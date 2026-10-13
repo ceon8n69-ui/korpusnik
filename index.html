@@ -309,6 +309,10 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
 .sheetc{position:relative}
 .sheetx{position:absolute;top:12px;right:12px;width:40px;height:40px;font-size:18px;font-weight:700}
 .sheetc h2{padding-right:48px}
+.refthumb{position:absolute;right:12px;top:12px;width:92px}
+.refthumb button:first-child{display:block;padding:0;border:var(--bw) solid var(--ink);background:var(--surface);box-shadow:var(--sh-s);cursor:pointer;width:100%}
+.refthumb img{display:block;width:100%;height:auto}
+.refthumb .x{position:absolute;top:-10px;right:-10px;width:24px;height:24px;border:var(--bw) solid var(--ink);background:var(--surface);font-weight:700;cursor:pointer;color:var(--ink)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -323,6 +327,7 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
   <nav class="drawer" id="drawer" hidden>
     <button type="button" data-nav="editor">Изделие<span>→</span></button>
     <button type="button" data-nav="orders">Заказы<span>→</span></button>
+    <button type="button" data-nav="photo">Мебель по фото<span>→</span></button>
     <button type="button" data-nav="mine">Мои шаблоны<span>→</span></button>
     <button type="button" data-nav="prices">Мои цены<span>→</span></button>
   </nav>
@@ -334,6 +339,7 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
         <section class="card route" id="orderBar"></section>
         <section class="card">
           <h2 class="lbl">Изделие</h2>
+          <button class="cta w" type="button" data-act="photo" style="margin-bottom:14px;min-height:50px"><span style="font-size:17px">Мебель по фото</span><i><svg class="i" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></svg></i></button>
           <div class="cats" id="cats" role="tablist" aria-label="Комнаты"></div>
           <div class="tpls" id="tpls"></div>
         </section>
@@ -1487,6 +1493,7 @@ $('#bMenu').onclick=()=>{const d=$('#drawer'); d.hidden=!d.hidden; $('#bMenu').s
 $('#bOrders').onclick=()=>state.orderId&&Store.order(state.orderId)?(state.openOrder=state.orderId,go('order')):go('orders');
 $('#drawer').onclick=e=>{const b=e.target.closest('[data-nav]'); if(!b) return; const n=b.dataset.nav;
   if(n==='mine'){state.cat='Мои'; renderCats(); renderTpls(); go('editor'); return;}
+  if(n==='photo'){go('editor'); openPhoto(); return;}
   if(n==='prices'){go('editor'); state.tab='est'; renderTab(); const d=$('details.prices'); if(d){d.open=true; d.scrollIntoView({block:'start'});} return;}
   go(n);};
 
@@ -1751,6 +1758,112 @@ $('#accEd').addEventListener('change',e=>{
   const f=e.target.dataset.af, row=e.target.closest('[data-ai]'); if(!f||!row) return;
   const a=accList()[+row.dataset.ai]; a[f]=f==='n'||f==='m'?+e.target.value:e.target.value; update(); renderAccEd();
 });
+
+/* ---------- Мебель по фото ---------- */
+let refImg=null, photoBlob=null, photoURL=null, photoRes=null, photoCtl=null;
+const ICON_CAM='<svg class="i" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></svg>';
+const inFrame=window.self!==window.top;
+async function sampleFn(){try{return window.claude&&typeof window.claude.use==='function'?await window.claude.use('sample'):null;}catch(e){return null;}}
+function photoPrompt(d){
+  const tl=Object.entries(TPL).filter(([k])=>k!=='free'&&k!=='custom'&&k!=='kitchen').map(([k,T])=>`${k} — ${T.name}: `+T.params.filter(p=>p.type!=='fixed').map(p=>p.type==='num'?`${p.k} ${p.min}..${p.max} мм|шт (по умолч. ${p.def})`:`${p.k}: ${(typeof p.opts==='function'?[]:p.opts).map(o=>o[0]).join('|')}`).join('; ')).join('\n');
+  const mats=Object.keys(MAT).filter(k=>k!=='dvp').join('|');
+  return `Ты — технолог-мебельщик. На фото — мебель, которую клиент хочет заказать. Определи изделие и разложи его на параметры конструктора «Корпусник». Ответь ТОЛЬКО одним JSON-объектом без пояснений вокруг.
+
+Известные размеры от мастера (мм): ширина ${d.W||'не указана'}, высота ${d.H||'не указана'}, глубина ${d.D||'не указана'}. Неуказанные оцени по пропорциям на фото и стандартам (шкаф глубина 550–600, кухня низ 720 на опорах 100, обеденный стол 750, полки шаг 300–400).
+Пожелания мастера: ${d.note||'нет'}
+
+ШАБЛОНЫ (ключ — название: параметры):
+${tl}
+
+custom — Свой корпус (лучший выбор для нестандартных шкафов, стеллажей, тумб, сочетаний открытых и закрытых секций): W,H,D; base: plinth|legs|none|wall; bh (высота цоколя/ножек); top: between|overlay|rails; back: yes|no; cols — массив секций СЛЕВА НАПРАВО, каждая секция — массив зон СНИЗУ ВВЕРХ: {"k":"sh|door|drw|rod|fix|nic","n":число полок или ящиков,"h":высота зоны в мм или 0=поровну,"f":"same" или "материал|декор" для фасада этой зоны}; sh=открытые полки, door=двери с полками внутри, drw=ящики, rod=штанга, fix=глухие полки, nic=пустая ниша; cw — ширины секций мм (0=поровну); ch — высоты секций мм (0=во всю высоту, работает при top=between).
+kitchen — Кухня целиком: low — нижние модули слева направо [{"k":"door|drw|sink|oven","w":ширина}], up — верхние [{"k":"up|upo","w":ширина}]; Hl, Dl, bh, Hu, Du, gap (фартук); fu — фасады верха: "same" или "материал|декор".
+
+МАТЕРИАЛЫ для всех изделий с корпусом: cm — материал корпуса: ${mats}; cdec — декор/цвет: для ДСП ${Object.keys(DECORS).join('|')}, для МДФ ${Object.keys(PAINTS).join('|')}, для щита и фанеры не нужен; fm, fdec — то же для фасадов; hnd — ручки: std|edge|gola|push. Строка "материал|декор" например "dsp16|graphite", "mdf19|black", "oak20|".
+Мягкая мебель: fab ${Object.keys(FABRICS).join('|')}, fcol ${Object.keys(FCOL).join('|')}.
+ОПЦИИ (только если видны на фото): "acc": [{"k":"led","place":"under|cab|inner|floor|river","col":"warm|neutral|rgb|uv","ctrl":"switch|motion|door|dimmer|wifi"}, {"k":"sock|popup|usb|qi|grom|panto|basket|org|mirror","n":1}].
+
+Формат ответа:
+{"tpl":"ключ шаблона","name":"короткое название по-русски","vals":{ ...параметры выбранного шаблона и материалы... },"summary":"2–4 предложения: что за изделие, как разложил на конструкцию, что упростил","assumptions":["допущение 1","допущение 2"],"confidence":"high|medium|low"}
+Правила: подбирай ближайший к фото цвет и материал; размеры — целые мм; если изделие нельзя сделать из плит (гнутое, скульптурное), выбери ближайший реализуемый вариант и честно скажи об этом в summary.`;
+}
+async function prepImage(file){
+  const url=URL.createObjectURL(file);
+  const img=await new Promise((ok,no)=>{const i=new Image(); i.onload=()=>ok(i); i.onerror=no; i.src=url;});
+  const k=Math.min(1,1280/Math.max(img.naturalWidth,img.naturalHeight)), w=Math.round(img.naturalWidth*k), h=Math.round(img.naturalHeight*k);
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h);
+  URL.revokeObjectURL(url);
+  const blob=await new Promise(ok=>cv.toBlob(ok,'image/jpeg',.85));
+  const t=document.createElement('canvas'), tk=Math.min(1,320/Math.max(w,h)); t.width=Math.round(w*tk); t.height=Math.round(h*tk); t.getContext('2d').drawImage(cv,0,0,t.width,t.height);
+  return {blob,thumb:t.toDataURL('image/jpeg',.8),full:cv.toDataURL('image/jpeg',.85)};
+}
+function extractJSON(text){const a=text.indexOf('{'), b=text.lastIndexOf('}'); if(a<0||b<=a) throw {code:'invalid_json',message:'no json'}; return JSON.parse(text.slice(a,b+1));}
+async function askByKey(prompt,blob,onText){
+  const key=LS.get('korp3.apikey',''); if(!key) throw {code:'no_key'};
+  const b64=await new Promise(ok=>{const r=new FileReader(); r.onload=()=>ok(String(r.result).split(',')[1]); r.readAsDataURL(blob);});
+  onText&&onText('…');
+  const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-5-5',max_tokens:4000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:prompt}]}]})});
+  if(!res.ok){const t=await res.text().catch(()=>''); throw {code:res.status===401?'bad_key':res.status===429?'rate_limited':'upstream_error',message:t.slice(0,200)};}
+  const j=await res.json(); return extractJSON((j.content||[]).map(c=>c.text||'').join(''));
+}
+const PHOTO_ERR={not_granted:'Доступ к Claude не разрешён для этой страницы.',sampling_disabled:'Claude недоступен для этого аккаунта.',images_unavailable:'В этом окне нельзя отправлять картинки.',image_rejected:'Картинка не подошла — попробуйте другой файл (JPG или PNG).',rate_limited:'Слишком много запросов или закончился лимит. Попробуйте позже.',refused:'Claude не стал разбирать это фото. Попробуйте другое.',invalid_json:'Ответ получился неполным. Нажмите «Ещё раз».',empty_completion:'Пустой ответ. Попробуйте ещё раз или другое фото.',session_expired:'Войдите в аккаунт Claude заново.',no_key:'Укажите ключ Claude API — он нужен для распознавания в приложении.',bad_key:'Ключ API не подошёл. Проверьте его в console.anthropic.com.'};
+async function openPhoto(){
+  const sm=await sampleFn();
+  const canAI=!!sm||!inFrame;
+  const key=LS.get('korp3.apikey','');
+  sheet(`<h2>Мебель по фото</h2>
+    <p class="note" style="margin:0">Скриншот из Pinterest или фото. ИИ подберёт конструкцию, размеры, материалы и цвета — дальше всё считается как обычно.</p>
+    <label class="empty" style="cursor:pointer;display:block" for="phFile">${photoURL?`<img src="${photoURL}" alt="Выбранное фото" style="max-height:220px;margin:0 auto;display:block">`:`<b>Выбрать фото</b><span class="note">JPG, PNG, скриншот</span>`}</label>
+    <input type="file" id="phFile" accept="image/*" hidden>
+    <div class="params"><div class="f"><label for="phW">Ширина, мм</label><div class="in"><input id="phW" type="number" inputmode="numeric" placeholder="если знаете"></div></div>
+      <div class="f"><label for="phH">Высота, мм</label><div class="in"><input id="phH" type="number" inputmode="numeric" placeholder="если знаете"></div></div>
+      <div class="f"><label for="phD">Глубина, мм</label><div class="in"><input id="phD" type="number" inputmode="numeric" placeholder="если знаете"></div></div></div>
+    <div class="f"><label for="phN">Пожелания</label><div class="in"><textarea id="phN" rows="2" placeholder="Например: в нишу, белый корпус, без ручек"></textarea></div></div>
+    ${!sm&&!inFrame?`<div class="f"><label for="phK">Ключ Claude API ${key?'(сохранён)':''}</label><div class="in"><input id="phK" type="password" autocomplete="off" placeholder="${key?'••••••••':'sk-ant-…'}"></div><p class="note" style="margin-top:4px">В приложении на телефоне распознавание работает через ваш ключ с console.anthropic.com. Ключ хранится только на этом устройстве.</p></div>`:''}
+    ${canAI?'':'<p class="err">Распознавание фото недоступно в этом окне.</p>'}
+    <p class="note" id="phStat" aria-live="polite"></p>
+    <div id="phRes"></div>
+    <button class="cta" type="button" id="phGo"${canAI?'':' disabled'}><span>Разложить по фото</span><i>${ICON_CAM}</i></button>`,
+  c=>{
+    c.querySelector('#phFile').onchange=async e=>{const f=e.target.files&&e.target.files[0]; if(!f) return; try{const p=await prepImage(f); photoBlob=p.blob; photoURL=p.full; refImg=p.thumb; photoRes=null; c.querySelector('label[for="phFile"]').innerHTML=`<img src="${photoURL}" alt="Выбранное фото" style="max-height:220px;margin:0 auto;display:block">`; c.querySelector('#phRes').innerHTML=''; c.querySelector('#phGo span').textContent='Разложить по фото';}catch(err){toast('Не удалось открыть картинку');}};
+    const go=c.querySelector('#phGo');
+    go.onclick=async()=>{
+      if(!photoBlob){c.querySelector('#phStat').textContent='Сначала выберите фото.'; return;}
+      const k=c.querySelector('#phK'); if(k&&k.value.trim()) LS.set('korp3.apikey',k.value.trim());
+      const d={W:+c.querySelector('#phW').value||0,H:+c.querySelector('#phH').value||0,D:+c.querySelector('#phD').value||0,note:c.querySelector('#phN').value.trim()};
+      const st=c.querySelector('#phStat'); go.disabled=true; st.textContent='Смотрю на фото и думаю… обычно 20–60 секунд.';
+      photoCtl=new AbortController();
+      try{
+        const prompt=photoPrompt(d); let res;
+        const prog=({text})=>{st.textContent=`Получаю раскладку… ${text.length} символов`;};
+        if(sm) res=await sm.json(prompt,{images:[photoBlob],signal:photoCtl.signal,onText:prog,cache:false});
+        else res=await askByKey(prompt,photoBlob,()=>prog({text:''}));
+        if(!res||!TPL[res.tpl]) throw {code:'invalid_json'};
+        photoRes=res; st.textContent=''; showPhotoRes(c);
+      }catch(e){st.textContent=PHOTO_ERR[e&&e.code]||'Не получилось. Попробуйте ещё раз.'; if(e&&['not_granted','sampling_disabled','images_unavailable'].includes(e.code)) go.hidden=true;}
+      finally{go.disabled=false;}
+    };
+    if(photoRes) showPhotoRes(c);
+  });
+}
+function showPhotoRes(c){
+  const r=photoRes, T=TPL[r.tpl], conf={high:'уверенно',medium:'примерно',low:'наугад'}[r.confidence]||'примерно';
+  c.querySelector('#phRes').innerHTML=`<div class="stepcard"><p class="sub">Распознано · ${conf}</p><h3>${esc(r.name||T.name)}</h3><p>${esc(r.summary||'')}</p>
+    ${Array.isArray(r.assumptions)&&r.assumptions.length?`<p class="sub">Допущения</p><ul style="margin:0;padding-left:18px">${r.assumptions.slice(0,6).map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:''}
+    <div class="chips"><span class="chip">${T.name}</span></div></div>
+    <button class="cta" type="button" id="phApply" style="margin-top:12px"><span>Открыть в конструкторе</span><i>${ICON.open}</i></button>`;
+  c.querySelector('#phGo').querySelector('span').textContent='Другой вариант';
+  c.querySelector('#phApply').onclick=()=>{
+    const k=r.tpl; state.tpl=k; state.vals[k]=Object.assign({},r.vals||{}); state.cat=TPL[k].cat; state.myName=r.name||null; state.editItem=null; state.sel=null; fHist=[];
+    step=1; resetCam=true; closeSheet(); renderCats(); renderTpls(); renderParams(); update(); renderRef(); go('editor'); window.scrollTo({top:0,behavior:'smooth'}); toast('Изделие разложено по фото — проверьте размеры');
+  };
+}
+function renderRef(){
+  let el=$('#refThumb');
+  if(!refImg){if(el) el.remove(); return;}
+  if(!el){el=document.createElement('div'); el.id='refThumb'; el.className='refthumb'; $('#viewer').appendChild(el);}
+  el.innerHTML=`<button type="button" data-act="refBig" aria-label="Открыть фото-референс"><img src="${refImg}" alt="Фото-референс"></button><button type="button" class="x" data-act="refClose" aria-label="Убрать фото">×</button>`;
+}
 
 /* ---------- Пересчёт ---------- */
 function update(){
@@ -2137,6 +2250,9 @@ document.addEventListener('click',e=>{
     c=>c.querySelector('#myOk').onclick=()=>{const n=c.querySelector('#myN').value.trim(); if(!n){c.querySelector('#myErr').hidden=false; return;}
       const ex=Store.tpls.find(t=>t.name===n); const d=ex||{id:uid('t'),kind:'tpl',created:Date.now()}; d.name=n; d.tpl=state.tpl; d.vals=clone(tv()); state.myName=n; state.cat='Мои'; closeSheet(); Store.put(d); renderCats(); renderTpls(); update(); toast('Шаблон сохранён');});
   else if(act==='export') exportData();
+  else if(act==='photo') openPhoto();
+  else if(act==='refBig'&&photoURL) sheet(`<h2>Референс</h2><img src="${photoURL}" alt="Фото-референс" style="width:100%;border:var(--bw) solid var(--ink)">`);
+  else if(act==='refClose'){refImg=null; renderRef();}
   else if(act==='closeFree'){const k=state.prevTpl&&TPL[state.prevTpl]&&state.prevTpl!=='free'?state.prevTpl:'wardrobe'; state.tpl=k; state.cat=TPL[k].cat; state.myName=null; state.sel=null; resetCam=true; renderCats(); renderTpls(); renderParams(); update(); window.scrollTo({top:0,behavior:'smooth'});}
   else if(act==='toFree'){state.prevTpl=state.tpl; const v=M.v; state.vals.free={free:partsToFree(M),cm:v.cm,cdec:v.cdec,fm:v.fm,fdec:v.fdec,hnd:v.hnd}; fHist=[]; state.tpl='free'; state.cat='Мои'; state.myName=null; state.editItem=null; state.sel=null; resetCam=true; renderCats(); renderTpls(); renderParams(); update(); toast('Детали перенесены в свободный редактор');}
 });
