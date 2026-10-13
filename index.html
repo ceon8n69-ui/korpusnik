@@ -895,6 +895,110 @@ function buildKitchenRow(v){
   return c;
 }
 
+
+/* ---- Свободный редактор деталей ---- */
+const FROLES={corpus:'Корпус',door:'Дверь на петлях',front:'Накладной фасад',back:'Задняя стенка ДВП',leg:'Ножка'};
+const FORI={v:'Вертикальная',h:'Горизонтальная',f:'Фронтальная',leg:'Ножка'};
+const FDIM={v:['Высота','Глубина'],h:['Ширина','Глубина'],f:['Ширина','Высота'],leg:['Высота','']};
+const DEF_FREE=[
+  {id:'p1',name:'Боковина левая',o:'v',a:900,b:400,x:0,y:0,z:0,role:'corpus',m:'body'},
+  {id:'p2',name:'Боковина правая',o:'v',a:900,b:400,x:784,y:0,z:0,role:'corpus',m:'body'},
+  {id:'p3',name:'Дно',o:'h',a:768,b:400,x:16,y:80,z:0,role:'corpus',m:'body'},
+  {id:'p4',name:'Крышка',o:'h',a:768,b:400,x:16,y:884,z:0,role:'corpus',m:'body'},
+  {id:'p5',name:'Перегородка',o:'v',a:788,b:400,x:392,y:96,z:0,role:'corpus',m:'body'},
+  {id:'p6',name:'Полка',o:'h',a:376,b:400,x:16,y:480,z:0,role:'corpus',m:'body'},
+  {id:'p7',name:'Цоколь',o:'f',a:768,b:80,x:16,y:0,z:384,role:'corpus',m:'body'},
+  {id:'p8',name:'Дверь',o:'f',a:394,b:810,x:399,y:84,z:400,role:'door',m:'front',hinge:'R'},
+  {id:'p9',name:'Задняя стенка',o:'f',a:796,b:816,x:2,y:82,z:-3,role:'back',m:'dvp'}];
+function normFree(a){
+  if(!Array.isArray(a)) a=DEF_FREE;
+  const num=(x,lo,hi,d)=>{x=Math.round(+x); return isFinite(x)?Math.min(hi,Math.max(lo,x)):d;};
+  return a.slice(0,200).filter(p=>p&&typeof p==='object').map((p,i)=>({id:String(p.id||'p'+i).slice(0,20),name:String(p.name||'').slice(0,60),o:FORI[p.o]?p.o:'v',
+    a:num(p.a,10,3200,600),b:num(p.b,10,3200,400),x:num(p.x,-5000,5000,0),y:num(p.y,-500,5000,0),z:num(p.z,-500,5000,0),
+    role:FROLES[p.role]?p.role:'corpus',m:typeof p.m==='string'&&(p.m==='body'||p.m==='front'||p.m==='dvp'||FOPTS.some(o=>o[0]===p.m))?p.m:'body',hinge:p.hinge==='R'?'R':'L'}));
+}
+function freeMk(v,p){
+  if(p.m==='dvp'||(p.role==='back'&&p.m==='body')) return ['dvp',null];
+  if(p.m==='body') return [v.cm,v.cdec];
+  if(p.m==='front') return [v.fm||v.cm,v.fdec];
+  const f=splitF(p.m); return f.fm?[f.fm,f.fdec]:[v.cm,v.cdec];
+}
+function freeBox(v,p){
+  if(p.o==='leg') return {x:p.x,y:p.y,z:p.z,sx:40,sy:p.a,sz:40};
+  const t=MAT[freeMk(v,p)[0]].t;
+  return p.o==='v'?{x:p.x,y:p.y,z:p.z,sx:t,sy:p.a,sz:p.b}:p.o==='h'?{x:p.x,y:p.y,z:p.z,sx:p.a,sy:t,sz:p.b}:{x:p.x,y:p.y,z:p.z,sx:p.a,sy:p.b,sz:t};
+}
+function buildFree(v){
+  const c=ctx(v),{P,F,H,Lb}=c; let doors=0,fronts=0,legs=0,backs=0;
+  const phOf=r=>r==='corpus'?'frame':r==='back'?'back':r==='leg'?'legs':r==='door'?'doors':'fronts';
+  const sp=(a,b,st=140)=>{const k=Math.max(2,Math.ceil((b-a)/st)+1);return Array.from({length:k},(_,i)=>a+i*(b-a)/(k-1));};
+  v.free.forEach(p=>{
+    const b=freeBox(v,p);
+    if(p.o==='leg'){legs++; P(Object.assign({name:p.name||'Ножка',grp:'hw',shape:'cylY',ph:'legs',pid:p.id},b)); [[-12,-12],[12,12],[12,-12],[-12,12]].forEach(([q,w])=>F('s16','legs',b.x+20+q,b.y+b.sy,b.z+20+w,'y')); return;}
+    const [mk,dec]=freeMk(v,p), grp=p.role==='door'||p.role==='front'?'front':p.role==='back'?'back':'corpus';
+    const edges=grp==='front'?e4(Math.max(b.sx,b.sy,b.sz),[b.sx,b.sy,b.sz].sort((q,w)=>w-q)[1]):grp==='back'?[]:p.o==='v'?[[2,b.sy]]:[[2,b.sx]];
+    P(Object.assign({name:p.name||FORI[p.o]+' деталь',grp,mk,dec,edges,ph:phOf(p.role),pid:p.id},b));
+    if(p.role==='door'){doors++; const left=p.hinge!=='R', n=hn(b.sy), hx=left?b.x+22:b.x+b.sx-22;
+      (n===2?[b.y+100,b.y+b.sy-100]:Array.from({length:n},(_,i)=>b.y+100+i*(b.sy-200)/(n-1))).forEach(y=>F('hinge','doors',hx,y,b.z+2,'z'));
+      addHandle(c,'doors',{x:b.x,y:b.y,w:b.sx,h:b.sy,z:b.z,tf:b.sz,drawer:false,left}); Lb('door');}
+    if(p.role==='front'){fronts++; [.25,.75].forEach(q=>[.3,.7].forEach(w=>F('s25','fronts',b.x+b.sx*q,b.y+b.sy*w,b.z,'z'))); addHandle(c,'fronts',{x:b.x,y:b.y,w:b.sx,h:b.sy,z:b.z,tf:b.sz,drawer:true});}
+    if(p.role==='back'){backs++; sp(b.x+20,b.x+b.sx-20).forEach(x=>{F('nail','back',x,b.y+10,b.z,'z');F('nail','back',x,b.y+b.sy-10,b.z,'z');}); sp(b.y+150,b.y+b.sy-150).forEach(y=>{F('nail','back',b.x+10,y,b.z,'z');F('nail','back',b.x+b.sx-10,y,b.z,'z');});}
+  });
+  // стыки корпусных деталей: конфирмат через пласть в торец соседней
+  const cp=c.parts.filter(p=>p.grp==='corpus'), K=['x','y','z'], S=['sx','sy','sz'], DIR=['x','y','z'];
+  const lo=(p,i)=>p[K[i]], hi=(p,i)=>p[K[i]]+p[S[i]];
+  let joints=0, clash=null;
+  for(let i=0;i<cp.length;i++) for(let j=i+1;j<cp.length;j++){
+    const A=cp[i],B=cp[j];
+    const ov=[0,1,2].map(k=>Math.min(hi(A,k),hi(B,k))-Math.max(lo(A,k),lo(B,k)));
+    if(ov.every(o=>o>1.5)){clash=clash||`Детали «${A.name}» и «${B.name}» пересекаются.`; continue;}
+    for(let ax=0;ax<3;ax++){
+      const touch=Math.abs(hi(A,ax)-lo(B,ax))<1.5||Math.abs(hi(B,ax)-lo(A,ax))<1.5;
+      const o=[0,1,2].filter(k=>k!==ax);
+      if(!touch||ov[o[0]]<15||ov[o[1]]<15) continue;
+      const thinA=A[S[ax]]<=45, thinB=B[S[ax]]<=45;
+      const [L,Sh]=ov[o[0]]>=ov[o[1]]?[o[0],o[1]]:[o[1],o[0]];
+      const l0=Math.max(lo(A,L),lo(B,L)), len=ov[L], s0=Math.max(lo(A,Sh),lo(B,Sh)), mid=s0+ov[Sh]/2;
+      if(thinA&&thinB){
+        [l0+len*.25,l0+len*.75].forEach(q=>{const pt=[0,0,0]; pt[L]=q; pt[Sh]=mid; pt[ax]=Math.abs(hi(A,ax)-lo(B,ax))<1.5?hi(A,ax):hi(B,ax); F('s30','frame',pt[0],pt[1],pt[2],DIR[ax]);});
+      }else{
+        const thr=thinB?B:A, ac=lo(thr,ax)+thr[S[ax]]/2;
+        (thinA||thinB?zl(l0,len):[l0+len*.25,l0+len*.75]).forEach(q=>{const pt=[0,0,0]; pt[L]=q; pt[Sh]=mid; pt[ax]=ac; F(thinA||thinB?'conf':'corner','frame',pt[0],pt[1],pt[2],DIR[ax]);});
+      }
+      joints++; break;
+    }
+  }
+  if(legs) H('fleg',legs);
+  if(cp.length) Lb('corpus'); if(cp.length>4) Lb('shelf',cp.length-4); if(backs) Lb('back'); if(legs) Lb('legs');
+  const all=c.parts; const bx=k=>[Math.min(...all.map(p=>p[K[k]])),Math.max(...all.map(p=>p[K[k]]+p[S[k]]))];
+  c.size=all.length?[0,1,2].map(k=>{const [a,b]=bx(k);return b-a;}):[0,0,0];
+  c.err=!all.length?'Добавьте первую деталь.':clash;
+  c.info.freeJoints=joints;
+  const nConf=c.fx.filter(f=>f.type==='conf').length;
+  c.phases=[
+    {ph:'frame',t:'Каркас',d:`Соединяйте детали корпуса по меткам: стыков ${joints}, конфирматов ${nConf}. Конфирмат идёт через пласть одной детали в торец другой. Порядок: нижние горизонтальные детали к левой вертикали, затем перегородки и полки, правую вертикаль — последней.`},
+    {ph:'back',t:'Задняя стенка',d:'Выставьте прямоугольник по диагоналям, прибейте ДВП гвоздями по периметру с шагом 120–150 мм.'},
+    {ph:'legs',t:'Ножки',d:`Ножек: ${legs}. Каждая — на 4 самореза 4×16.`},
+    {ph:'doors',t:'Двери',d:`${hingeTxt(2)} Дверей: ${doors}, ${HND[v.hnd||'std']}.`},
+    {ph:'fronts',t:'Накладные фасады',d:`Фасадов: ${fronts}. Зазор 3 мм, крепление изнутри 4 саморезами 4×25, ${HND[v.hnd||'std']}.`}];
+  return c;
+}
+/* Перенос любого изделия в свободный редактор */
+function partsToFree(m){
+  const v=m.v, out=[]; let n=0;
+  m.parts.forEach(p=>{
+    if(p.grp==='soft') return;
+    if(p.grp==='hw'){ if(p.shape==='cylY') out.push({id:'p'+(++n),name:p.name,o:'leg',a:r1(p.sy),b:40,x:r1(p.x),y:r1(p.y),z:r1(p.z),role:'leg',m:'body'}); return; }
+    const t=MAT[p.mk].t, o=Math.abs(p.sx-t)<.6?'v':Math.abs(p.sy-t)<.6?'h':'f';
+    const [a,b]=o==='v'?[p.sy,p.sz]:o==='h'?[p.sx,p.sz]:[p.sx,p.sy];
+    const role=p.grp==='front'?(p.name.startsWith('Дверь')&&!p.name.includes('купе')?'door':'front'):p.grp==='back'?'back':'corpus';
+    const mm=p.mk==='dvp'?'dvp':p.grp==='front'?(p.mk===(v.fm||v.cm)&&p.dec===v.fdec?'front':p.mk+'|'+(p.dec||'')):(p.mk===v.cm&&p.dec===v.cdec?'body':p.mk+'|'+(p.dec||''));
+    const hinge=role==='door'&&m.fx.some(f=>f.type==='hinge'&&Math.abs(f.x-(p.x+p.sx-22))<1)?'R':'L';
+    out.push({id:'p'+(++n),name:p.name,o,a:r1(a),b:r1(b),x:r1(p.x),y:r1(p.y),z:r1(p.z),role,m:FOPTS.some(q=>q[0]===mm)||['body','front','dvp'].includes(mm)?mm:'body',hinge});
+  });
+  return out;
+}
+
 /* ---- Шаблоны ---- */
 const N=(k,l,min,max,def,u='мм',x={})=>Object.assign({k,l,min,max,def,u,type:'num'},x);
 const S=(k,l,opts,def,x={})=>Object.assign({k,l,type:'sel',opts,def},x);
@@ -980,6 +1084,7 @@ const TPL={
   desk:{name:'Стол письменный',cat:'Кабинет',custom:buildDesk,noFront:true,params:[...dims([800,1800,1200],[700,800,750],[450,800,600]),N('mh','Высота царги',150,500,300)]},
   office:C('Тумба офисная','Кабинет',[...dims([350,600,400],[500,750,600],[400,600,500]),N('drawers','Ящики',2,4,3,'шт')],
     v=>({base:{type:'none'},top:'overlay',cols:[[{drawers:v.drawers}]]})),
+  free:{name:'Свободный редактор',cat:'Мои',custom:buildFree,params:[]},
   custom:C('Свой корпус','Мои',[...dims([300,3000,1000],[200,2800,2000],[150,800,500]),baseSel('plinth',['plinth','legs','none','wall']),bhP(80),
       S('top','Верх',[['between','Крышка между боковин'],['overlay','Крышка сверху'],['rails','Царги под столешницу']],'between'),S('back','Задняя стенка',[['yes','ДВП'],['no','Без стенки']],'yes')],
     v=>({base:BASE(v),top:v.top,back:v.back==='yes',legKind:'fleg',cols:v.cols.map(col=>col.map(zoneOf)),colW:v.cw,colH:v.ch})),
@@ -987,6 +1092,7 @@ const TPL={
     v=>({base:{type:'legs',h:v.bh},legKind:'kleg',top:'rails',back:false,cols:[[{doors:v.doors}]]}),{note:'Раковина и сифон в расчёт не входят. Задней стенки нет — под коммуникации.'})
 };
 IC.kitchen='<path d="M2 15h24M3 16v7h22v-7M10 16v7M17 16v7M3 3h22v7H3zM10 3v7M17 3v7"/>';
+IC.free='<path d="M4 22V8l6-4 14 4v14l-6 3-14-3z"/><path d="M10 4v14l14 4M10 18l-6 4"/>';
 IC.custom='<rect x="4" y="3" width="20" height="22" rx="1"/><path d="M14 3v22M4 10h10M14 15h10M4 18h10"/><path d="M19 6v5M16.5 8.5h5"/>';
 Object.keys(TPL).forEach(k=>TPL[k].icon=`<svg viewBox="0 0 28 28">${IC[k]||IC.rack}</svg>`);
 const ZONES={sh:'Полки',door:'Двери + полки',drw:'Ящики',rod:'Штанга',fix:'Глухие полки',nic:'Ниша'};
@@ -1018,6 +1124,7 @@ function normVals(key,vals){
   });
   if(v.bh!==undefined&&v.bh>0&&v.bh<40&&v.base!=='legs') v.bh=40;
   if(key==='custom'){v.cols=normCols(vals.cols); const dflt=!Array.isArray(vals.cols); v.cw=normNums(dflt?DEF_CW:vals.cw,v.cols.length,3000); v.ch=normNums(dflt?DEF_CH:vals.ch,v.cols.length,2800);}
+  if(key==='free') v.free=normFree(vals.free);
   if(key==='kitchen'){v.low=normMods(vals.low,'low'); v.up=normMods(vals.up,'up');}
   return v;
 }
@@ -1247,13 +1354,13 @@ $('#tabs').onclick=e=>{const b=e.target.closest('.tab'); if(!b) return; state.ta
 function renderCats(){$('#cats').innerHTML=CATS.map(c=>`<button class="cat" type="button" role="tab" data-c="${c}" aria-selected="${c===state.cat}">${c}</button>`).join('');}
 $('#cats').onclick=e=>{const b=e.target.closest('.cat'); if(!b) return; state.cat=b.dataset.c; save(); renderCats(); renderTpls();};
 function renderTpls(){
-  let h=Object.entries(TPL).filter(([,T])=>T.cat===state.cat).map(([k,T])=>`<button class="tpl" type="button" data-k="${k}" aria-pressed="${k===state.tpl&&!(k==='custom'&&state.myName)}">${T.icon}<span>${T.name}</span></button>`).join('');
-  if(state.cat==='Мои') h+=Store.tpls.map(t=>`<div style="position:relative"><button class="tpl" type="button" data-my="${t.id}" aria-pressed="${state.tpl==='custom'&&state.myName===t.name}" style="width:100%">${TPL.custom.icon}<span>${esc(t.name)}</span></button><button class="x" type="button" data-delmy="${t.id}" aria-label="Удалить шаблон ${esc(t.name)}">×</button></div>`).join('');
+  let h=Object.entries(TPL).filter(([,T])=>T.cat===state.cat).map(([k,T])=>`<button class="tpl" type="button" data-k="${k}" aria-pressed="${k===state.tpl&&!state.myName}">${T.icon}<span>${T.name}</span></button>`).join('');
+  if(state.cat==='Мои') h+=Store.tpls.map(t=>`<div style="position:relative"><button class="tpl" type="button" data-my="${t.id}" aria-pressed="${state.tpl===(t.tpl||'custom')&&state.myName===t.name}" style="width:100%">${(TPL[t.tpl]||TPL.custom).icon}<span>${esc(t.name)}</span></button><button class="x" type="button" data-delmy="${t.id}" aria-label="Удалить шаблон ${esc(t.name)}">×</button></div>`).join('');
   $('#tpls').innerHTML=h;
 }
 $('#tpls').onclick=e=>{
   const d=e.target.closest('[data-delmy]'); if(d){const t=Store.tpls.find(x=>x.id===d.dataset.delmy); if(t) confirmSheet(`Удалить шаблон «${esc(t.name)}»?`,'Удалить',()=>Store.del(t)); return;}
-  const my=e.target.closest('[data-my]'); if(my){const t=Store.tpls.find(x=>x.id===my.dataset.my); if(!t) return; state.tpl='custom'; state.vals.custom=clone(t.vals); state.myName=t.name; state.editItem=null; step=1; resetCam=true; renderTpls(); renderParams(); update(); return;}
+  const my=e.target.closest('[data-my]'); if(my){const t=Store.tpls.find(x=>x.id===my.dataset.my); if(!t) return; const k=TPL[t.tpl]?t.tpl:'custom'; state.tpl=k; state.vals[k]=clone(t.vals); state.myName=t.name; fHist=[]; state.sel=null; state.editItem=null; step=1; resetCam=true; renderTpls(); renderParams(); update(); return;}
   const b=e.target.closest('.tpl'); if(!b) return; const k=b.dataset.k; if(k===state.tpl&&!state.myName) return;
   state.tpl=k; state.myName=null; state.editItem=null; step=1; resetCam=true; renderTpls(); renderParams(); update();
 };
@@ -1288,6 +1395,8 @@ $('#params').addEventListener('change',e=>{
 const fOptsHTML=sel=>{let h='',g=null; FOPTS.forEach(([v,l,gg])=>{if(gg!==g){if(g) h+='</optgroup>'; g=gg; if(gg) h+=`<optgroup label="${gg}">`;} h+=`<option value="${v}"${v===sel?' selected':''}>${l}</option>`;}); return h+(g?'</optgroup>':'');};
 function renderSecEd(){
   const box=$('#secEd');
+  if(state.tpl==='free'){ if(box.previousElementSibling!==$('#viewer')) $('#viewer').after(box); } else if(box.parentNode!==$('#sum').parentNode) $('#sum').before(box);
+  if(state.tpl==='free'){box.hidden=false; renderFreeEd(box); return;}
   if(state.tpl==='kitchen'){box.hidden=false; renderModEd(box); return;}
   if(state.tpl!=='custom'){box.hidden=true; return;} box.hidden=false;
   const nv=normVals('custom',tv()); const cols=nv.cols, cw=nv.cw, chh=nv.ch; tv().cols=cols; tv().cw=cw; tv().ch=chh;
@@ -1326,6 +1435,7 @@ function renderModEd(box){
   <p class="note" style="margin-top:10px">Верхние модули выравниваются от левого края. Цвет верхних фасадов меняется в параметрах — так делают кухню «чёрный низ, дерево сверху».</p>`;
 }
 $('#secEd').addEventListener('change',e=>{
+  if(state.tpl==='free') return;
   const t=e.target;
   if(t.dataset.cw!==undefined){tv().cw[+t.dataset.cw]=Math.max(0,Math.round(+t.value||0)); renderSecEd(); update(); return;}
   if(t.dataset.ch!==undefined){tv().ch[+t.dataset.ch]=Math.max(0,Math.round(+t.value||0)); renderSecEd(); update(); return;}
@@ -1337,6 +1447,7 @@ $('#secEd').addEventListener('change',e=>{
   renderSecEd(); update();
 });
 $('#secEd').addEventListener('click',e=>{
+  if(state.tpl==='free') return;
   let t;
   if((t=e.target.closest('[data-addm]'))){const r=t.dataset.addm; tv()[r].push({k:r==='low'?'door':'up',w:600});}
   else if((t=e.target.closest('[data-delm]'))){const r=t.closest('.zone'); tv()[r.dataset.r].splice(+r.dataset.i,1);}
@@ -1351,13 +1462,90 @@ $('#secEd').addEventListener('click',e=>{
   renderSecEd(); update();
 });
 
+/* ---------- Свободный редактор ---------- */
+let fHist=[]; let fStep=10;
+const fList=()=>tv().free;
+const fSel=()=>(fList()||[]).find(p=>p.id===state.sel)||null;
+function fChange(fn){fHist.push(JSON.stringify(fList())); if(fHist.length>40) fHist.shift(); fn(); update(); renderSecEd();}
+const fBox=p=>freeBox(M?M.v:normVals('free',tv()),p);
+function fSnap(ax,sgn){
+  const p=fSel(); if(!p) return; const K=['x','y','z'],S=['sx','sy','sz'], A=fBox(p);
+  let best=null;
+  fList().forEach(q=>{ if(q.id===p.id) return; const B=fBox(q);
+    const ok=[0,1,2].filter(k=>k!==ax).every(k=>Math.min(A[K[k]]+A[S[k]],B[K[k]]+B[S[k]])-Math.max(A[K[k]],B[K[k]])>0.5); if(!ok) return;
+    const gap=sgn>0?B[K[ax]]-(A[K[ax]]+A[S[ax]]):A[K[ax]]-(B[K[ax]]+B[S[ax]]);
+    if(gap>=-0.5&&(best===null||gap<best)) best=gap;});
+  if(best===null){ if(ax===1&&sgn<0) best=A.y; else {toast('В этом направлении нет соседней детали'); return;} }
+  if(Math.abs(best)<0.5){toast('Уже вплотную'); return;}
+  fChange(()=>{p[K[ax]]=Math.round(p[K[ax]]+sgn*best);});
+}
+function fAdd(o){
+  const s=fSel(), b=s?fBox(s):null, id='p'+Date.now().toString(36).slice(-6);
+  const base=b||{x:0,y:0,z:0,sx:0,sy:720,sz:400};
+  const p={id,o,role:o==='leg'?'leg':'corpus',m:'body',hinge:'L',
+    name:o==='v'?'Стойка':o==='h'?'Полка':o==='f'?'Панель':'Ножка',
+    a:o==='v'?Math.round(Math.max(base.sy,300)):o==='h'?400:o==='f'?400:100,
+    b:o==='v'||o==='h'?Math.round(Math.max(base.sz,100)):o==='f'?400:40,
+    x:Math.round(base.x+base.sx+100),y:o==='leg'?0:Math.round(base.y),z:Math.round(base.z)};
+  fChange(()=>{fList().push(p); state.sel=id;});
+}
+function renderFreeEd(box){
+  const v=normVals('free',tv()); tv().free=v.free; const list=v.free, p=fSel();
+  const dims=FDIM[p?p.o:'v'], b=p?freeBox(v,p):null;
+  const mOpts=sel=>[['body','Как корпус'],['front','Как фасады'],['dvp','ДВП 3 мм']].map(([k,l])=>`<option value="${k}"${k===sel?' selected':''}>${l}</option>`).join('')+fOptsHTML(sel).replace('<option value="same">Как основные фасады</option>','');
+  const fld=(k,l,val,attrs='')=>`<div class="f"><label for="ff_${k}">${l}</label><div class="in"><input id="ff_${k}" data-ff="${k}" type="number" inputmode="numeric" value="${val}" ${attrs}><span class="u">мм</span></div></div>`;
+  box.innerHTML=`<h2 class="lbl">Детали · ${list.length}</h2>
+  <div class="row"><button class="btn" type="button" data-fadd="v">+ Вертикаль</button><button class="btn" type="button" data-fadd="h">+ Горизонталь</button><button class="btn" type="button" data-fadd="f">+ Фронт</button><button class="btn" type="button" data-fadd="leg">+ Ножка</button></div>
+  <div class="row" style="margin-top:8px"><button class="btn" type="button" data-fdo="dup"${p?'':' disabled'}>Дублировать</button><button class="btn dng" type="button" data-fdo="del"${p?'':' disabled'}>Удалить</button><button class="btn" type="button" data-fdo="undo"${fHist.length?'':' disabled'}>${ICON.refresh}Отменить</button></div>
+  ${p?`<div class="col" style="margin-top:12px"><div class="colh"><span>${esc(p.name||FORI[p.o])}</span><span style="font-family:var(--f-b);font-size:12px;text-transform:none">${Math.round(b.sx)}×${Math.round(b.sy)}×${Math.round(b.sz)}</span></div>
+    <div class="params" style="padding:10px">
+      <div class="f wide"><label for="ff_name">Название</label><div class="in"><input id="ff_name" data-ff="name" value="${esc(p.name)}"></div></div>
+      <div class="f"><label for="ff_o">Положение</label><div class="in"><select id="ff_o" data-ff="o">${Object.entries(FORI).map(([k,l])=>`<option value="${k}"${k===p.o?' selected':''}>${l}</option>`).join('')}</select></div></div>
+      <div class="f"><label for="ff_role">Роль</label><div class="in"><select id="ff_role" data-ff="role">${Object.entries(FROLES).map(([k,l])=>`<option value="${k}"${k===p.role?' selected':''}>${l}</option>`).join('')}</select></div></div>
+      ${p.o!=='leg'?`<div class="f wide"><label for="ff_m">Материал</label><div class="in"><select id="ff_m" data-ff="m">${mOpts(p.m)}</select></div></div>`:''}
+      ${fld('a',dims[0],p.a,'min="10" max="3200"')}${p.o!=='leg'?fld('b',dims[1],p.b,'min="10" max="3200"'):'<div></div>'}
+      ${fld('x','X — вправо',p.x)}${fld('y','Y — вверх',p.y)}${fld('z','Z — вперёд',p.z)}
+      ${p.role==='door'?`<div class="f"><label for="ff_hinge">Петли</label><div class="in"><select id="ff_hinge" data-ff="hinge"><option value="L"${p.hinge==='L'?' selected':''}>Слева</option><option value="R"${p.hinge==='R'?' selected':''}>Справа</option></select></div></div>`:'<div></div>'}
+    </div>
+    <div style="padding:0 10px 10px;display:flex;flex-direction:column;gap:8px">
+      <div class="f"><label for="ff_step">Шаг сдвига</label><div class="seg" id="ff_step" style="grid-template-columns:repeat(4,1fr)">${[1,10,50,100].map(s=>`<button type="button" data-fstep="${s}" aria-pressed="${s===fStep}">${s} мм</button>`).join('')}</div></div>
+      <div class="seg" style="grid-template-columns:repeat(6,1fr)" aria-label="Сдвиг">${[['0,-1','←'],['0,1','→'],['1,-1','↓'],['1,1','↑'],['2,-1','Назад'],['2,1','Вперёд']].map(([d,l])=>`<button type="button" data-fmove="${d}" aria-label="Сдвиг ${l}">${l}</button>`).join('')}</div>
+      <p class="sub" style="margin:4px 0 0">Прижать к соседней детали</p>
+      <div class="seg" style="grid-template-columns:repeat(6,1fr)">${[['0,-1','←'],['0,1','→'],['1,-1','↓'],['1,1','↑'],['2,-1','Назад'],['2,1','Вперёд']].map(([d,l])=>`<button type="button" data-fsnap="${d}" aria-label="Прижать ${l}" style="background:var(--yel-soft)">${l}</button>`).join('')}</div>
+    </div></div>`:'<p class="note" style="margin-top:12px">Тапните деталь на 3D или в списке, чтобы выбрать и изменить её.</p>'}
+  <div class="steps" style="margin-top:12px;max-height:280px;overflow:auto">${list.map(q=>{const qb=freeBox(v,q);return `<button type="button" data-fpick="${q.id}"${q.id===state.sel?' aria-current="step"':''} style="border-top:1px solid var(--hair)"><span>${FORI[q.o][0]}</span>${esc(q.name||FORI[q.o])} <small style="margin-left:auto;font-weight:600;color:inherit;opacity:.7">${Math.round(qb.sx)}×${Math.round(qb.sy)}×${Math.round(qb.sz)}</small></button>`;}).join('')}</div>
+  <p class="note" style="margin-top:10px">Конфирматы ставятся сами там, где детали касаются: через пласть одной в торец другой. Пересечения деталей подсвечиваются ошибкой.</p>
+  <div class="row" style="margin-top:12px"><button class="btn y" type="button" data-act="saveMy">${ICON.save}Сохранить как мой шаблон</button></div>`;
+}
+document.addEventListener('click',e=>{
+  if(state.tpl!=='free') return; let t;
+  if((t=e.target.closest('[data-fadd]'))) return fAdd(t.dataset.fadd);
+  if((t=e.target.closest('[data-fpick]'))){state.sel=t.dataset.fpick; applyVis(); renderSecEd(); return;}
+  if((t=e.target.closest('[data-fstep]'))){fStep=+t.dataset.fstep; renderSecEd(); return;}
+  if((t=e.target.closest('[data-fmove]'))){const [ax,sg]=t.dataset.fmove.split(',').map(Number), p=fSel(); if(p) fChange(()=>{p[['x','y','z'][ax]]+=sg*fStep;}); return;}
+  if((t=e.target.closest('[data-fsnap]'))){const [ax,sg]=t.dataset.fsnap.split(',').map(Number); fSnap(ax,sg); return;}
+  if((t=e.target.closest('[data-fdo]'))){const d=t.dataset.fdo, p=fSel();
+    if(d==='undo'&&fHist.length){tv().free=JSON.parse(fHist.pop()); if(!fSel()) state.sel=null; update(); renderSecEd(); return;}
+    if(!p) return;
+    if(d==='del') fChange(()=>{tv().free=fList().filter(q=>q.id!==p.id); state.sel=null;});
+    if(d==='dup'){const b=fBox(p), q=Object.assign({},p,{id:'p'+Date.now().toString(36).slice(-6),name:p.name}); if(p.o==='h') q.y+=300; else if(p.o==='f') q.x+=Math.round(b.sx)+3; else q.x+=300; fChange(()=>{fList().push(q); state.sel=q.id;});}
+  }
+});
+$('#secEd').addEventListener('change',e=>{
+  if(state.tpl!=='free') return; const k=e.target.dataset.ff, p=fSel(); if(!k||!p) return;
+  const val=e.target.value;
+  fChange(()=>{ if(['a','b','x','y','z'].includes(k)) p[k]=Math.round(+val||0); else p[k]=val;
+    if(k==='role'){ if(val==='back') p.m='dvp'; else if(val==='door'||val==='front') p.m='front'; else if(val==='leg') p.o='leg'; else if(p.m==='dvp'||p.m==='front') p.m='body'; if((val==='door'||val==='front'||val==='back')&&p.o!=='f') p.o='f'; }
+    if(k==='o'&&val==='leg') p.role='leg'; if(k==='o'&&val!=='leg'&&p.role==='leg') p.role='corpus'; });
+},true);
+
 /* ---------- Пересчёт ---------- */
 function update(){
   M=compute(state.tpl,tv(),{grain:state.grain,drill:state.drill},prices);
   step=Math.min(Math.max(1,step),M.steps.length);
   const er=$('#err'); er.hidden=!M.err; er.textContent=M.err||'';
   const [a,b,c]=M.size.map(Math.round), v=M.v;
-  $('#hTitle').textContent=state.tpl==='custom'&&state.myName?state.myName:M.T.name;
+  $('#hTitle').textContent=state.myName||M.T.name;
   $('#hSub').textContent=`${a}×${b}×${c} мм · ${matName(v.cm,v.cdec)}${hasSoft()?' · '+FABRICS[v.fab].n:''}`;
   save(); renderSum(); renderOrderBar(); renderCTA(); dirty3D=true; if(state.screen==='editor') renderTab();
 }
@@ -1398,6 +1586,14 @@ function init3D(){
     const dl2=new THREE.DirectionalLight(0xffffff,0.2); dl2.position.set(-1.5,.5,-1); scene.add(dl2);
     const group=new THREE.Group(); scene.add(group);
     R={renderer,scene,cam,ctr,group,el,items:[],marks:[]};
+    let down=null; const cv=renderer.domElement;
+    cv.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];});
+    cv.addEventListener('pointerup',e=>{
+      if(!down||state.tpl!=='free'||state.tab!=='3d') return; if(Math.hypot(e.clientX-down[0],e.clientY-down[1])>6) return;
+      const r=cv.getBoundingClientRect(), pt=new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1), rc=new THREE.Raycaster();
+      rc.setFromCamera(pt,cam); const hits=rc.intersectObjects(R.items.filter(i=>i.mesh.visible&&i.p.pid).map(i=>i.mesh));
+      state.sel=hits.length?R.items.find(i=>i.mesh===hits[0].object).p.pid:null; applyVis(); renderSecEd();
+    });
     const size=()=>{const w=el.clientWidth,h=el.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); renderer.domElement.style.width=w+'px'; renderer.domElement.style.height=h+'px'; cam.aspect=w/h; cam.updateProjectionMatrix();};
     if(window.ResizeObserver) new ResizeObserver(size).observe(el); else window.addEventListener('resize',size);
     size();
@@ -1446,7 +1642,7 @@ function applyVis(){
   const asm=state.tab==='asm';
   R.items.forEach(it=>{
     let vis=true,hi=false;
-    if(asm){vis=it.p.step<=step; hi=it.p.step===step;} else if(noFronts&&(it.p.grp==='front'||it.p.grp==='soft')) vis=false;
+    if(asm){vis=it.p.step<=step; hi=it.p.step===step;} else {if(noFronts&&(it.p.grp==='front'||it.p.grp==='soft')) vis=false; if(state.tpl==='free'&&it.p.pid&&it.p.pid===state.sel) hi=true;}
     it.mesh.visible=vis; if(it.line) it.line.visible=vis;
     it.mesh.material.color.set(hi?ACCENT:it.base); it.mesh.material.emissive.set(hi?'#2a1e00':'#000000');
     it.mesh.material.transparent=asm&&!hi; it.mesh.material.opacity=asm&&!hi?.55:1;
@@ -1464,7 +1660,8 @@ function panel3D(P){
   cards.push([colorOf(v.cm,v.cdec),M.T.noFront?'Материал':'Корпус',matName(v.cm,v.cdec),MAT[v.cm].t+' мм']);
   const seen=new Set(); M.parts.filter(p=>p.grp==='front').forEach(p=>{const k=p.mk+'|'+(p.dec||''); if(seen.has(k)) return; seen.add(k); cards.push([colorOf(p.mk,p.dec),'Фасады',matName(p.mk,p.dec),MAT[p.mk].t+' мм']);});
   if(hasSoft()) cards.push([FCOL[v.fcol].c,'Обивка',FABRICS[v.fab].n+' · '+FCOL[v.fcol].n,'ширина 1,4 м']);
-  P.innerHTML=`<div class="mats">${cards.map(([c,l,n,pl])=>`<div class="mcard"><span class="ava" style="background:${c}"></span><div class="who"><b>${n}</b><small>${l}</small><span class="plate">${pl}</span></div></div>`).join('')}</div>
+  const canFree=state.tpl!=='free'&&!hasSoft();
+  P.innerHTML=`${canFree?`<button class="cta w" type="button" data-act="toFree"><span>Редактировать детали вручную</span><i>${ICON.edit}</i></button>`:''}<div class="mats">${cards.map(([c,l,n,pl])=>`<div class="mcard"><span class="ava" style="background:${c}"></span><div class="who"><b>${n}</b><small>${l}</small><span class="plate">${pl}</span></div></div>`).join('')}</div>
     ${showFx?`<h3>Весь крепёж</h3>${fxLegend(Object.entries(M.fxCount))}`:'<p class="note">Кнопка с винтом справа на 3D показывает все точки крепления. Пошагово — во вкладке «Сборка».</p>'}
     ${notesHTML()}`;
 }
@@ -1617,7 +1814,7 @@ const itemCalc=it=>compute(it.tpl,it.vals,{grain:state.grain,drill:state.drill},
 const orderTotal=o=>o.items.reduce((s,it)=>s+itemCalc(it).total,0);
 function itemFromCurrent(){
   const [a,b,c]=M.size.map(Math.round), v=M.v;
-  return {tpl:state.tpl,vals:clone(tv()),name:state.tpl==='custom'&&state.myName?state.myName:M.T.name,size:`${a}×${b}×${c}`,mat:matName(v.cm,v.cdec)+(hasSoft()?' · '+FABRICS[v.fab].n+' '+FCOL[v.fcol].n:'')};
+  return {tpl:state.tpl,vals:clone(tv()),name:state.myName||M.T.name,size:`${a}×${b}×${c}`,mat:matName(v.cm,v.cdec)+(hasSoft()?' · '+FABRICS[v.fab].n+' '+FCOL[v.fcol].n:'')};
 }
 function addToOrder(o){
   const ed=state.editItem&&o.items.find(i=>i.id===state.editItem);
@@ -1664,7 +1861,7 @@ $('#scrOrder').addEventListener('click',e=>{
   const o=Store.order(state.openOrder); if(!o) return; let t;
   if((t=e.target.closest('[data-st]'))){o.status=t.dataset.st; Store.put(o); return;}
   if((t=e.target.closest('[data-openit]'))){const it=o.items.find(i=>i.id===t.dataset.openit); if(!it) return;
-    state.tpl=it.tpl; state.vals[it.tpl]=clone(it.vals); state.cat=TPL[it.tpl].cat; state.orderId=o.id; state.editItem=it.id; state.myName=it.tpl==='custom'?it.name:null; step=1; resetCam=true;
+    state.tpl=it.tpl; state.vals[it.tpl]=clone(it.vals); state.cat=TPL[it.tpl].cat; state.orderId=o.id; state.editItem=it.id; state.myName=['custom','free'].includes(it.tpl)&&it.name!==TPL[it.tpl].name?it.name:null; fHist=[]; state.sel=null; step=1; resetCam=true;
     renderCats(); renderTpls(); renderParams(); update(); go('editor'); return;}
   if((t=e.target.closest('[data-delit]'))){const it=o.items.find(i=>i.id===t.dataset.delit); if(!it) return;
     confirmSheet(`Удалить «${esc(it.name)}» из заказа?`,'Удалить',()=>{o.items=o.items.filter(i=>i.id!==it.id); if(state.editItem===it.id) state.editItem=null; Store.put(o);});}
@@ -1721,14 +1918,15 @@ document.addEventListener('click',e=>{
   else if(act==='copy') copyText(summaryText(),'Смета скопирована');
   else if(act==='saveMy') sheet(`<h2>Мой шаблон</h2><div class="f"><label for="myN">Название</label><div class="in"><input id="myN" value="${esc(state.myName||'')}" placeholder="Например: Шкаф в нишу 2 секции"></div></div><p class="err" id="myErr" hidden>Введите название.</p><button class="cta" type="button" id="myOk"><span>Сохранить</span><i>${ICON.save}</i></button><button class="btn" type="button" data-close>Отмена</button>`,
     c=>c.querySelector('#myOk').onclick=()=>{const n=c.querySelector('#myN').value.trim(); if(!n){c.querySelector('#myErr').hidden=false; return;}
-      const ex=Store.tpls.find(t=>t.name===n); const d=ex||{id:uid('t'),kind:'tpl',created:Date.now()}; d.name=n; d.vals=clone(tv()); state.myName=n; state.cat='Мои'; closeSheet(); Store.put(d); renderCats(); renderTpls(); update(); toast('Шаблон сохранён');});
+      const ex=Store.tpls.find(t=>t.name===n); const d=ex||{id:uid('t'),kind:'tpl',created:Date.now()}; d.name=n; d.tpl=state.tpl; d.vals=clone(tv()); state.myName=n; state.cat='Мои'; closeSheet(); Store.put(d); renderCats(); renderTpls(); update(); toast('Шаблон сохранён');});
   else if(act==='export') exportData();
+  else if(act==='toFree'){const v=M.v; state.vals.free={free:partsToFree(M),cm:v.cm,cdec:v.cdec,fm:v.fm,fdec:v.fdec,hnd:v.hnd}; fHist=[]; state.tpl='free'; state.cat='Мои'; state.myName=null; state.editItem=null; state.sel=null; resetCam=true; renderCats(); renderTpls(); renderParams(); update(); toast('Детали перенесены в свободный редактор');}
 });
 
 /* ---------- Тексты, копирование, экспорт ---------- */
 function summaryText(){
   const v=M.v, L=[], [a,b,c]=M.size.map(Math.round);
-  L.push(`${state.myName&&state.tpl==='custom'?state.myName:M.T.name} ${a}×${b}×${c} мм`);
+  L.push(`${state.myName||M.T.name} ${a}×${b}×${c} мм`);
   L.push('Материал: '+matName(v.cm,v.cdec)+(M.parts.some(p=>p.grp==='front')&&v.fm?', фасады: '+matName(v.fm,v.fdec):'')+(hasSoft()?', обивка: '+FABRICS[v.fab].n+' '+FCOL[v.fcol].n:''),'');
   ['mat','soft','svc','hw','labor'].forEach(s=>{const ls=M.lines.filter(l=>l.sec===s); if(!ls.length) return; L.push(SEC[s]+':'); ls.forEach(l=>L.push(`• ${l.name} — ${fmt(l.qty)} ${l.unit} = ${Math.round(l.sum)} грн`)); L.push('');});
   L.push(`Материалы и цех: ${money(M.matSum+M.markup)}`,`Работа: ${money(M.labSum)}`,`ИТОГО: ${money(M.total)}`);
