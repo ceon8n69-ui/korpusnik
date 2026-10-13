@@ -1,0 +1,30 @@
+{
+ "name": "Корпусник — мебель на заказ",
+ "short_name": "Корпусник",
+ "lang": "ru",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "any",
+ "background_color": "#F3F2EE",
+ "theme_color": "#F3F2EE",
+ "description": "Шаблоны мебели: 3D, чертёж, раскрой, крепёж по шагам, смета и заказы клиентов",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}
