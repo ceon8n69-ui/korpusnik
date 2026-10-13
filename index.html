@@ -304,6 +304,11 @@ details.prices summary{cursor:pointer;font-family:var(--f-d);font-weight:700;fon
 textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--surface);color:var(--ink);border:var(--bw) solid var(--ink);padding:8px}
 .sync{font-size:12px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
 .sync i{width:8px;height:8px;border-radius:50%;background:var(--muted)} .sync.on i{background:var(--ok)}
+.cardh{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+.cardh .btn{min-height:34px;padding:6px 10px;white-space:nowrap}
+.sheetc{position:relative}
+.sheetx{position:absolute;top:12px;right:12px;width:40px;height:40px;font-size:18px;font-weight:700}
+.sheetc h2{padding-right:48px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -1422,7 +1427,7 @@ if(!TPL[state.tpl]) state.tpl='wardrobe';
 if(!CATS.includes(state.cat)) state.cat=TPL[state.tpl].cat;
 let prices=Object.assign({},PRICE_DEF,LS.get('korp3.prices',{}));
 let M=null, step=1, noFronts=false, showFx=false, dirty3D=true, resetCam=true;
-const save=()=>LS.set('korp3.state',{tpl:state.tpl,cat:state.cat,vals:state.vals,grain:state.grain,drill:state.drill,tab:state.tab,screen:state.screen,orderId:state.orderId,editItem:state.editItem,openOrder:state.openOrder,filter:state.filter,myName:state.myName});
+const save=()=>LS.set('korp3.state',{tpl:state.tpl,cat:state.cat,vals:state.vals,grain:state.grain,drill:state.drill,tab:state.tab,screen:state.screen,orderId:state.orderId,editItem:state.editItem,openOrder:state.openOrder,filter:state.filter,myName:state.myName,fold:state.fold,prevTpl:state.prevTpl});
 const tv=()=>state.vals[state.tpl]||(state.vals[state.tpl]={});
 const hasSoft=()=>M&&M.parts.some(p=>p.grp==='soft');
 
@@ -1525,7 +1530,7 @@ function renderTpls(){
 $('#tpls').onclick=e=>{
   const d=e.target.closest('[data-delmy]'); if(d){const t=Store.tpls.find(x=>x.id===d.dataset.delmy); if(t) confirmSheet(`Удалить шаблон «${esc(t.name)}»?`,'Удалить',()=>Store.del(t)); return;}
   const my=e.target.closest('[data-my]'); if(my){const t=Store.tpls.find(x=>x.id===my.dataset.my); if(!t) return; const k=TPL[t.tpl]?t.tpl:'custom'; state.tpl=k; state.vals[k]=clone(t.vals); state.myName=t.name; fHist=[]; state.sel=null; state.editItem=null; step=1; resetCam=true; renderTpls(); renderParams(); update(); return;}
-  const b=e.target.closest('.tpl'); if(!b) return; const k=b.dataset.k; if(k===state.tpl&&!state.myName) return;
+  const b=e.target.closest('.tpl'); if(!b) return; const k=b.dataset.k; if(k===state.tpl&&!state.myName) return; if(k==='free'&&state.tpl!=='free') state.prevTpl=state.tpl;
   state.tpl=k; state.myName=null; state.editItem=null; step=1; resetCam=true; renderTpls(); renderParams(); update();
 };
 
@@ -1557,11 +1562,18 @@ $('#params').addEventListener('change',e=>{
 
 /* ---------- Конструктор секций и модулей кухни ---------- */
 const fOptsHTML=sel=>{let h='',g=null; FOPTS.forEach(([v,l,gg])=>{if(gg!==g){if(g) h+='</optgroup>'; g=gg; if(gg) h+=`<optgroup label="${gg}">`;} h+=`<option value="${v}"${v===sel?' selected':''}>${l}</option>`;}); return h+(g?'</optgroup>':'');};
+function addFold(box,key,extra=''){
+  const h=box.querySelector('h2.lbl'); const title=h?h.textContent:''; if(h) h.remove();
+  const folded=!!(state.fold&&state.fold[key]);
+  const head=`<div class="cardh"><h2 class="lbl" style="margin:0">${title}</h2><div class="row" style="flex-wrap:nowrap">${extra}<button class="btn" type="button" data-fold="${key}" aria-expanded="${!folded}">${folded?'Развернуть':'Свернуть'}</button></div></div>`;
+  if(folded) box.innerHTML=head; else box.insertAdjacentHTML('afterbegin',head);
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-fold]'); if(!b) return; state.fold=state.fold||{}; state.fold[b.dataset.fold]=!state.fold[b.dataset.fold]; save(); renderSecEd(); renderAccEd();});
 function renderSecEd(){
   const box=$('#secEd');
   if(state.tpl==='free'){ if(box.previousElementSibling!==$('#viewer')) $('#viewer').after(box); } else if(box.parentNode!==$('#sum').parentNode) $('#sum').before(box);
-  if(state.tpl==='free'){box.hidden=false; renderFreeEd(box); return;}
-  if(state.tpl==='kitchen'){box.hidden=false; renderModEd(box); return;}
+  if(state.tpl==='free'){box.hidden=false; renderFreeEd(box); addFold(box,'free',`<button class="btn y" type="button" data-act="closeFree">Закрыть</button>`); return;}
+  if(state.tpl==='kitchen'){box.hidden=false; renderModEd(box); addFold(box,'mods'); return;}
   if(state.tpl!=='custom'){box.hidden=true; return;} box.hidden=false;
   const nv=normVals('custom',tv()); const cols=nv.cols, cw=nv.cw, chh=nv.ch; tv().cols=cols; tv().cw=cw; tv().ch=chh;
   const v=normVals('custom',tv()), lowTop=v.top!=='between';
@@ -1582,6 +1594,7 @@ function renderSecEd(){
       </div>`;}).join('')}
     </div>`).join('')}</div>
   <div class="row" style="margin-top:12px">${cols.length<6?'<button class="btn" type="button" data-addcol>+ Секция</button>':''}<button class="btn y" type="button" data-act="saveMy">${ICON.save}Сохранить как мой шаблон</button></div>`;
+  addFold(box,'secs');
 }
 function renderModEd(box){
   const low=normMods(tv().low,'low'), up=normMods(tv().up,'up'); tv().low=low; tv().up=up;
@@ -1727,6 +1740,7 @@ function renderAccEd(){
       <button class="ib" type="button" data-acc-del="${i}" aria-label="Удалить">${ICON.trash}</button></div>`).join('')}</div>`:'<p class="note">Подсветка, розетки, зарядки и полезные мелочи. Всё появится на 3D, в смете и в инструкции.</p>'}
   ${L?`<dl class="stats"><div><dt>Лента</dt><dd>${L.m}<small>м</small></dd></div><div><dt>Мощность</dt><dd>${L.w}<small>Вт</small></dd></div><div><dt>Блок</dt><dd>${L.psu}<small>Вт</small></dd></div></dl>`:''}
   ${Object.entries(groups).map(([g,items])=>`<p class="sub" style="margin-top:14px">${g}</p><div class="row" style="margin-top:6px">${items.map(([k,d])=>`<button class="btn" type="button" data-acc-add="${k}">+ ${k==='led'?'LED-лента':d.n.replace(' врезной','').replace(' в столешницу','')}</button>`).join('')}</div>`).join('')}`;
+  addFold(box,'acc');
 }
 $('#accEd').addEventListener('click',e=>{
   let t;
@@ -2071,7 +2085,7 @@ $('#scrOrder').addEventListener('click',e=>{
 });
 
 /* ---------- Нижний лист ---------- */
-function sheet(html,bind){const bg=$('#sheet'); $('#sheetC').innerHTML=html; bg.hidden=false; bind&&bind($('#sheetC')); const f=$('#sheetC').querySelector('input,button'); if(f) f.focus();}
+function sheet(html,bind){const bg=$('#sheet'); $('#sheetC').innerHTML=`<button class="ib sheetx" type="button" data-close aria-label="Закрыть">✕</button>`+html; bg.hidden=false; bind&&bind($('#sheetC')); const f=$('#sheetC').querySelector('input,textarea')||$('#sheetC').querySelector('.sheetx'); if(f) f.focus();}
 function closeSheet(){$('#sheet').hidden=true; $('#sheetC').innerHTML='';}
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet'||e.target.closest('[data-close]')) closeSheet();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sheet').hidden) closeSheet();});
@@ -2123,7 +2137,8 @@ document.addEventListener('click',e=>{
     c=>c.querySelector('#myOk').onclick=()=>{const n=c.querySelector('#myN').value.trim(); if(!n){c.querySelector('#myErr').hidden=false; return;}
       const ex=Store.tpls.find(t=>t.name===n); const d=ex||{id:uid('t'),kind:'tpl',created:Date.now()}; d.name=n; d.tpl=state.tpl; d.vals=clone(tv()); state.myName=n; state.cat='Мои'; closeSheet(); Store.put(d); renderCats(); renderTpls(); update(); toast('Шаблон сохранён');});
   else if(act==='export') exportData();
-  else if(act==='toFree'){const v=M.v; state.vals.free={free:partsToFree(M),cm:v.cm,cdec:v.cdec,fm:v.fm,fdec:v.fdec,hnd:v.hnd}; fHist=[]; state.tpl='free'; state.cat='Мои'; state.myName=null; state.editItem=null; state.sel=null; resetCam=true; renderCats(); renderTpls(); renderParams(); update(); toast('Детали перенесены в свободный редактор');}
+  else if(act==='closeFree'){const k=state.prevTpl&&TPL[state.prevTpl]&&state.prevTpl!=='free'?state.prevTpl:'wardrobe'; state.tpl=k; state.cat=TPL[k].cat; state.myName=null; state.sel=null; resetCam=true; renderCats(); renderTpls(); renderParams(); update(); window.scrollTo({top:0,behavior:'smooth'});}
+  else if(act==='toFree'){state.prevTpl=state.tpl; const v=M.v; state.vals.free={free:partsToFree(M),cm:v.cm,cdec:v.cdec,fm:v.fm,fdec:v.fdec,hnd:v.hnd}; fHist=[]; state.tpl='free'; state.cat='Мои'; state.myName=null; state.editItem=null; state.sel=null; resetCam=true; renderCats(); renderTpls(); renderParams(); update(); toast('Детали перенесены в свободный редактор');}
 });
 
 /* ---------- Тексты, копирование, экспорт ---------- */
