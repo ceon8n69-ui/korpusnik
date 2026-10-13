@@ -338,6 +338,7 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
           <p class="err" id="err" hidden></p>
         </section>
         <section class="card" id="secEd" hidden></section>
+        <section class="card" id="accEd"></section>
         <section class="card raise sum" id="sum"></section>
         <div class="cta-desk" id="ctaDesk"></div>
       </aside>
@@ -367,6 +368,7 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
 <script>
 /* ===== Расчётное ядро: материалы, шаблоны, движок корпусов, раскрой, смета ===== */
 const r1=Math.round;
+function plural(n,a,b,c){const m=n%10,h=n%100; return m===1&&h!==11?a:m>=2&&m<=4&&(h<10||h>=20)?b:c;}
 const DECORS={white:{n:'Белый',c:'#F2F2EE'},sonoma:{n:'Дуб сонома',c:'#D8BD8E'},craft:{n:'Дуб крафт',c:'#C9A06A'},ash:{n:'Ясень шимо',c:'#C9BBA5'},walnut:{n:'Орех',c:'#7B5639'},concrete:{n:'Бетон',c:'#A9AAA6'},graphite:{n:'Графит',c:'#4B5057'},black:{n:'Чёрный',c:'#26282B'}};
 const PAINTS={white:{n:'Белая эмаль',c:'#F3F2EE'},ivory:{n:'Слоновая кость',c:'#EDE6D4'},grey:{n:'Светло-серый',c:'#CBCCC8'},sage:{n:'Шалфей',c:'#9EA892'},navy:{n:'Тёмно-синий',c:'#2E3A4E'},graphite:{n:'Графит',c:'#3F4448'},black:{n:'Чёрный мат',c:'#232427'}};
 const MAT={
@@ -411,16 +413,20 @@ const FX={
   glide:{n:'Подпятник',c:'#64748B',p:'glide',tip:'Забивается в нижний торец, сверло 6 мм.'},
   push:{n:'Толкатель push-to-open',c:'#0F766E',p:null,tip:'Крепится на корпус напротив фасада, саморезы 4×16. Петли — без доводчика, для push-to-open.'},
   tie:{n:'Стяжка межсекционная',c:'#7C3AED',p:'tie',tip:'Сверло 5 мм насквозь через соседние боковины, по 4 на стык: 2 сверху, 2 снизу.'},
+  clip:{n:'Клипса профиля LED',c:'#FACC15',p:null,tip:'Клипса на 2 самореза 3×12, шаг 40 см. Профиль защёлкивается сверху.'},
+  hole:{n:'Отверстие под врезку',c:'#111827',p:null,tip:'Коронка нужного диаметра, сверлить с лицевой стороны.'},
+  insert:{n:'Вставка резьбовая М6',c:'#D97706',p:'insert',tip:'Сверло 8 мм на глубину 15 мм — не насквозь, вкручивать шестигранником ровно.'},
+  mark:{n:'—',c:'#000',p:null},
   staple:{n:'Скоба 10 мм',c:'#C084FC',p:null,tip:'Степлер мебельный. Ремень натяните на 5–8%, по 4 скобы на конец, край загните и прибейте ещё 2.'}
 };
 const confTip=mk=>MAT[mk].fin==='oil'?'Ступенчатое сверло: 7 мм в пласть, 4,5 мм в торец на 50 мм. В массиве держите 50 мм от края.':'Ступенчатое сверло 5/7 мм: 7 мм в пласть, 5 мм в торец на глубину 50 мм. Заглушки в цвет.';
 
-const HW={handle:['Ручка','шт'],slide:['Направляющие шариковые','пара'],rod:['Штанга Ø25 с фланцами','компл'],kleg:['Опора кухонная регулируемая','шт'],fleg:['Ножка мебельная','шт'],tleg:['Ножка стола','шт'],coupe:['Профили двери-купе, комплект','компл'],track:['Направляющие купе верх+низ','м'],lamel:['Ламель 53×8','шт'],lamholder:['Латодержатель','шт'],csupport:['Опора центральная регулируемая','шт'],ledge:['Брус 40×40','м'],belt:['Ремень мебельный эластичный 50 мм','м'],wheel:['Колесо мебельное','шт'],hprof:['Ручка-профиль торцевая','м'],gola:['Профиль Gola','м'],push:['Толкатель push-to-open','шт'],ctop:['Столешница 38 мм','м'],kplinth:['Цоколь кухонный + клипсы','м'],plug:['Заглушка на конфирмат','шт']};
-const LABOR={corpus:'Сборка корпуса',door:'Навес и регулировка двери',drawer:'Сборка и установка ящика',shelf:'Полка или перегородка',back:'Задняя стенка',rod:'Установка штанги',legs:'Установка опор',hang:'Навеска на стену',coupe:'Установка двери-купе',table:'Сборка стола',bed:'Сборка кровати',frame:'Сборка каркаса мягкой мебели',uph:'Обивка, м²'};
+const HW={handle:['Ручка','шт'],slide:['Направляющие шариковые','пара'],rod:['Штанга Ø25 с фланцами','компл'],kleg:['Опора кухонная регулируемая','шт'],fleg:['Ножка мебельная','шт'],tleg:['Ножка стола','шт'],coupe:['Профили двери-купе, комплект','компл'],track:['Направляющие купе верх+низ','м'],lamel:['Ламель 53×8','шт'],lamholder:['Латодержатель','шт'],csupport:['Опора центральная регулируемая','шт'],ledge:['Брус 40×40','м'],belt:['Ремень мебельный эластичный 50 мм','м'],wheel:['Колесо мебельное','шт'],hprof:['Ручка-профиль торцевая','м'],gola:['Профиль Gola','м'],push:['Толкатель push-to-open','шт'],ctop:['Столешница 38 мм','м'],epoxy:['Смола эпоксидная для глубокой заливки','кг'],pigment:['Пигмент для смолы, 50 г','шт'],lumino:['Люминофор, 100 г','шт'],slab_oak:['Слэб дуб 50 мм','м²'],slab_walnut:['Слэб орех 50 мм','м²'],slab_elm:['Слэб карагач 50 мм','м²'],slab_acacia:['Слэб акация 50 мм','м²'],slab_pine:['Слэб сосна 50 мм','м²'],formkit:['Опалубка: силикон, скотч, плёнка','компл'],abrasive:['Шлифкруги P80–P2000, набор','компл'],polish:['Полировальная паста + круг','компл'],legU:['Подстолье П-образное, пара','компл'],legX:['Подстолье X-образное, пара','компл'],legW:['Ножки из массива 70×70, 4 шт','компл'],led_white:['LED-лента белая 24 В','м'],led_rgb:['LED-лента RGB 24 В','м'],led_uv:['LED-лента УФ','м'],led_prof:['Профиль алюминиевый с рассеивателем','м'],psu36:['Блок питания 36 Вт','шт'],psu60:['Блок питания 60 Вт','шт'],psu100:['Блок питания 100 Вт','шт'],psu150:['Блок питания 150 Вт','шт'],psu200:['Блок питания 200 Вт','шт'],psu300:['Блок питания 300 Вт','шт'],ctl_switch:['Выключатель для ленты','шт'],ctl_motion:['Датчик движения','шт'],ctl_door:['Датчик открывания двери','шт'],ctl_dimmer:['Сенсорный диммер','шт'],ctl_wifi:['Wi-Fi контроллер (Tuya)','шт'],wire:['Провод 2×0,75','м'],ledcon:['Коннекторы и кабель-канал, набор','компл'],cable:['Кабель ПВС 3×1,5','м'],acc_sock:['Блок розеток врезной 2×220 В + USB','шт'],acc_popup:['Выдвижной блок розеток (pop-up)','шт'],acc_usb:['Модуль USB-A + USB-C','шт'],acc_qi:['Беспроводная зарядка Qi врезная','шт'],acc_grom:['Люверс Ø60','шт'],acc_panto:['Пантограф (лифт для одежды)','шт'],acc_basket:['Выдвижная корзина','шт'],acc_org:['Органайзер в ящик','шт'],acc_mirror:['Зеркало на дверь','шт'],kplinth:['Цоколь кухонный + клипсы','м'],plug:['Заглушка на конфирмат','шт']};
+const LABOR={corpus:'Сборка корпуса',door:'Навес и регулировка двери',drawer:'Сборка и установка ящика',shelf:'Полка или перегородка',back:'Задняя стенка',rod:'Установка штанги',legs:'Установка опор',hang:'Навеска на стену',coupe:'Установка двери-купе',table:'Сборка стола',bed:'Сборка кровати',frame:'Сборка каркаса мягкой мебели',river:'Изготовление стола-реки, м²',led:'Монтаж LED-подсветки, м',socket:'Врезка розетки, зарядки, люверса',extra:'Установка опций',uph:'Обивка, м²'};
 
 const PRICE_DEF=Object.assign({},...Object.entries(MAT).map(([k,m])=>({['m_'+k]:m.price})),{
   cut:30,edge2:38,edge04:22,fin_paint:650,fin_oil:220,
-  hinge:75,slide:320,handle:90,confirmat:2,plug:0.6,shelfpin:2.5,nail:0.4,screw:0.6,screw50:1.5,corner:6,tbracket:35,tie:8,hprof:260,gola:480,push:140,ctop:1500,kplinth:320,bedbolt:25,hanger:45,glide:3,
+  hinge:75,slide:320,handle:90,confirmat:2,plug:0.6,shelfpin:2.5,nail:0.4,screw:0.6,screw50:1.5,corner:6,tbracket:35,tie:8,insert:6,epoxy:650,pigment:250,lumino:900,slab_oak:9000,slab_walnut:14000,slab_elm:7000,slab_acacia:6500,slab_pine:3200,formkit:450,abrasive:650,polish:450,legU:3800,legX:4500,legW:2400,fin_lak:450,led_white:120,led_rgb:220,led_uv:180,led_prof:180,psu36:350,psu60:450,psu100:650,psu150:850,psu200:1000,psu300:1400,ctl_switch:150,ctl_motion:350,ctl_door:280,ctl_dimmer:400,ctl_wifi:650,wire:25,ledcon:180,cable:45,acc_sock:850,acc_popup:1800,acc_usb:450,acc_qi:1200,acc_grom:80,acc_panto:2500,acc_basket:1400,acc_org:450,acc_mirror:900,L_river:5500,L_led:90,L_socket:300,L_extra:250,hprof:260,gola:480,push:140,ctop:1500,kplinth:320,bedbolt:25,hanger:45,glide:3,
   kleg:45,fleg:120,tleg:450,belt:28,wheel:35,foam:5500,synt:45,glue:280,staple:120,fab_velour:350,fab_rogozhka:300,fab_chenille:420,fab_eco:380,fab_boucle:480,rod:260,coupe:2200,track:350,lamel:45,lamholder:6,csupport:120,ledge:60,
   L_corpus:600,L_door:150,L_drawer:300,L_shelf:50,L_back:120,L_rod:100,L_legs:80,L_hang:200,L_coupe:400,L_table:500,L_bed:1200,L_frame:900,L_uph:450,L_drill:30,delivery:0,markup:15});
 const PRICE_META=[
@@ -428,6 +434,8 @@ const PRICE_META=[
   ['Цех и отделка',[['cut','Раскрой на станке','грн/м'],['edge2','Кромка ПВХ 2 мм с поклейкой','грн/м'],['edge04','Кромка ПВХ 0,4 мм с поклейкой','грн/м'],['fin_paint','Покраска МДФ эмалью','грн/м²'],['fin_oil','Шлифовка + масло/лак','грн/м²']]],
   ['Фурнитура',[['hinge','Петля с доводчиком','грн/шт'],['slide','Направляющие шариковые','грн/пара'],['handle','Ручка','грн/шт'],['confirmat','Конфирмат 7×50','грн/шт'],['plug','Заглушка','грн/шт'],['shelfpin','Полкодержатель','грн/шт'],['nail','Гвоздь для ДВП','грн/шт'],['screw','Саморез 4×16…4×30','грн/шт'],['screw50','Саморез 4×50','грн/шт'],['corner','Уголок мебельный','грн/шт'],['tbracket','Стяжка для ножки стола','грн/шт'],['bedbolt','Стяжка кроватная','грн/шт'],['hanger','Навес мебельный','грн/шт'],['glide','Подпятник','грн/шт'],['kleg','Опора кухонная','грн/шт'],['fleg','Ножка мебельная','грн/шт'],['tleg','Ножка стола','грн/шт'],['rod','Штанга с фланцами','грн/компл'],['coupe','Профили купе на дверь','грн/компл'],['track','Направляющие купе','грн/м'],['lamel','Ламель','грн/шт'],['lamholder','Латодержатель','грн/шт'],['csupport','Опора центральная','грн/шт'],['ledge','Брус 40×40','грн/м'],['hprof','Ручка-профиль торцевая','грн/м'],['gola','Профиль Gola','грн/м'],['push','Толкатель push-to-open','грн/шт'],['tie','Стяжка межсекционная','грн/шт'],['ctop','Столешница 38 мм','грн/м'],['kplinth','Цоколь кухонный','грн/м']]],
   ['Мягкие материалы',[['foam','Поролон ППУ','грн/м³'],['synt','Синтепон 200 г/м²','грн/м'],['glue','Клей для поролона','грн/л'],['staple','Скобы 10 мм, пачка 1000','грн/пачка'],['belt','Ремень мебельный','грн/м'],['wheel','Колесо мебельное','грн/шт'],...Object.entries(FABRICS).map(([k,f])=>['fab_'+k,'Ткань: '+f.n,'грн/м'])]],
+  ['Стол-река',[['epoxy','Смола эпоксидная','грн/кг'],['pigment','Пигмент 50 г','грн/шт'],['lumino','Люминофор 100 г','грн/шт'],['slab_oak','Слэб дуб','грн/м²'],['slab_walnut','Слэб орех','грн/м²'],['slab_elm','Слэб карагач','грн/м²'],['slab_acacia','Слэб акация','грн/м²'],['slab_pine','Слэб сосна','грн/м²'],['formkit','Расходники опалубки','грн'],['abrasive','Шлифкруги, набор','грн'],['polish','Полировка','грн'],['legU','Подстолье П, пара','грн'],['legX','Подстолье X, пара','грн'],['legW','Ножки массив, 4 шт','грн'],['insert','Вставка М6','грн/шт'],['fin_lak','Лак 2К','грн/м²'],['L_river','Изготовление стола-реки','грн/м²']]],
+  ['Электрика и опции',[['led_white','LED-лента белая','грн/м'],['led_rgb','LED-лента RGB','грн/м'],['led_uv','LED-лента УФ','грн/м'],['led_prof','Профиль с рассеивателем','грн/м'],['psu36','БП 36 Вт','грн'],['psu60','БП 60 Вт','грн'],['psu100','БП 100 Вт','грн'],['psu150','БП 150 Вт','грн'],['psu200','БП 200 Вт','грн'],['psu300','БП 300 Вт','грн'],['ctl_switch','Выключатель','грн'],['ctl_motion','Датчик движения','грн'],['ctl_door','Датчик двери','грн'],['ctl_dimmer','Диммер','грн'],['ctl_wifi','Wi-Fi контроллер','грн'],['wire','Провод 2×0,75','грн/м'],['ledcon','Коннекторы, кабель-канал','грн'],['cable','Кабель ПВС 3×1,5','грн/м'],['acc_sock','Блок розеток врезной','грн'],['acc_popup','Pop-up блок розеток','грн'],['acc_usb','Модуль USB','грн'],['acc_qi','Зарядка Qi','грн'],['acc_grom','Люверс','грн'],['acc_panto','Пантограф','грн'],['acc_basket','Корзина','грн'],['acc_org','Органайзер','грн'],['acc_mirror','Зеркало','грн'],['L_led','Монтаж LED','грн/м'],['L_socket','Врезка','грн/шт'],['L_extra','Установка опции','грн/шт']]],
   ['Работа',[['L_corpus','Сборка корпуса','грн'],['L_door','Навес двери','грн/шт'],['L_drawer','Сборка ящика','грн/шт'],['L_shelf','Полка, перегородка','грн/шт'],['L_back','Задняя стенка','грн'],['L_rod','Установка штанги','грн'],['L_legs','Установка опор','грн'],['L_hang','Навеска на стену','грн'],['L_coupe','Дверь-купе','грн/шт'],['L_table','Сборка стола','грн'],['L_bed','Сборка кровати','грн'],['L_frame','Каркас мягкой мебели','грн'],['L_uph','Обивка','грн/м²'],['L_drill','Присадка (сверловка)','грн/деталь'],['delivery','Доставка и подъём','грн'],['markup','Наценка на материалы','%']]]
 ];
 
@@ -999,6 +1007,155 @@ function partsToFree(m){
   return out;
 }
 
+
+/* ---- Стол-река ---- */
+const SLABS={oak:{n:'Дуб',c:'#B48A5A',p:'slab_oak'},walnut:{n:'Орех',c:'#6E4B33',p:'slab_walnut'},elm:{n:'Карагач',c:'#A9774E',p:'slab_elm'},acacia:{n:'Акация',c:'#9C6B3E',p:'slab_acacia'},pine:{n:'Сосна',c:'#DDB27A',p:'slab_pine'}};
+const EPOXY={clear:{n:'Прозрачная',c:'#9FD3E6',o:.45,e:'#000000'},blue:{n:'Тонированная синяя',c:'#1E6FA8',o:.72,e:'#0A2A44'},glow:{n:'Светящаяся (люминофор)',c:'#35C8F5',o:.7,e:'#1594C2'},opal:{n:'Молочная',c:'#E6ECEF',o:.85,e:'#000000'},black:{n:'Чёрная',c:'#141414',o:.92,e:'#000000'}};
+const RLEGS={U:'П-образное металлическое',X:'X-образное металлическое',wood:'Ножки из массива 70×70',none:'Без подстолья'};
+function rng(seed){let a=seed>>>0||1;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function riverBanks(v){
+  const W=v.W,D=v.D,r=rng(v.seed*7919+13), ph=[0,0,0,0,0].map(()=>r()*Math.PI*2), k1=1+Math.floor(r()*2), k2=2+Math.floor(r()*2), wv=v.wav/10;
+  const pts=[]; let area=0;
+  for(let x=0;x<=W+0.1;x+=20){
+    const u=x/W*Math.PI*2;
+    const c=D/2+(D*.12*wv)*Math.sin(u*k1+ph[0]);
+    let w=(v.rmin+v.rmax)/2+(v.rmax-v.rmin)/2*Math.sin(u*k2+ph[1]);
+    const n1=wv*(18*Math.sin(x/41+ph[2])+11*Math.sin(x/17+ph[3])), n2=wv*(16*Math.sin(x/37+ph[4])+9*Math.sin(x/13+ph[2]));
+    let z1=c-w/2+n1, z2=c+w/2+n2; z1=Math.max(60,Math.min(D-80,z1)); z2=Math.min(D-60,Math.max(z1+20,z2));
+    pts.push([x,z1,z2]); if(x>0) area+=20*(z2-z1);
+  }
+  return {pts,area};
+}
+function buildRiver(v){
+  v.cm=v.cm||'dsp16'; v.cdec=v.cdec||'white';
+  const c=ctx(v),{P,F,H,Lb}=c, W=v.W,D=v.D,T=v.T,Hh=v.H, ty=Hh-T;
+  const {pts,area}=riverBanks(v), S=SLABS[v.slab], E=EPOXY[v.epx];
+  const A=[[0,0],[W,0],...pts.slice().reverse().map(p=>[p[0],p[1]])];
+  const B=[...pts.map(p=>[p[0],p[2]]),[W,D],[0,D]];
+  const R=[...pts.map(p=>[p[0],p[1]]),...pts.slice().reverse().map(p=>[p[0],p[2]])];
+  P({name:'Слэб 1',grp:'corpus',mk:null,shape:'poly',poly:A,x:0,y:ty,z:0,sx:W,sy:T,sz:D,color:S.c,ph:'prep'});
+  P({name:'Слэб 2',grp:'corpus',mk:null,shape:'poly',poly:B,x:0,y:ty,z:0,sx:W,sy:T,sz:D,color:S.c,ph:'prep'});
+  P({name:'Река (эпоксидная смола)',grp:'epoxy',mk:null,shape:'poly',poly:R,x:0,y:ty,z:0,sx:W,sy:T,sz:D,color:E.c,opacity:E.o,emissive:E.e,ph:'pour'});
+  // опалубка из ламинированной ДСП — временная, видна только на своём шаге
+  const fb=50, fh=T+40;
+  P({name:'Опалубка: дно',mk:'dsp16',x:-fb,y:ty-16,z:-fb,sx:W+2*fb,sy:16,sz:D+2*fb,ph:'form',tmp:true});
+  P({name:'Опалубка: борт длинный',mk:'dsp16',x:-fb,y:ty,z:-fb-16,sx:W+2*fb,sy:fh,sz:16,ph:'form',tmp:true});
+  P({name:'Опалубка: борт длинный',mk:'dsp16',x:-fb,y:ty,z:D+fb,sx:W+2*fb,sy:fh,sz:16,ph:'form',tmp:true});
+  P({name:'Опалубка: борт торцевой',mk:'dsp16',x:-fb-16,y:ty,z:-fb-16,sx:16,sy:fh,sz:D+2*fb+32,ph:'form',tmp:true});
+  P({name:'Опалубка: борт торцевой',mk:'dsp16',x:W+fb,y:ty,z:-fb-16,sx:16,sy:fh,sz:D+2*fb+32,ph:'form',tmp:true});
+  for(let x=-fb+100;x<W+fb;x+=250){F('s30','form',x,ty-8,-fb-8,'y');F('s30','form',x,ty-8,D+fb+8,'y');}
+  // подстолье
+  const lh=ty;
+  if(v.legs==='U'||v.legs==='X'){
+    [150,W-210].forEach(x=>{
+      P({name:'Подстолье: стойка',grp:'hw',x,y:0,z:100,sx:60,sy:lh,sz:60,ph:'legs'});
+      P({name:'Подстолье: стойка',grp:'hw',x,y:0,z:D-160,sx:60,sy:lh,sz:60,ph:'legs'});
+      P({name:'Подстолье: перемычка',grp:'hw',x,y:lh-40,z:100,sx:60,sy:40,sz:D-200,ph:'legs'});
+      [130,D/2,D-130].forEach(z=>F('insert','legs',x+30,ty,z,'y'));
+    });
+    H(v.legs==='U'?'legU':'legX',1);
+  }else if(v.legs==='wood'){
+    [[80,80],[W-150,80],[80,D-150],[W-150,D-150]].forEach(([x,z])=>{P({name:'Ножка 70×70',grp:'hw',x,y:0,z,sx:70,sy:lh,sz:70,ph:'legs'}); F('insert','legs',x+35,ty,z+35,'y');});
+    H('legW',1);
+  }
+  // расчёт смолы
+  const L=area*T/1e6, kg=L*1.1*1.15, layers=Math.ceil(T/40);
+  H('epoxy',Math.ceil(kg*10)/10);
+  if(v.epx==='blue'||v.epx==='opal'||v.epx==='black') H('pigment',Math.max(1,Math.ceil(kg*10/50)));
+  if(v.epx==='glow') H('lumino',Math.max(1,Math.ceil(kg*1000*0.04/100)));
+  const slabA=(W*D-area)/1e6*1.25; H(S.p,Math.ceil(slabA*100)/100);
+  H('formkit',1); H('abrasive',1); H('polish',1);
+  const top=2*W*D/1e6+2*(W+D)*T/1e6;
+  c.fin=v.fin==='lak'?{k:'fin_lak',n:'Лак 2К полиуретановый',a:top}:{k:'fin_oil',n:'Масло-воск',a:top};
+  Lb('river',Math.ceil(W*D/1e5)/10); if(v.legs!=='none') Lb('legs');
+  c.size=[W,Hh,D]; c.info.river={L:Math.round(L*10)/10,kg:Math.round(kg*10)/10,layers,area:Math.round(area/1e4)/100};
+  const pg=v.epx==='glow'?`Люминофор — 3–5% от массы смолы (~${Math.ceil(kg*40)} г); для яркости его часто добавляют только в последний, верхний слой, размешать до однородности. Светится после зарядки светом; ярче — с УФ-лентой.`:v.epx==='blue'||v.epx==='black'?'Пигмент — 0,5–1% от массы смолы, добавлять в компонент А до смешивания.':v.epx==='opal'?'Белый пигмент 1–2% даёт молочный, полупрозрачный эффект.':'Без пигмента: важна чистота формы и отсутствие пыли.';
+  c.phases=[
+    {ph:'prep',t:'Подготовка слэбов',d:`Слэбы ${S.n} влажностью 8–12%, толщиной от ${T+10} мм. Снимите кору с берегов, выровняйте фрезером на салазках до ${T+5} мм, обеспыльте. Трещины и сучки пропитайте жидкой смолой.`},
+    {ph:'form',t:'Опалубка',d:`Опалубка из ламинированной ДСП: дно ${W+100}×${D+100} мм и 4 борта высотой ${T+40} мм на саморезах 4×30. Швы — силиконом, всё внутри — упаковочным скотчем или плёнкой, иначе смола приклеится. Выставьте по уровню ±1 мм. Слэбы прижмите струбцинами, чтобы не всплыли.`},
+    {ph:'pour',t:'Заливка реки',d:`Объём реки ${Math.round(L*10)/10} л — нужно ~${Math.round(kg*10)/10} кг смолы для глубокой заливки с запасом 15%. Сначала тонкий запечатывающий слой по берегам и дну. Потом ${layers} ${plural(layers,'заливка','заливки','заливок')} по ≤40 мм с перерывом по инструкции смолы (обычно 24–72 ч), при 20–25 °C. ${pg} Пузыри убирайте феном или горелкой в первые 30 минут.`},
+    {ph:'cure',t:'Выдержка и распалубка',d:'Полная полимеризация — около 7 суток. Не грейте и не двигайте стол. Затем снимите опалубку.'},
+    {ph:'sand',t:'Фрезеровка и шлифовка',d:`Выровняйте плоскость фрезером на салазках, обрежьте торцы в размер ${W}×${D} мм. Шлифовка P80 → 120 → 180 → 240 → 320 → 400. Для глянцевой реки дальше P600 → 1000 → 2000 и полировка пастой.`},
+    {ph:'finish',t:'Покрытие',d:v.fin==='lak'?'Лак 2К в 2–3 слоя с промежуточной шлифовкой P400.':'Масло-воск в 2 слоя, излишки снять через 15 минут. Реку можно отполировать отдельно до стекла.'},
+    {ph:'legs',t:'Подстолье',d:v.legs==='none'?'':`Вкрутите резьбовые вставки М6 в нижнюю пласть (сверло 8 мм, глубина 15 мм, не насквозь!), прикрутите ${RLEGS[v.legs].toLowerCase()}.`}];
+  c.notes=[`Площадь реки ${Math.round(area/1e4)/100} м². Цены на смолу и слэбы ставьте по своему поставщику — они сильно отличаются.`];
+  c.err=v.rmin>=v.rmax?'Минимальная ширина реки должна быть меньше максимальной.':v.rmax>v.D-200?'Река шире стола.':null;
+  // дополнительные фазы, у которых нет деталей
+  c.fx.push({type:'mark',ph:'cure',x:0,y:-9999,z:0,dir:'y'},{type:'mark',ph:'sand',x:0,y:-9999,z:0,dir:'y'},{type:'mark',ph:'finish',x:0,y:-9999,z:0,dir:'y'});
+  return c;
+}
+
+/* ---- Опции и электрика: для любого изделия ---- */
+const ACC={
+  led:{n:'LED-подсветка',g:'Подсветка'},
+  sock:{n:'Блок розеток 220 В врезной',g:'Розетки и зарядка',p:'acc_sock',hole:'Вырез по шаблону блока, лобзик. Кабель ПВС 3×1,5 — только через электрика.'},
+  popup:{n:'Выдвижной блок розеток в столешницу',g:'Розетки и зарядка',p:'acc_popup',hole:'Коронка Ø60 (или по паспорту блока) насквозь.'},
+  usb:{n:'Модуль USB-A + USB-C врезной',g:'Розетки и зарядка',p:'acc_usb',hole:'Коронка Ø35–40 по паспорту модуля.'},
+  qi:{n:'Беспроводная зарядка Qi в столешницу',g:'Розетки и зарядка',p:'acc_qi',hole:'Снизу фрезеруется гнездо, сверху остаётся 4–6 мм материала (смолы до 8 мм).'},
+  grom:{n:'Люверс для проводов Ø60',g:'Розетки и зарядка',p:'acc_grom',hole:'Коронка Ø60 насквозь.'},
+  panto:{n:'Пантограф (лифт для одежды)',g:'Удобства',p:'acc_panto'},
+  basket:{n:'Выдвижная корзина',g:'Удобства',p:'acc_basket'},
+  org:{n:'Органайзер в ящик',g:'Удобства',p:'acc_org'},
+  mirror:{n:'Зеркало на дверь',g:'Удобства',p:'acc_mirror'}
+};
+const LEDPLACE={under:'Под полками',cab:'Под верхними шкафами',inner:'Вертикально по боковинам',floor:'Снизу — «парящая»',river:'Под рекой стола',manual:'Своя длина'};
+const LEDCOL={warm:{n:'Тёплая 3000K',c:'#FFC46B',w:9.6,p:'led_white'},neutral:{n:'Нейтральная 4000K',c:'#FFF3DC',w:9.6,p:'led_white'},rgb:{n:'RGB цветная',c:'#B07CFF',w:14.4,p:'led_rgb'},uv:{n:'УФ (для люминофора)',c:'#7A5CFF',w:9.6,p:'led_uv'}};
+const LEDCTRL={switch:'Выключатель',motion:'Датчик движения',door:'Датчик открывания',dimmer:'Сенсорный диммер',wifi:'Wi-Fi контроллер (Tuya)'};
+function normAcc(a){
+  if(!Array.isArray(a)) return [];
+  return a.slice(0,30).filter(x=>x&&ACC[x.k]).map(x=>({k:x.k,place:LEDPLACE[x.place]?x.place:'under',col:LEDCOL[x.col]?x.col:'warm',ctrl:LEDCTRL[x.ctrl]?x.ctrl:'switch',m:Math.min(50,Math.max(0,+x.m||0)),n:Math.min(20,Math.max(1,Math.round(+x.n||1)))}));
+}
+function applyAcc(c,v){
+  const acc=v.acc||[]; if(!acc.length) return;
+  const {P,F,H,Lb}=c, parts=c.parts.slice();
+  const tk=p=>p.mk&&MAT[p.mk]?MAT[p.mk].t:p.sy;
+  const horiz=parts.filter(p=>p.grp==='corpus'&&!p.tmp&&p.mk&&Math.round(p.sy)===MAT[p.mk].t&&p.sx>150&&p.sz>150);
+  const bb=k=>{const ps=parts.filter(p=>!p.tmp&&p.grp!=='hw'); return [Math.min(...ps.map(p=>p[k])),Math.max(...ps.map(p=>p[k]+p[k==='x'?'sx':k==='y'?'sy':'sz']))];};
+  const strip=(x,y,z,len,vert,col,ph)=>{const o=vert?{x,y,z,sx:10,sy:len,sz:10}:{x,y,z,sx:len,sy:8,sz:12}; P(Object.assign({name:'LED-лента в профиле',grp:'led',color:LEDCOL[col].c,ph},o));
+    const n=Math.max(2,Math.ceil(len/400)+1); for(let i=0;i<n;i++){const q=i*len/(n-1); F('clip',ph,vert?x+5:x+q,vert?y+q:y+4,z+6,vert?'x':'y');} return len/1000;};
+  let ledM=0, ledW=0; const ctrls={}; const texts=[];
+  acc.forEach(a=>{
+    if(a.k!=='led') return;
+    let m=0; const col=a.col;
+    if(a.place==='under') horiz.filter(p=>!/Дно|Цоколь/.test(p.name)&&p.y>200).forEach(p=>{m+=strip(p.x+30,p.y-8,p.z+p.sz-60,p.sx-60,false,col,'elec');});
+    else if(a.place==='cab') horiz.filter(p=>/Дно/.test(p.name)&&p.y>1000).forEach(p=>{m+=strip(p.x+30,p.y-8,p.z+p.sz-60,p.sx-60,false,col,'elec');});
+    else if(a.place==='inner') parts.filter(p=>p.grp==='corpus'&&/Боковина|Перегородка/.test(p.name)&&p.sy>300).forEach(p=>{const [x0]=bb('x'); m+=strip(p.x<=x0+1?p.x+p.sx:p.x-10,p.y+40,p.z+p.sz-40,p.sy-80,true,col,'elec');});
+    else if(a.place==='floor'){const [x0,x1]=bb('x'), [z0,z1]=bb('z'); const low=horiz.filter(p=>p.y>20).sort((q,w)=>q.y-w.y)[0]; const y=low?low.y-8:Math.max(5,bb('y')[0]); m+=strip(x0+40,Math.max(2,y),z1-80,x1-x0-80,false,col,'elec');
+      if(c.info.river){m+=strip(x0+60,y,z0+60,x1-x0-120,false,col,'elec');}}
+    else if(a.place==='river'&&c.info.river){const ty=v.H-v.T; m+=strip(150,ty-8,v.D/2-6,v.W-300,false,col,'elec');}
+    else m=a.m;
+    if(!m) return;
+    ledM+=m; ledW+=m*LEDCOL[col].w; H(LEDCOL[col].p,m); H('led_prof',m); ctrls[a.ctrl]=(ctrls[a.ctrl]||0)+1;
+    texts.push(`${LEDCOL[col].n} — ${LEDPLACE[a.place].toLowerCase()}, ${Math.round(m*10)/10} м, ${LEDCTRL[a.ctrl].toLowerCase()}`);
+  });
+  if(ledM){
+    const need=ledW*1.25, psu=[36,60,100,150,200,300].find(w=>w>=need)||300, npsu=Math.ceil(need/300)||1;
+    H('psu'+psu,npsu); Object.entries(ctrls).forEach(([k,q])=>H('ctl_'+k,q)); H('wire',Math.ceil(ledM+3*Object.keys(ctrls).length)); H('ledcon',1); Lb('led',Math.ceil(ledM*10)/10);
+    c.info.led={m:Math.round(ledM*10)/10,w:Math.round(ledW),psu,npsu};
+  }
+  // врезная электрика и опции
+  const topP=parts.filter(p=>!p.tmp&&(p.grp==='corpus'||p.name==='Столешница')&&p.sx>200&&p.sz>200).sort((a,b)=>(b.y+b.sy)-(a.y+a.sy))[0];
+  let slot=0; const holes=[];
+  acc.forEach(a=>{
+    if(a.k==='led') return; const d=ACC[a.k]; H(d.p,a.n);
+    if(d.hole){
+      for(let i=0;i<a.n;i++){
+        if(topP){const x=topP.x+topP.sx-120-slot*160, z=topP.z+120, y=topP.y+topP.sy; slot++;
+          P({name:d.n,grp:'acc',shape:'cylY',x:x-35,y:y-2,z:z-35,sx:70,sy:6,sz:70,color:'#2B2B2B',ph:'elec'}); F('hole','elec',x,y,z,'y');}
+        Lb('socket');
+      }
+      holes.push(`${d.n} ×${a.n}: ${d.hole}`);
+      if(a.k!=='grom'&&a.k!=='usb') H('cable',2*a.n);
+    }else Lb('extra',a.n);
+  });
+  const lines=[];
+  if(c.info.led){const L=c.info.led; lines.push(`Подсветка: ${texts.join('; ')}. Всего ленты ${L.m} м, ${L.w} Вт — блок питания ${L.psu} Вт${L.npsu>1?' ×'+L.npsu:''} (12/24 В, с запасом 25%). Профили крепите клипсами каждые 40 см, провода прячьте в кабель-канал по задней кромке. Блок питания — в проветриваемое и доступное место.`);}
+  if(holes.length) lines.push(`Врезка: ${holes.join(' ')} Сверлите с лицевой стороны коронкой, чтобы не было сколов. Подключение 220 В выполняет электрик.`);
+  const extra=acc.filter(a=>!ACC[a.k].hole&&a.k!=='led').map(a=>`${ACC[a.k].n} ×${a.n}`);
+  if(extra.length) lines.push(`Установите: ${extra.join(', ')} — по инструкции производителя.`);
+  if(lines.length){c.phases=c.phases.concat([{ph:'elec',t:'Электрика и опции',d:lines.join(' ')}]); if(!c.parts.some(p=>p.ph==='elec')) c.fx.push({type:'mark',ph:'elec',x:0,y:-9999,z:0,dir:'y'});}
+}
+
 /* ---- Шаблоны ---- */
 const N=(k,l,min,max,def,u='мм',x={})=>Object.assign({k,l,min,max,def,u,type:'num'},x);
 const S=(k,l,opts,def,x={})=>Object.assign({k,l,type:'sel',opts,def},x);
@@ -1074,14 +1231,16 @@ const TPL={
     v=>({base:{type:'wall'},top:'between',cols:[[{doors:v.doors,sh:v.shelves}]]})),
   kpenal:C('Кухня: пенал под технику','Кухня',[...dims([400,650,600],[1800,2400,2100],[450,650,560]),N('niche','Ниша под технику',0,800,600),N('bh','Опоры',80,150,100)],
     v=>({base:{type:'legs',h:v.bh},legKind:'kleg',top:'between',cols:[v.niche>0?[{h:800,doors:1,sh:1},{h:v.niche},{doors:1,sh:1}]:[{h:800,doors:1,sh:1},{doors:1,sh:2}]]})),
-  dining:{name:'Стол обеденный',cat:'Кухня',custom:buildDining,noFront:true,params:[...dims([800,2400,1400],[700,800,750],[600,1100,800]),S('dbl','Столешница',[['yes','Двойная (склейка)'],['no','Одинарная']],'yes')]},
+  river:{name:'Стол-река',cat:'Столы',custom:buildRiver,noFront:true,noMat:true,params:[N('W','Длина',600,3200,2000),N('D','Ширина',400,1200,900),N('T','Толщина',25,80,40),N('H','Высота',350,1100,750),N('rmin','Река: самое узкое',40,700,150),N('rmax','Река: самое широкое',80,900,380),N('wav','Волнистость берегов',0,10,6,'из 10'),N('seed','Вариант берегов',1,99,7,'№'),
+    S('slab','Слэб',Object.entries(SLABS).map(([k,x])=>[k,x.n]),'oak'),S('epx','Заливка',Object.entries(EPOXY).map(([k,x])=>[k,x.n]),'glow'),S('legs','Подстолье',Object.entries(RLEGS),'U'),S('fin','Покрытие',[['oil','Масло-воск'],['lak','Лак 2К']],'oil')]},
+  dining:{name:'Стол обеденный',cat:'Столы',custom:buildDining,noFront:true,params:[...dims([800,2400,1400],[700,800,750],[600,1100,800]),S('dbl','Столешница',[['yes','Двойная (склейка)'],['no','Одинарная']],'yes')]},
   shoe:C('Обувница','Прихожая',[...dims([500,1200,800],[600,1400,1000],[250,400,300]),N('doors','Двери',1,3,2,'шт'),N('shelves','Полки',1,5,3,'шт'),baseSel('legs',['plinth','legs']),bhP(80)],
     v=>({base:BASE(v),top:'overlay',cols:[[{doors:v.doors,sh:v.shelves}]]})),
   shoebench:C('Банкетка-обувница','Прихожая',[...dims([500,1400,800],[400,550,450],[300,450,350]),N('cols','Секции',1,3,2,'шт'),N('shelves','Полки',0,2,1,'шт')],
     v=>({base:{type:'none'},top:'overlay',ov:10,back:false,cols:Array.from({length:v.cols},()=>[{sh:v.shelves}])}),{noFront:true}),
   pencil:C('Шкаф-пенал','Прихожая',[...dims([300,600,400],[1500,2400,2000],[300,600,400]),N('shelves','Полки в отделении',0,4,2,'шт'),N('bh','Цоколь',0,150,60)],
     v=>({base:{type:'plinth',h:v.bh},top:'between',cols:[[{doors:1,sh:v.shelves},{doors:1,sh:v.shelves}]]})),
-  desk:{name:'Стол письменный',cat:'Кабинет',custom:buildDesk,noFront:true,params:[...dims([800,1800,1200],[700,800,750],[450,800,600]),N('mh','Высота царги',150,500,300)]},
+  desk:{name:'Стол письменный',cat:'Столы',custom:buildDesk,noFront:true,params:[...dims([800,1800,1200],[700,800,750],[450,800,600]),N('mh','Высота царги',150,500,300)]},
   office:C('Тумба офисная','Кабинет',[...dims([350,600,400],[500,750,600],[400,600,500]),N('drawers','Ящики',2,4,3,'шт')],
     v=>({base:{type:'none'},top:'overlay',cols:[[{drawers:v.drawers}]]})),
   free:{name:'Свободный редактор',cat:'Мои',custom:buildFree,params:[]},
@@ -1093,6 +1252,7 @@ const TPL={
 };
 IC.kitchen='<path d="M2 15h24M3 16v7h22v-7M10 16v7M17 16v7M3 3h22v7H3zM10 3v7M17 3v7"/>';
 IC.free='<path d="M4 22V8l6-4 14 4v14l-6 3-14-3z"/><path d="M10 4v14l14 4M10 18l-6 4"/>';
+IC.river='<path d="M2 9h24v6H2zM5 15v8M23 15v8"/><path d="M11 9c1 2-1 4 1 6M16 9c-1 2 1 4-1 6"/>';
 IC.custom='<rect x="4" y="3" width="20" height="22" rx="1"/><path d="M14 3v22M4 10h10M14 15h10M4 18h10"/><path d="M19 6v5M16.5 8.5h5"/>';
 Object.keys(TPL).forEach(k=>TPL[k].icon=`<svg viewBox="0 0 28 28">${IC[k]||IC.rack}</svg>`);
 const ZONES={sh:'Полки',door:'Двери + полки',drw:'Ящики',rod:'Штанга',fix:'Глухие полки',nic:'Ниша'};
@@ -1103,10 +1263,11 @@ function normCols(c){
   return c.slice(0,6).map(col=>(Array.isArray(col)&&col.length?col:[{k:'sh',n:2,h:0}]).slice(0,8).map(z=>({k:ZONES[z&&z.k]?z.k:'sh',n:Math.min(8,Math.max(0,Math.round(+(z&&z.n)||0))),h:Math.min(2500,Math.max(0,Math.round(+(z&&z.h)||0))),f:FOPTS.some(o=>o[0]===(z&&z.f))?z.f:'same'})));
 }
 const normNums=(a,n,max)=>Array.from({length:n},(_,i)=>Math.min(max,Math.max(0,Math.round(+((a||[])[i])||0))));
-const CATS=['Мои','Спальня','Мягкая мебель','Гостиная','Кухня','Прихожая','Кабинет','Ванная'];
+const CATS=['Мои','Спальня','Мягкая мебель','Столы','Гостиная','Кухня','Прихожая','Кабинет','Ванная'];
 
 function matParams(key){
   const T=TPL[key];
+  if(T.noMat) return [];
   const a=[S('cm',T.noFront?'Материал':'Материал корпуса',MAT_OPTS,T.defCm||'dsp16'),S('cdec','Декор / цвет',v=>decOpts(v.cm),'white',{when:v=>!!decOpts(v.cm)})];
   if(!T.noFront) a.push(S('fm','Материал фасадов',MAT_OPTS,'dsp16'),S('fdec','Декор фасадов',v=>decOpts(v.fm),'sonoma',{when:v=>!!decOpts(v.fm)}),S('hnd','Ручки',[['std','Скобы'],['edge','Торцевой профиль'],['gola','Без ручек — Gola'],['push','Без ручек — push-to-open']],'std'));
   return a;
@@ -1125,6 +1286,7 @@ function normVals(key,vals){
   if(v.bh!==undefined&&v.bh>0&&v.bh<40&&v.base!=='legs') v.bh=40;
   if(key==='custom'){v.cols=normCols(vals.cols); const dflt=!Array.isArray(vals.cols); v.cw=normNums(dflt?DEF_CW:vals.cw,v.cols.length,3000); v.ch=normNums(dflt?DEF_CH:vals.ch,v.cols.length,2800);}
   if(key==='free') v.free=normFree(vals.free);
+  v.acc=normAcc(vals.acc);
   if(key==='kitchen'){v.low=normMods(vals.low,'low'); v.up=normMods(vals.up,'up');}
   return v;
 }
@@ -1161,6 +1323,7 @@ function pack(pieces,mk,rotate){
 function compute(key,vals,opts,P){
   const T=TPL[key], v=normVals(key,vals);
   const m=T.custom?T.custom(v):buildCase(v,T.cfg(v));
+  applyAcc(m,v);
   m.v=v; m.key=key; m.T=T; m.notes=(m.notes||[]).concat(T.note?[T.note]:[]);
   if(!m.err) for(const p of m.parts) if(!(p.sx>0&&p.sy>0&&p.sz>0)){m.err=`Размеры не сходятся: деталь «${p.name}» получилась нулевой. Увеличьте габариты.`;break;}
   // шаги: только те фазы, где есть детали или крепёж
@@ -1193,7 +1356,7 @@ function compute(key,vals,opts,P){
   m.cutm=groups.reduce((s,g)=>s+(g.L+g.W)*g.qty,0)/1000;
   m.nPanels=groups.filter(g=>g.mk!=='dvp').reduce((s,g)=>s+g.qty,0);
   // крепёж
-  m.fxCount={}; m.fx.forEach(f=>m.fxCount[f.type]=(m.fxCount[f.type]||0)+1);
+  m.fxCount={}; m.fx.forEach(f=>{if(f.type!=='mark') m.fxCount[f.type]=(m.fxCount[f.type]||0)+1;});
   // смета
   const lines=[]; const add=(sec,name,qty,unit,price)=>{if(qty>0) lines.push({sec,name,qty,unit,price,sum:qty*price});};
   sg.forEach(s=>add('mat',matName(s.mk,s.dec),s.sheets.length,MAT[s.mk].grain?'щит':'лист',P['m_'+s.mk]));
@@ -1202,6 +1365,7 @@ function compute(key,vals,opts,P){
   add('svc','Раскрой на станке',Math.ceil(m.cutm),'м',P.cut);
   const finArea={};
   groups.forEach(g=>{const f=MAT[g.mk].fin; if(f==='paint'||f==='oil') finArea[f]=(finArea[f]||0)+2*g.L*g.W*g.qty/1e6;});
+  if(m.fin) add('svc',m.fin.n,Math.ceil(m.fin.a*10)/10,'м²',P[m.fin.k]);
   if(finArea.paint) add('svc','Покраска МДФ эмалью (2 стороны)',Math.ceil(finArea.paint*10)/10,'м²',P.fin_paint);
   if(finArea.oil) add('svc','Шлифовка + масло/лак (2 стороны)',Math.ceil(finArea.oil*10)/10,'м²',P.fin_oil);
   const soft=m.parts.filter(p=>p.grp==='soft');
@@ -1218,8 +1382,8 @@ function compute(key,vals,opts,P){
   Object.entries(m.fxCount).forEach(([k,q])=>{const f=FX[k]; if(!f.p) return; const qq=['conf','pin','nail','s16','s25','s30','s50'].includes(k)?Math.ceil(q*1.1):q; add('hw',f.n,qq,'шт',P[f.p]);});
   if(m.fxCount.conf) add('hw','Заглушка на конфирмат',m.fxCount.conf,'шт',P.plug);
   Object.entries(m.hw).forEach(([k,q])=>add('hw',HW[k][0]+(k==='slide'&&m.info.slideLen?`, ${m.info.slideLen} мм`:''),HW[k][1]==='м'?Math.ceil(q*10)/10:q,HW[k][1],P[k]));
-  Object.entries(m.labor).forEach(([k,q])=>add('labor',LABOR[k].replace(', м²',''),q,k==='uph'?'м²':'шт',P['L_'+k]));
-  if(opts.drill&&!soft.length) add('labor','Присадка (сверловка)',m.nPanels,'дет',P.L_drill);
+  const LABU={uph:'м²',river:'м²',led:'м'}; Object.entries(m.labor).forEach(([k,q])=>add('labor',LABOR[k].replace(/, м²?$/,''),q,LABU[k]||'шт',P['L_'+k]));
+  if(opts.drill&&!soft.length&&!m.info.river) add('labor','Присадка (сверловка)',m.nPanels,'дет',P.L_drill);
   if(P.delivery>0) add('labor','Доставка и подъём',1,'',P.delivery);
   m.lines=lines;
   const sum=f=>lines.filter(f).reduce((s,l)=>s+l.sum,0);
@@ -1379,7 +1543,7 @@ function renderParams(){
     const raw=tv()[p.k], val=raw!==undefined&&raw!==''?raw:vals[p.k];
     return `<div class="f" data-k="${p.k}"><label for="${id}">${p.l}</label><div class="in"><input id="${id}" data-k="${p.k}" type="number" inputmode="numeric" min="${p.min}" max="${p.max}" step="1" value="${val}"><span class="u">${p.u}</span></div></div>`;
   }).join('');
-  applyWhen(vals); renderSecEd();
+  applyWhen(vals); renderSecEd(); renderAccEd();
 }
 function applyWhen(vals){vals=vals||normVals(state.tpl,tv()); allParams(state.tpl).forEach(p=>{if(p.when){const el=$(`#params .f[data-k="${p.k}"]`); if(el) el.hidden=!p.when(vals);}});}
 let timer=null;
@@ -1539,6 +1703,41 @@ $('#secEd').addEventListener('change',e=>{
     if(k==='o'&&val==='leg') p.role='leg'; if(k==='o'&&val!=='leg'&&p.role==='leg') p.role='corpus'; });
 },true);
 
+/* ---------- Опции и электрика ---------- */
+const accList=()=>Array.isArray(tv().acc)?tv().acc:(tv().acc=[]);
+function ledPlaces(){const k=state.tpl; return Object.keys(LEDPLACE).filter(p=>(p!=='cab'||k==='kitchen')&&(p!=='river'||k==='river'));}
+function defPlace(){const k=state.tpl; return k==='river'?'river':k==='kitchen'?'cab':['wardrobe','coupe','pencil','kpenal'].includes(k)?'inner':['sofa','csofa','armchair','pouf','bed','tv','dresser','bedside'].includes(k)?'floor':'under';}
+function renderAccEd(){
+  const box=$('#accEd'); const list=normAcc(accList()); tv().acc=list;
+  const sel=(af,opts,val)=>`<div class="in"><select data-af="${af}">${opts.map(([k,l])=>`<option value="${k}"${k===val?' selected':''}>${l}</option>`).join('')}</select></div>`;
+  const groups={};
+  Object.entries(ACC).forEach(([k,d])=>{(groups[d.g]=groups[d.g]||[]).push([k,d]);});
+  const L=M&&M.info&&M.info.led;
+  box.innerHTML=`<h2 class="lbl">Опции и электрика</h2>
+  ${list.length?`<div class="secs">${list.map((a,i)=>a.k==='led'?`
+    <div class="col" data-ai="${i}"><div class="colh"><span>LED-подсветка</span><button type="button" data-acc-del="${i}">Удалить ×</button></div>
+      <div class="params" style="padding:10px">
+        <div class="f wide"><label>Где</label>${sel('place',ledPlaces().map(p=>[p,LEDPLACE[p]]),a.place)}</div>
+        <div class="f"><label>Цвет</label>${sel('col',Object.entries(LEDCOL).map(([k,x])=>[k,x.n]),a.col)}</div>
+        <div class="f"><label>Управление</label>${sel('ctrl',Object.entries(LEDCTRL),a.ctrl)}</div>
+        ${a.place==='manual'?`<div class="f"><label>Длина</label><div class="in"><input data-af="m" type="number" inputmode="decimal" min="0" max="50" step="0.1" value="${a.m}"><span class="u">м</span></div></div>`:''}
+      </div></div>`:`
+    <div class="item" data-ai="${i}" style="padding:8px 10px"><div class="who"><b>${ACC[a.k].n}</b>${ACC[a.k].hole?'<small>Врезка — метка на 3D</small>':''}</div>
+      <div class="in" style="width:84px"><input data-af="n" type="number" inputmode="numeric" min="1" max="20" value="${a.n}" aria-label="Количество"><span class="u">шт</span></div>
+      <button class="ib" type="button" data-acc-del="${i}" aria-label="Удалить">${ICON.trash}</button></div>`).join('')}</div>`:'<p class="note">Подсветка, розетки, зарядки и полезные мелочи. Всё появится на 3D, в смете и в инструкции.</p>'}
+  ${L?`<dl class="stats"><div><dt>Лента</dt><dd>${L.m}<small>м</small></dd></div><div><dt>Мощность</dt><dd>${L.w}<small>Вт</small></dd></div><div><dt>Блок</dt><dd>${L.psu}<small>Вт</small></dd></div></dl>`:''}
+  ${Object.entries(groups).map(([g,items])=>`<p class="sub" style="margin-top:14px">${g}</p><div class="row" style="margin-top:6px">${items.map(([k,d])=>`<button class="btn" type="button" data-acc-add="${k}">+ ${k==='led'?'LED-лента':d.n.replace(' врезной','').replace(' в столешницу','')}</button>`).join('')}</div>`).join('')}`;
+}
+$('#accEd').addEventListener('click',e=>{
+  let t;
+  if((t=e.target.closest('[data-acc-add]'))){const k=t.dataset.accAdd; accList().push(k==='led'?{k,place:defPlace(),col:state.tpl==='river'&&normVals('river',tv()).epx==='glow'?'uv':'warm',ctrl:'switch',m:2}:{k,n:1}); update(); renderAccEd(); toast(ACC[k].n+' — добавлено'); return;}
+  if((t=e.target.closest('[data-acc-del]'))){accList().splice(+t.dataset.accDel,1); update(); renderAccEd();}
+});
+$('#accEd').addEventListener('change',e=>{
+  const f=e.target.dataset.af, row=e.target.closest('[data-ai]'); if(!f||!row) return;
+  const a=accList()[+row.dataset.ai]; a[f]=f==='n'||f==='m'?+e.target.value:e.target.value; update(); renderAccEd();
+});
+
 /* ---------- Пересчёт ---------- */
 function update(){
   M=compute(state.tpl,tv(),{grain:state.grain,drill:state.drill},prices);
@@ -1546,8 +1745,8 @@ function update(){
   const er=$('#err'); er.hidden=!M.err; er.textContent=M.err||'';
   const [a,b,c]=M.size.map(Math.round), v=M.v;
   $('#hTitle').textContent=state.myName||M.T.name;
-  $('#hSub').textContent=`${a}×${b}×${c} мм · ${matName(v.cm,v.cdec)}${hasSoft()?' · '+FABRICS[v.fab].n:''}`;
-  save(); renderSum(); renderOrderBar(); renderCTA(); dirty3D=true; if(state.screen==='editor') renderTab();
+  $('#hSub').textContent=state.tpl==='river'?`${a}×${c}×${b} мм · ${SLABS[v.slab].n} · ${EPOXY[v.epx].n.toLowerCase()}`:`${a}×${b}×${c} мм · ${matName(v.cm,v.cdec)}${hasSoft()?' · '+FABRICS[v.fab].n:''}`;
+  save(); renderSum(); renderAccEd(); renderOrderBar(); renderCTA(); dirty3D=true; if(state.screen==='editor') renderTab();
 }
 function renderSum(){
   const sheets=M.sheetGroups.filter(s=>s.mk!=='dvp').reduce((q,s)=>q+s.sheets.length,0);
@@ -1602,6 +1801,7 @@ function init3D(){
   }catch(err){el.innerHTML='<p class="note" style="padding:90px 16px 16px">3D не поддерживается на этом устройстве. Чертёж, раскрой и смета работают.</p>';R={fail:true};}
 }
 function partColor(p){
+  if(p.color) return p.color;
   if(p.grp==='hw') return p.name==='Ремень'?'#3C3F44':'#A9AFB6';
   if(p.grp==='soft') return FCOL[M.v.fcol]?FCOL[M.v.fcol].c:'#888';
   if(p.mk==='dvp') return MAT.dvp.c;
@@ -1614,15 +1814,17 @@ function build3D(){
   let mx=-1e9,my=0,mz=-1e9,nx=1e9,nz=1e9;
   M.parts.forEach(p=>{
     let geo;
-    if(p.shape==='cylX'){geo=new THREE.CylinderGeometry(p.sy/2,p.sy/2,p.sx,20); geo.rotateZ(Math.PI/2);}
+    if(p.shape==='poly'){const sh=new THREE.Shape(p.poly.map(([x,z])=>new THREE.Vector2(x,-z))); geo=new THREE.ExtrudeGeometry(sh,{depth:p.sy,bevelEnabled:false,curveSegments:1}); geo.rotateX(-Math.PI/2);}
+    else if(p.shape==='cylX'){geo=new THREE.CylinderGeometry(p.sy/2,p.sy/2,p.sx,20); geo.rotateZ(Math.PI/2);}
     else if(p.shape==='cylY') geo=new THREE.CylinderGeometry(p.sx/2,p.sx/2,p.sy,20);
     else geo=new THREE.BoxGeometry(p.sx,p.sy,p.sz);
     const hw=p.grp==='hw', soft=p.grp==='soft', base=partColor(p);
-    const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:base,roughness:hw?.35:soft?.95:.8,metalness:hw?.6:0}));
-    mesh.position.set(p.x+p.sx/2,p.y+p.sy/2,p.z+p.sz/2); R.group.add(mesh);
+    const mat=p.grp==='led'?new THREE.MeshBasicMaterial({color:base}):p.grp==='epoxy'?new THREE.MeshStandardMaterial({color:base,transparent:true,opacity:p.opacity,emissive:p.emissive,roughness:.08,metalness:.05}):new THREE.MeshStandardMaterial({color:base,roughness:hw?.35:soft?.95:.8,metalness:hw?.6:0});
+    const mesh=new THREE.Mesh(geo,mat);
+    if(p.shape==='poly') mesh.position.set(0,p.y,0); else mesh.position.set(p.x+p.sx/2,p.y+p.sy/2,p.z+p.sz/2); R.group.add(mesh);
     let line=null;
-    if(!p.shape&&!soft){line=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x111111,transparent:true,opacity:.6})); line.position.copy(mesh.position); R.group.add(line);}
-    R.items.push({p,mesh,line,base});
+    if(!p.shape&&!soft&&p.grp!=='led'&&p.grp!=='acc'){line=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x111111,transparent:true,opacity:.6})); line.position.copy(mesh.position); R.group.add(line);}
+    R.items.push({p,mesh,line,base,baseE:p.emissive||'#000000',baseO:p.opacity||1});
     mx=Math.max(mx,p.x+p.sx); my=Math.max(my,p.y+p.sy); mz=Math.max(mz,p.z+p.sz); nx=Math.min(nx,p.x); nz=Math.min(nz,p.z);
   });
   const s=Math.max(mx-nx,my,mz-nz), r=Math.min(22,Math.max(9,s*.008));
@@ -1643,9 +1845,10 @@ function applyVis(){
   R.items.forEach(it=>{
     let vis=true,hi=false;
     if(asm){vis=it.p.step<=step; hi=it.p.step===step;} else {if(noFronts&&(it.p.grp==='front'||it.p.grp==='soft')) vis=false; if(state.tpl==='free'&&it.p.pid&&it.p.pid===state.sel) hi=true;}
+    if(it.p.tmp){vis=asm&&it.p.step===step; hi=false;}
     it.mesh.visible=vis; if(it.line) it.line.visible=vis;
-    it.mesh.material.color.set(hi?ACCENT:it.base); it.mesh.material.emissive.set(hi?'#2a1e00':'#000000');
-    it.mesh.material.transparent=asm&&!hi; it.mesh.material.opacity=asm&&!hi?.55:1;
+    const mt=it.mesh.material; mt.color.set(hi&&it.p.grp!=='led'?ACCENT:it.base); if(mt.emissive) mt.emissive.set(hi?'#2a1e00':it.baseE);
+    mt.transparent=(asm&&!hi)||it.baseO<1; mt.opacity=(asm&&!hi?.55:1)*it.baseO;
   });
   R.marks.forEach(m=>m.g.visible=asm?m.f.step===step:showFx);
 }
@@ -1658,9 +1861,10 @@ const notesHTML=()=>M.notes&&M.notes.length?`<div class="callout">${M.notes.join
 function panel3D(P){
   const v=M.v, cards=[];
   cards.push([colorOf(v.cm,v.cdec),M.T.noFront?'Материал':'Корпус',matName(v.cm,v.cdec),MAT[v.cm].t+' мм']);
+  if(M.info.river){cards.length=0; cards.push([SLABS[v.slab].c,'Слэбы',SLABS[v.slab].n+', толщина от '+(v.T+10)+' мм',M.info.river.area+' м² реки'],[EPOXY[v.epx].c,'Заливка',EPOXY[v.epx].n,M.info.river.kg+' кг смолы']);}
   const seen=new Set(); M.parts.filter(p=>p.grp==='front').forEach(p=>{const k=p.mk+'|'+(p.dec||''); if(seen.has(k)) return; seen.add(k); cards.push([colorOf(p.mk,p.dec),'Фасады',matName(p.mk,p.dec),MAT[p.mk].t+' мм']);});
   if(hasSoft()) cards.push([FCOL[v.fcol].c,'Обивка',FABRICS[v.fab].n+' · '+FCOL[v.fcol].n,'ширина 1,4 м']);
-  const canFree=state.tpl!=='free'&&!hasSoft();
+  const canFree=state.tpl!=='free'&&state.tpl!=='river'&&!hasSoft();
   P.innerHTML=`${canFree?`<button class="cta w" type="button" data-act="toFree"><span>Редактировать детали вручную</span><i>${ICON.edit}</i></button>`:''}<div class="mats">${cards.map(([c,l,n,pl])=>`<div class="mcard"><span class="ava" style="background:${c}"></span><div class="who"><b>${n}</b><small>${l}</small><span class="plate">${pl}</span></div></div>`).join('')}</div>
     ${showFx?`<h3>Весь крепёж</h3>${fxLegend(Object.entries(M.fxCount))}`:'<p class="note">Кнопка с винтом справа на 3D показывает все точки крепления. Пошагово — во вкладке «Сборка».</p>'}
     ${notesHTML()}`;
@@ -1668,7 +1872,7 @@ function panel3D(P){
 
 /* ---------- Чертёж ---------- */
 function drawSVG(){
-  const ps=M.parts.filter(p=>!(p.grp==='hw'&&p.name==='Ремень'));
+  const ps=M.parts.filter(p=>!(p.grp==='hw'&&p.name==='Ремень')&&!p.tmp&&p.grp!=='led'&&p.grp!=='acc');
   const nX=Math.min(...ps.map(p=>p.x)), mX=Math.max(...ps.map(p=>p.x+p.sx)), mY=Math.max(...ps.map(p=>p.y+p.sy)), nZ=Math.min(...ps.map(p=>p.z)), xZ=Math.max(...ps.map(p=>p.z+p.sz)), Wt=mX-nX, Dt=xZ-nZ;
   const s=Math.max(Wt,mY), fs=Math.round(Math.max(26,s*.032));
   const mL=fs*4.2, mT=fs*3.2, chain=fs*5.2, gap=fs*2.5, mR=fs*1.5, mB=fs*5.6;
@@ -1744,7 +1948,6 @@ function sheetSVG(sh,mk,i){
   });
   return o+'</svg>';
 }
-const plural=(n,a,b,c)=>{const m=n%10,h=n%100; return m===1&&h!==11?a:m>=2&&m<=4&&(h<10||h>=20)?b:c;};
 function panelCut(P){
   if(!M.sheetGroups.length){P.innerHTML='<p class="note">Для этого изделия нечего кроить.</p>';return;}
   let html=`<label class="chk"><input type="checkbox" id="cGrain"${state.grain?' checked':''}> Учитывать текстуру ДСП и фанеры (детали не поворачиваются)</label>
