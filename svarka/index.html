@@ -1072,81 +1072,135 @@ function bStairL(v){
 }
 
 function bSpiral(v){
-  const c=ctx(v), H=v.H, R=v.D/2, PO=SEC[v.pole], rp=PO.h/2, n=Math.max(8,Math.round(H/200)), h=H/n, nt=n-1;
+  const c=ctx(v), H=v.H, R=v.D/2, sq=v.plan==='square', PO=SEC[v.pole], rp=PO.h/2, n=Math.max(8,Math.round(H/200)), h=H/n, nt=n-1;
   const rw=rp+.6*(R-rp); let th=v.ang>0?v.ang*DEG:clamp(215/rw,16*DEG,32*DEG);
-  const dir=v.dir==='cw'?-1:1, wood=!!WOOD[v.tread], plate=v.kons==='plate', tt=wood?40:4, ts=plate&&wood?4:0, foot=v.base==='footing', land=v.land==='yes';
+  const dir=v.dir==='ccw'?-1:1, f0=(+v.a0||0)*DEG, wood=!!WOOD[v.tread], plate=v.kons==='plate', tt=wood?40:4, ts=plate&&wood?4:0, foot=v.base==='footing', land=v.land==='yes';
   const P=(r,f,y)=>[r*Math.cos(f),y,r*Math.sin(f)], r0=rp+10, ov=3*DEG;
-  // клин ступени: заготовка считается с раскладкой «валетом» (два клина на прямоугольник)
-  const wedge=(fa,fb,y,t,mat,name,ph)=>{const lo=Math.min(fa,fb), hi=Math.max(fa,fb), out=lin(lo,hi,Math.max(7,Math.ceil((hi-lo)/(5*DEG)))).map(f=>[R*Math.cos(f),R*Math.sin(f)]);
-    const p=c.poly(mat,[[r0*Math.cos(lo),r0*Math.sin(lo)],...out,[r0*Math.cos(hi),r0*Math.sin(hi)]],y,t,{ph,name}), sp=hi-lo;
-    p.blankAB=sp>.7?[R-r0+20,R*Math.sin(Math.min(sp,Math.PI/2))+20]:[R-r0+20,(R+r0)*Math.sin(sp/2)+20]; p.blank=p.blankAB[0]*p.blankAB[1]; return p;};
+  const rOut=f=>sq?R/Math.max(Math.abs(Math.cos(f)),Math.abs(Math.sin(f))):R, O=(f,d,y)=>P(rOut(f)-d,f,y);
+  const fA=u=>f0+dir*u; // угол по ходу подъёма
+  // стены
+  const gapW=sq?20:60, WL=R+gapW, walls=v.walls==='corner'?[0,2]:v.walls==='one'?[0]:[];
+  const wallDist=p=>walls.length?Math.min(...walls.map(ax=>Math.abs(p[ax]+WL))):1e9;
+  walls.forEach(ax=>ax===0?c.ghost(-WL-150,0,-WL-150,150,H+500,2*WL+900,'Стена'):c.ghost(-WL-150,0,-WL-150,2*WL+900,H+500,150,'Стена'));
+  // контур ступени: внутренняя дуга + внешний край (круг или квадрат с углами)
+  const cornersIn=(lo,hi)=>{const o=[]; for(let k=Math.ceil((lo-Math.PI/4)/(Math.PI/2));Math.PI/4+k*Math.PI/2<hi;k++) o.push(Math.PI/4+k*Math.PI/2); return o;};
+  const outAngles=(lo,hi)=>sq?[lo,...cornersIn(lo,hi),hi]:lin(lo,hi,Math.max(7,Math.ceil((hi-lo)/(5*DEG))));
+  const wedge=(fa,fb,y,t,mat,name,ph)=>{const lo=Math.min(fa,fb), hi=Math.max(fa,fb), out=outAngles(lo,hi).map(f=>{const r=rOut(f); return [r*Math.cos(f),r*Math.sin(f)];});
+    const p=c.poly(mat,[[r0*Math.cos(lo),r0*Math.sin(lo)],...out,[r0*Math.cos(hi),r0*Math.sin(hi)]],y,t,{ph,name}), a=Math.max(...out.map(q=>Math.hypot(q[0],q[1])))-r0+20;
+    const sp=hi-lo; p.blankAB=sq?[a,p.area*1.35/a+20]:sp>.7?[R-r0+20,R*Math.sin(Math.min(sp,Math.PI/2))+20]:[R-r0+20,(R+r0)*Math.sin(sp/2)+20]; p.blank=p.blankAB[0]*p.blankAB[1]; return p;};
   // стойка и основание
   c.bar(v.pole,[0,10,0],[0,H+120,0],{name:'Центральная стойка',ph:'pole',up:[0,0,1]});
   if(foot){c.cyl('conc',0,0,-800,800,500,{ph:'pole',name:'Опора под стойку'}); c.L('footing',1);}
   c.box('s10',-150,0,-150,300,10,300,{ph:'pole',name:'Пластина стойки 300×300×10',buyAs:'plate300'}); c.H('plate300');
   [[-110,-110],[110,-110],[-110,110],[110,110]].forEach(([x,z])=>c.mark('anchor','pole',[x,10,z],'anchor12'));
   c.mark('anchor','pole',[0,H+100,0],'anchor12',2); c.W('pole',[0,10,0],2);
-  const HR=v.hr==='wood'?SEC.hrw:SEC[v.hr], rail=v.rail==='yes', bn=+v.bn||2, balSec=v.bal==='tw'?'tw12':v.bal==='q12'?'q12':'20x20x2';
-  let balN=0;
-  const baluster=(f,y0,yh)=>{c.bar(balSec,P(R-40,f,y0),P(R-40,f,yh-HR.h/2),{name:v.bal==='tw'?'Балясина витая':'Балясина',ph:'rail',up:[0,1,0]}); c.W('rail',P(R-40,f,y0),2); c.W('rail',P(R-40,f,yh-HR.h/2)); balN++;};
+  // ступени
+  let wallFix=0;
   for(let k=1;k<=nt;k++){
-    const f0=dir*(k-1)*th, fc=f0+dir*th/2, yt=k*h, yb=yt-tt-ts;
+    const f0k=fA((k-1)*th), fc=fA((k-.5)*th), yt=k*h, yb=yt-tt-ts;
     if(plate){
-      if(ts) wedge(f0-dir*ov,f0+dir*(th+ov),yb,ts,'s4','Лоток ступени 4 мм','consoles');
-      c.bar('s50x5',P(rp,fc,yb-25),P(R-90,fc,yb-25),{name:'Ребро ступени 50×5',ph:'consoles',up:[0,1,0]});
-      c.bar('s40x4',P(rp,f0+dir*.02,yb-20),P(R-15,f0+dir*.02,yb-20),{name:'Борт ступени 40×4',ph:'consoles',up:[0,1,0]});
-      c.W('consoles',P(rp,fc,yb-25),2); c.W('consoles',P(rp,f0,yb-20),2); c.W('consoles',P((rp+R)/2,fc,yb-2),2);
+      if(ts) wedge(f0k-dir*ov,fA(k*th)+dir*ov,yb,ts,'s4','Лоток ступени 4 мм','consoles');
+      c.bar('s50x5',P(rp,fc,yb-25),O(fc,90,yb-25),{name:'Ребро ступени 50×5',ph:'consoles',up:[0,1,0]});
+      c.bar('s40x4',P(rp,f0k+dir*.02,yb-20),O(f0k+dir*.02,15,yb-20),{name:'Борт ступени 40×4',ph:'consoles',up:[0,1,0]});
+      c.W('consoles',P(rp,fc,yb-25),2); c.W('consoles',P(rp,f0k,yb-20),2); c.W('consoles',P((rp+R)/2,fc,yb-2),2);
     }else{
       const yc=yt-tt-30;
-      c.bar('60x40x3',P(rp,fc,yc),P(R-60,fc,yc),{name:'Консоль ступени',ph:'consoles',up:[0,1,0]}); c.W('consoles',P(rp,fc,yc),2);
-      c.bar('40x20x2',P(R-90,f0+dir*.06,yt-tt-10),P(R-90,f0+dir*(th-.06),yt-tt-10),{name:'Ступень: поперечина',ph:'consoles',up:[0,1,0]}); c.W('consoles',P(R-90,fc,yt-tt-10),2);
+      c.bar('60x40x3',P(rp,fc,yc),O(fc,60,yc),{name:'Консоль ступени',ph:'consoles',up:[0,1,0]}); c.W('consoles',P(rp,fc,yc),2);
+      c.bar('40x20x2',O(f0k+dir*.06,90,yt-tt-10),O(fA(k*th)-dir*.06,90,yt-tt-10),{name:'Ступень: поперечина',ph:'consoles',up:[0,1,0]}); c.W('consoles',O(fc,90,yt-tt-10),2);
       c.bar('20x20x2',P(rp,fc,yc-260),P((rp+R)/2,fc,yc-20),{name:'Консоль: подкос',ph:'consoles',up:[0,1,0]}); c.W('consoles',P(rp,fc,yc-260)); c.W('consoles',P((rp+R)/2,fc,yc-20));
     }
-    wedge(f0-dir*ov,f0+dir*(th+ov),yt-tt,tt,wood?v.tread:'rif4','Ступень (клин)','treads');
+    if(walls.length&&wallDist(O(fc,0,0))<250){c.bar('L40x4',O(fc,25,yb-110),O(fc,25,yb-10),{name:'Кронштейн ступени к стене',ph:'consoles',up:[Math.cos(fc),0,Math.sin(fc)]}); c.mark('anchor','consoles',O(fc,0,yb-60),'anchor10',2); wallFix++;}
+    wedge(f0k-dir*ov,fA(k*th)+dir*ov,yt-tt,tt,wood?v.tread:'rif4','Ступень (клин)','treads');
     if(wood) c.mark('bolt','treads',P((rp+R)/2,fc,yt-tt),'tbolt',4);
-    if(rail) for(let j=0;j<bn;j++){const f=f0+dir*th*(j+.5)/bn, prog=(k-1)+(j+.5)/bn; baluster(f,yt,(prog+.5)*h+900);}
   }
   // площадка выхода (90°)
-  const fl0=dir*nt*th, fl1=fl0+dir*Math.PI/2;
+  const uL=nt*th, uEnd=land?uL+Math.PI/2:uL;
   if(land){
-    const yl=H-tt-ts;
-    [fl0,fl1].forEach(f=>{c.bar('60x40x3',P(rp,f,yl-20),P(R-30,f,yl-20),{name:'Площадка: балка',ph:'landing',up:[0,1,0]}); c.W('landing',P(rp,f,yl-20),2);});
-    c.arc('40x40x2',lin(fl0,fl1,10).map(f=>P(R-30,f,yl-20)),{name:'Площадка: дуга',ph:'landing'}); c.W('landing',P(R-30,fl0,yl-20),2); c.W('landing',P(R-30,fl1,yl-20),2);
+    const yl=H-tt-ts, fl0=fA(uL), fl1=fA(uEnd);
+    [fl0,fl1].forEach(f=>{c.bar('60x40x3',P(rp,f,yl-20),O(f,30,yl-20),{name:'Площадка: балка',ph:'landing',up:[0,1,0]}); c.W('landing',P(rp,f,yl-20),2);});
+    const lo=Math.min(fl0,fl1), hi=Math.max(fl0,fl1);
+    if(sq){const fs=outAngles(lo,hi); for(let i=0;i<fs.length-1;i++) c.bar('40x40x2',O(fs[i],30,yl-20),O(fs[i+1],30,yl-20),{name:'Площадка: обвязка',ph:'landing'});}
+    else c.arc('40x40x2',lin(lo,hi,10).map(f=>O(f,30,yl-20)),{name:'Площадка: дуга',ph:'landing'});
+    c.W('landing',O(fl0,30,yl-20),2); c.W('landing',O(fl1,30,yl-20),2);
     if(ts) wedge(fl0,fl1,yl,ts,'s4','Площадка: лист 4 мм','landing');
     wedge(fl0,fl1,H-tt,tt,wood?v.tread:'rif4','Площадка: настил','treads');
-    [P(R-60,fl0+dir*.3,yl-20),P(R-60,fl1-dir*.3,yl-20)].forEach(p=>c.mark('anchor','landing',p,'anchor12',2));
+    [O(fl0+dir*.3,60,yl-20),O(fl1-dir*.3,60,yl-20)].forEach(p=>c.mark('anchor','landing',p,'anchor12',2));
     c.L('landing',1);
   }
-  // поручень по винтовой линии + по площадке
-  let hrLen=0;
+  // ограждение: только там, где нет стены
+  const rail=v.rail==='yes', HR=v.hr==='wood'?SEC.hrw:SEC[v.hr], hrSec=v.hr==='wood'?'hrw':v.hr, bn=+v.bn||2, sp=R*th/bn;
+  const mode=sq?'square':v.hrt==='poly'?'poly':'helix', balSec=v.bal==='tw'?'tw12':v.bal==='q12'?'q12':'20x20x2';
+  const yTr=u=>u<uL?(Math.floor(u/th)+1)*h:H, hy=u=>Math.min((u/th+.5)*h+900,H+900), Q=u=>O(fA(u),40,hy(u));
+  let balN=0, hrLen=0, runs=[], segs=[];
   if(rail){
-    const steps=Math.ceil(nt*th/(5*DEG)), pts=[]; for(let i=0;i<=steps;i++){const prog=nt*i/steps; pts.push(P(R-40,dir*prog*th,(prog+.5)*h+900));}
-    if(land){const yTop=(nt+.5)*h+900; lin(fl0,fl1,12).slice(1).forEach(f=>pts.push(P(R-40,f,yTop))); const nb=Math.max(2,Math.round(R*Math.PI/2/(R*th/bn))); for(let j=0;j<nb;j++) baluster(fl0+dir*(Math.PI/2)*(j+.5)/nb,H,yTop);}
-    const hp=c.arc(v.hr==='wood'?'hrw':v.hr,pts,{name:'Поручень винтовой',ph:'rail'}); hrLen=hp.len/1000; if(v.hr==='wood'){c.H('hrwood',hrLen); c.H('hrbracket',nt);}
+    const sideWall=f=>{const cx=Math.cos(f), sz=Math.sin(f); return Math.abs(cx)>=Math.abs(sz)?(cx<0&&walls.includes(0)):(sz<0&&walls.includes(2));};
+    const open=u=>sq?!sideWall(fA(u)):wallDist(O(fA(u),0,0))>250, iv=[]; let a=null;
+    for(let u=0;u<=uEnd+1e-9;u+=DEG){const o=open(Math.min(u,uEnd)); if(o&&a===null) a=u; if(!o&&a!==null){iv.push([a,u-DEG]); a=null;}}
+    if(a!==null) iv.push([a,uEnd]);
+    const flatU=(nt+.5)*th;
+    iv.filter(([a,b])=>b-a>5*DEG).forEach(([ua,ub])=>{
+      let us=[ua,ub];
+      if(mode==='square'){for(let u=ua;u<ub;u+=DEG){const f=fA(u), g=fA(u+DEG); cornersIn(Math.min(f,g),Math.max(f,g)).forEach(()=>us.push(u+DEG/2));}}
+      else if(mode==='poly'){for(let k=1;k*th<ub;k++) if(k*th>ua) us.push(k*th);}
+      else for(let u=ua;u<ub;u+=5*DEG) us.push(u);
+      if(flatU>ua&&flatU<ub) us.push(flatU);
+      us=[...new Set(us.map(u=>Math.round(u*1e6)/1e6))].sort((x,y)=>x-y);
+      const pts=us.map(Q);
+      if(mode==='helix'){const hp=c.arc(hrSec,pts,{name:'Поручень гнутый',ph:'rail'}); hrLen+=hp.len;}
+      else{
+        for(let i=0;i<pts.length-1;i++){
+          const d0=i>0?vnorm(vsub(pts[i],pts[i-1])):null, d1=vnorm(vsub(pts[i+1],pts[i])), d2=i<pts.length-2?vnorm(vsub(pts[i+2],pts[i+1])):null;
+          const cutA=Math.max(d0?Math.acos(clamp(vdot(d0,d1),-1,1))/2:0,d2?Math.acos(clamp(vdot(d1,d2),-1,1))/2:0)/DEG;
+          const b=c.bar(hrSec,pts[i],pts[i+1],{name:mode==='square'?'Поручень прямой':'Поручень: прямой отрезок',ph:'rail',up:[0,1,0],cut:cutA>1?`${Math.round(cutA)}°`:''}); hrLen+=b.len; segs.push(b);
+          c.W('rail',pts[i]);
+        }
+        // стойки в узлах поручня
+        us.forEach(u=>{if(Math.abs(u-flatU)<1e-6&&mode==='square') return; const f=fA(u), top=Q(u); const s=mode==='square'?'40x40x2':balSec;
+          c.bar(s,O(f,40,yTr(Math.min(u,uEnd-1e-6))),[top[0],top[1]-HR.h/2,top[2]],{name:mode==='square'?'Стойка перил 40×40':'Балясина-стойка',ph:'rail',up:[Math.cos(f),0,Math.sin(f)]});
+          if(s===balSec) balN++; c.W('rail',O(f,40,yTr(Math.min(u,uEnd-1e-6))),2);
+          if(walls.length&&wallDist(O(f,0,0))<400&&(u===ua||u===ub)) c.mark('anchor','rail',top,'anchor10',2);});
+      }
+      runs.push({ua,ub,n:us.length});
+      // балясины вдоль поручня с шагом sp (в плане)
+      const plan=p=>[p[0],p[2]]; let acc=sp/2;
+      for(let i=0;i<pts.length-1;i++){
+        const A=pts[i], B=pts[i+1], Lp=Math.hypot(B[0]-A[0],B[2]-A[2]);
+        while(acc<Lp){const t=acc/Lp, x=A[0]+(B[0]-A[0])*t, z=A[2]+(B[2]-A[2])*t, uLin=us[i]+(us[i+1]-us[i])*t;
+          let du=Math.atan2(z,x)-fA(uLin); du=Math.atan2(Math.sin(du),Math.cos(du)); const uq=clamp(uLin+dir*du,0,uEnd-1e-6);
+          const nearPost=mode!=='helix'&&(t*Lp<45||(1-t)*Lp<45);
+          if(!nearPost){const yTop=A[1]+(B[1]-A[1])*t-HR.h/2, yB=yTr(uq); c.bar(balSec,[x,yB,z],[x,yTop,z],{name:v.bal==='tw'?'Балясина витая':'Балясина',ph:'rail',up:[0,1,0]}); c.W('rail',[x,yB,z],2); c.W('rail',[x,yTop,z]); balN++;}
+          acc+=sp;}
+        acc-=Lp;
+      }
+    });
+    if(v.hr==='wood'){c.H('hrwood',hrLen/1000); c.H('hrbracket',Math.ceil(hrLen/700));}
     if(v.bal==='tw') c.H('baltw',balN);
   }
   // ограждение проёма на втором этаже
   let topM=0;
-  if(v.topr>0){const fe=land?fl1:fl0, t=[-Math.sin(fe)*dir,0,Math.cos(fe)*dir], A=P(R+60,fe,H), B=vadd(A,vmul(t,v.topr));
+  if(v.topr>0){const fe=fA(uEnd), t=[-Math.sin(fe)*dir,0,Math.cos(fe)*dir], A=O(fe,-60,H), B=vadd(A,vmul(t,v.topr));
     topM=railRun(c,{A,B,hrH:950,infill:'bars',hr:v.hr==='wood'?'wood':v.hr,ph:'toprail'});}
   const turn=h*2*Math.PI/th, clear=turn-tt-ts-30-60;
-  c.L('spiral',nt); if(wood) c.L('tread',nt+(land?1:0)); if(hrLen+topM) c.L('rail',hrLen+topM);
+  c.L('spiral',nt); if(wood) c.L('tread',nt+(land?1:0)); if(hrLen+topM*1000) c.L('rail',hrLen/1000+topM);
   c.info.stairs={h:r1(h),go:r1(rw*th),ang:(th/DEG).toFixed(1),turn:r1(turn),nt};
   if(clear<1950) c.warn(`Над головой ~${r1(clear)} мм за один виток — меньше 2000 мм. Увеличьте угол ступени или диаметр.`);
-  if(v.D<1400) c.warn(`Диаметр ${v.D} мм — тесно для жилой лестницы (удобно от 1600 мм, минимум 1400).`);
+  if(v.D<1400) c.warn(`${sq?'Сторона':'Диаметр'} ${v.D} мм — тесно для жилой лестницы (удобно от 1600 мм, минимум 1400).`);
   if(rw*th<180) c.warn(`Глубина ступени на линии хода ${r1(rw*th)} мм — мелко, нога не помещается. Увеличьте угол ступени.`);
   if(h>215) c.warn(`Подъём ступени ${r1(h)} мм — круто даже для винтовой (норма 170–210).`);
-  const gap=r1(R*th/bn-12);
-  if(rail&&gap>110) c.warn(`Между балясинами ~${gap} мм — ребёнок пролезет (безопасно до 110 мм). Если в доме дети — ставьте ${Math.ceil(R*th/122)} балясины на ступень.`);
-  c.note(`Проём в перекрытии — круг не меньше Ø${v.D+100} мм (или квадрат ${v.D+100}×${v.D+100}). Центр стойки — не ближе ${R+60} мм к стенам. Высоту меряйте от чистого пола внизу до чистого пола наверху — с учётом будущей стяжки, плитки, ламината.`);
-  c.size=[v.D,H+1000,v.D];
-  const tbl=Array.from({length:Math.min(nt,5)},(_,i)=>`${i+1}: ${r1(i*th/DEG)}°, ${r1((i+1)*h-tt-ts)} мм`).join('; ');
-  c.step('mark','Расчёт и разметка',`Высота ${H} мм (чистый пол — чистый пол) → ${n} подъёмов по ${r1(h)} мм: ${nt} ступеней${land?' + площадка выхода':''}, поворот на ступень ${(th/DEG).toFixed(1)}°, глубина на линии хода ${r1(rw*th)} мм. Полный виток — ${r1(turn)} мм по высоте. Проём — не меньше Ø${v.D+100} мм, центр стойки — не ближе ${R+60} мм к стенам.`,true);
+  if(rail&&sp-12>110) c.warn(`Между балясинами ~${r1(sp-12)} мм — ребёнок пролезет (безопасно до 110 мм). Если в доме дети — ставьте ${Math.ceil(R*th/122)} балясины на ступень.`);
+  if(rail&&!runs.length) c.note('Ограждение не нужно — лестница со всех сторон у стен. Проём наверху всё равно оградите.');
+  c.note(`Проём в перекрытии — ${sq?`квадрат не меньше ${v.D+100}×${v.D+100} мм`:`круг не меньше Ø${v.D+100} мм (или квадрат ${v.D+100}×${v.D+100})`}. Центр стойки — ${R+gapW} мм от стен${walls.length?'':' (если рядом стена)'}. Высоту меряйте от чистого пола внизу до чистого пола наверху — с учётом будущей стяжки, плитки, ламината.`);
+  c.size=sq?[v.D,H+1000,v.D]:[v.D,H+1000,v.D];
+  const tbl=Array.from({length:Math.min(nt,5)},(_,i)=>`${i+1}: ${r1((v.a0||0)+dir*i*th/DEG)}°, ${r1((i+1)*h-tt-ts)} мм`).join('; ');
+  const runTxt=runs.map(r=>`от ${r1(hy(r.ua))} до ${r1(hy(r.ub))} мм`).join(' и ');
+  c.step('mark','Расчёт и разметка',`Высота ${H} мм (чистый пол — чистый пол) → ${n} подъёмов по ${r1(h)} мм: ${nt} ступеней${land?' + площадка выхода':''}, ${sq?'квадратная в плане ':''}поворот на ступень ${(th/DEG).toFixed(1)}° ${dir>0?'по часовой':'против часовой'} (вид сверху), глубина на линии хода ${r1(rw*th)} мм. Первая ступень стартует под углом ${v.a0||0}° (0° — вправо, 90° — к вам, 180° — к левой стене, 270° — к задней). Полный виток — ${r1(turn)} мм по высоте. ${sq?`Проём — квадрат не меньше ${v.D+100}×${v.D+100} мм`:`Проём — не меньше Ø${v.D+100} мм`}, центр стойки — ${R+gapW} мм от стен.`,true);
   c.step('pole','Основание и стойка',`${foot?'Под стойкой — опора: яма Ø500 на 800 мм, щебень 100 мм, бетон М250 вровень с полом, выдержать 7 дней. ':''}Стойка ${PO.n} длиной ${H+110} мм на пластине 300×300×10 (4 анкера М12), строго по отвесу в двух плоскостях. Верх — кронштейном к перекрытию: анкеры в бетон или шурупы-глухари в деревянную балку.`);
-  c.step('consoles',plate?'Лотки ступеней':'Консоли',plate?`${nt} одинаковых ступеней на стапеле: ${ts?`лоток из листа 4 мм по шаблону (клин ${(th/DEG+6).toFixed(1)}°, радиус ${R} мм), `:''}снизу ребро 50×5 длиной ${r1(R-90-rp)} мм, по переднему краю борт 40×4. Ребро и борт приварить к стойке по таблице «ступень: угол, высота низа»: ${tbl}${nt>5?'…':''} Разметьте углы и высоты на стойке заранее.`:`${nt} одинаковых консолей на стапеле: консоль 60×40×3 длиной ${r1(R-60-rp)} мм + поперечина 40×20 + подкос 20×20. Привариваются к стойке по таблице «ступень: угол, высота»: ${tbl}${nt>5?'…':''} Шаг по углу ${(th/DEG).toFixed(1)}°, по высоте ${r1(h)} мм.`);
-  if(land) c.step('landing','Площадка выхода',`Площадка 90° на уровне второго этажа: две балки 60×40×3 от стойки и дуга 40×40${ts?', сверху лист 4 мм':''}. Крепится к стойке сваркой и к перекрытию — 4 анкера или глухаря. Верх настила вровень с полом второго этажа.`);
-  if(rail) c.step('rail','Ограждение',`${balN} ${v.bal==='tw'?'кованых витых балясин 12×12':v.bal==='q12'?'балясин из квадрата 12':'балясин 20×20'} — по ${bn} на ступень, на торце ступени. Поручень ${v.hr==='wood'?'гнутый клееный (заказ у столяра)':SEC[v.hr].n} по винтовой линии: радиус ${R-40} мм, подъём ${r1(turn)} мм на виток, длина ~${r1(hrLen*1000)} мм. Гнуть по месту, прихватывая к балясинам.${topM?` Наверху — ограждение проёма ${v.topr} мм.`:''}`);
-  c.step('treads','Ступени',wood?`${nt} клиновидных ступеней${land?' и настил площадки':''} — ${WOOD[v.tread].n.toLowerCase()} 40 мм: внутренний радиус ${r0} мм, наружный ${R} мм, угол ${(th/DEG+6).toFixed(1)}° (с нахлёстом). Кроить из щита «валетом» — два клина на прямоугольник ${r1(R-r0+20)}×${r1(2*(R+r0)*Math.sin((th+6*DEG)/2)+40)} мм. Масло до монтажа, крепление болтами М8 снизу${plate?' через лоток':' к консоли'}, между металлом и деревом — резиновая прокладка.`:'Клиновидные ступени из рифлёного листа 4 мм — по шаблону, проварка к ребру и борту.');
+  c.step('consoles',plate?'Лотки ступеней':'Консоли',(plate?`${nt} ступеней на стапеле: ${ts?`лоток из листа 4 мм по шаблону${sq?' (у углов квадрата ступени шире — шаблон свой для каждой позиции)':` (клин ${(th/DEG+6).toFixed(1)}°, радиус ${R} мм)`}, `:''}снизу ребро 50×5, по переднему краю борт 40×4. Ребро и борт приварить к стойке по таблице «ступень: угол, высота низа»: ${tbl}${nt>5?'…':''}`:`${nt} консолей 60×40×3 + поперечина 40×20 + подкос 20×20. Привариваются к стойке по таблице «ступень: угол, высота»: ${tbl}${nt>5?'…':''}`)+(wallFix?` У стены ${wallFix} ${plural(wallFix,'ступень','ступени','ступеней')} дополнительно крепятся уголком 40×4 и 2 анкерами 10×100 — лестница перестаёт качаться.`:''));
+  if(land) c.step('landing','Площадка выхода',`Площадка 90° на уровне второго этажа: две балки 60×40×3 от стойки и ${sq?'обвязка 40×40 по квадрату':'дуга 40×40'}${ts?', сверху лист 4 мм':''}. Крепится к стойке сваркой и к перекрытию — 4 анкера или глухаря. Верх настила вровень с полом второго этажа. Выход с площадки должен смотреть туда, где пол второго этажа.`);
+  if(rail) c.step('rail','Ограждение',runs.length?(mode==='square'?`Без гибки: ${segs.length} ${plural(segs.length,'прямой наклонный поручень','прямых наклонных поручня','прямых наклонных поручней')} ${v.hr==='wood'?'из дерева 60×50':SEC[v.hr].n} по открытым сторонам квадрата — ${segs.map(b=>r1(b.len)+' мм').join(' + ')}, по высоте ${runTxt}; на углах квадрата — излом поручня и стойка 40×40, у стены конец поручня — на фланец с 2 анкерами. Высота перил от ступени гуляет ±35 мм — это нормально. Балясины ${v.bal==='tw'?'кованые витые 12×12':v.bal==='q12'?'из квадрата 12':'20×20'} с шагом ~${r1(sp)} мм, всего ${balN}.`
+    :mode==='poly'?`Без гибки: поручень из ${segs.length} прямых отрезков ${v.hr==='wood'?'дерева':SEC[v.hr].n} по ~${r1(segs.reduce((s,b)=>s+b.len,0)/Math.max(1,segs.length))} мм — от стойки к стойке на каждой ступени, рез концов ~${r1(th/DEG/2)}°. Стыки проварить и зачистить заподлицо — издалека смотрится как гнутый. Балясины ${v.bal==='tw'?'кованые витые':''} с шагом ~${r1(sp)} мм, всего ${balN}.`
+    :`${balN} ${v.bal==='tw'?'кованых витых балясин 12×12':v.bal==='q12'?'балясин из квадрата 12':'балясин 20×20'} с шагом ~${r1(sp)} мм. Поручень ${v.hr==='wood'?'гнутый клееный (заказ у столяра)':SEC[v.hr].n} по винтовой линии: радиус ${R-40} мм, подъём ${r1(turn)} мм на виток, длина ~${r1(hrLen)} мм. Гнуть по месту, прихватывая к балясинам.`)+(topM?` Наверху — ограждение проёма ${v.topr} мм.`:''):'Лестница со всех сторон у стен — ограждение не нужно.');
+  c.step('treads','Ступени',wood?`${nt} ступеней${land?' и настил площадки':''} — ${WOOD[v.tread].n.toLowerCase()} 40 мм${sq?', у углов квадрата ступени шире, раскрой по шаблонам с лотков':`: внутренний радиус ${r0} мм, наружный ${R} мм, угол ${(th/DEG+6).toFixed(1)}° (с нахлёстом), кроить из щита «валетом»`}. Масло до монтажа, крепление болтами М8 снизу${plate?' через лоток':' к консоли'}, между металлом и деревом — резиновая прокладка.`:`Ступени из рифлёного листа 4 мм — по шаблону, проварка к ребру и борту.`);
   return c;
 }
 
@@ -1513,15 +1567,21 @@ const TPL={
     S('kos','Косоуры',[['two','Два косоура'],['mono','Центральный']],'two'),S('ks','Сечение косоура',KS_OPTS,'100x50x3'),
     S('tread','Ступени',TREAD_OPTS,'oak'),S('riser','Подступенки',YN,'no',{show:v=>!!WOOD[v.tread]}),
     S('rail','Ограждение',[['yes','Да'],['none','Нет']],'yes'),S('rtype','Заполнение ограждения',RAIL_INF.slice(0,2),'bars',{show:v=>v.rail!=='none'}),S('hr','Поручень',HR_OPTS,'wood',{show:v=>v.rail!=='none'})]},
-  spiral:{name:'Винтовая лестница',cat:'Лестницы',desc:'Центральная стойка, лотки или консоли, клиновые ступени, площадка выхода',build:bSpiral,params:[
-    N('H','Высота: чистый пол — чистый пол',2200,4500,2800),N('D','Диаметр',1200,2400,1600),S('pole','Стойка',secOpts(['d108x4','d133x4','d159x4.5']),'d133x4'),
-    S('dir','Направление подъёма',[['ccw','Против часовой'],['cw','По часовой']],'ccw'),N('ang','Угол ступени (0 — авто)',0,40,0,'°'),
+  spiral:{name:'Винтовая лестница',cat:'Лестницы',desc:'Круглая или квадратная в угол, лотки или консоли, площадка выхода; перила гнутые или из прямых отрезков',build:bSpiral,params:[
+    N('H','Высота: чистый пол — чистый пол',2200,4500,2800),N('D','Диаметр (или сторона квадрата)',1200,2400,1600),
+    S('plan','Форма в плане',[['round','Круглая'],['square','Квадратная — в угол, перила прямые']],'round'),
+    S('walls','Стены рядом',[['none','Нет, стоит свободно'],['corner','В углу: стена слева и сзади'],['one','Одна стена слева']],'none'),
+    N('a0','Старт первой ступени: угол',0,345,0,'°',{step:15}),S('dir','Подъём, вид сверху',[['cw','По часовой'],['ccw','Против часовой']],'cw'),
+    S('pole','Стойка',secOpts(['d108x4','d133x4','d159x4.5']),'d133x4'),N('ang','Угол ступени (0 — авто)',0,40,0,'°'),
     S('kons','Каркас ступени',[['plate','Стальной лоток + ребро (как на фото)'],['tube','Консоль из трубы 60×40']],'plate'),
     S('tread','Ступени',TREAD_OPTS,'oak'),S('land','Площадка выхода наверху',YN,'yes'),
     S('base','Основание стойки',[['footing','Своя бетонная опора'],['slab','Анкеры в бетонный пол']],'footing'),
-    S('rail','Ограждение',YN,'yes'),S('bal','Балясины',[['tw','Кованые витые 12×12'],['q12','Квадрат 12 гладкий'],['t20','Труба 20×20']],'tw',{show:v=>v.rail==='yes'}),
+    S('rail','Ограждение',YN,'yes'),
+    S('hrt','Поручень',[['helix','Гнутый по винтовой'],['poly','Ломаный из прямых отрезков — без гибки']],'helix',{show:v=>v.rail==='yes'&&v.plan!=='square'}),
+    S('hr','Профиль поручня',v=>v&&(v.plan==='square'||v.hrt==='poly')?HR_OPTS:HR_OPTS.filter(o=>o[0]!=='40x40x2'),'d42x3',{show:v=>v.rail==='yes'}),
+    S('bal','Балясины',[['tw','Кованые витые 12×12'],['q12','Квадрат 12 гладкий'],['t20','Труба 20×20']],'tw',{show:v=>v.rail==='yes'}),
     S('bn','Балясин на ступень',[[2,'2'],[3,'3 — безопасно для детей'],[1,'1']],2,{show:v=>v.rail==='yes'}),
-    S('hr','Поручень',HR_OPTS.filter(o=>o[0]!=='40x40x2'),'d42x3',{show:v=>v.rail==='yes'}),N('topr','Ограждение проёма наверху (0 — нет)',0,8000,0)]},
+    N('topr','Ограждение проёма наверху (0 — нет)',0,8000,0)]},
   porch:{name:'Крыльцо с площадкой',cat:'Лестницы',desc:'Уличные ступени к двери, площадка перед входом',build:v=>bStair(v,'porch'),params:[
     N('H','Высота до порога',300,1800,800),N('W','Ширина',800,3000,1500),N('go','Глубина ступени (0 — авто)',0,400,0),N('land','Площадка (глубина, 0 — нет)',0,2000,1200),
     S('ks','Косоуры',KS_OPTS,'100x50x3'),S('tread','Ступени',TREAD_OPTS,'rif4'),S('riser','Подступенки',YN,'no',{show:v=>!!WOOD[v.tread]}),
@@ -1734,7 +1794,7 @@ async function askClaude(prompt,blob,onProg,signal){
   return extractJSON(text);
 }
 function aiPrompt(text,cur,hasImg){
-  const optS=p=>(typeof p.opts==='function'?[]:p.opts).map(o=>`${o[0]}=${String(o[1]).replace(/\s+/g,' ')}`).join(' | ');
+  const optS=p=>(typeof p.opts==='function'?p.opts({}):p.opts).map(o=>`${o[0]}=${String(o[1]).replace(/\s+/g,' ')}`).join(' | ');
   const tl=Object.entries(TPL).filter(([k])=>k!=='custom').map(([k,T])=>`• ${k} — ${T.name} [${T.cat}]: ${T.desc}.\n  `+T.params.map(p=>p.type==='num'?`${p.k} (${p.l}, ${p.u}) ${p.min}..${p.max}, по умолч. ${p.def}`:`${p.k} (${p.l}): ${optS(p)}`).join('; ')).join('\n');
   const secs=Object.entries(SEC).filter(([,x])=>x.buy!==false).map(([k,x])=>`${k}=${x.n}`).join('; ');
   const hw=Object.entries(HW).map(([k,x])=>`${k}=${x[0]} (${x[1]})`).join('; ');
