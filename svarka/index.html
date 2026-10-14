@@ -251,7 +251,10 @@ tr.tot td{font-family:var(--f-d);font-weight:700;font-size:17px;background:var(-
 .stepcard h3{margin:0}
 .stepcard p{margin:0;max-width:65ch}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{font-size:12px;font-weight:700;padding:3px 8px;border:1.5px solid var(--ink);background:var(--yel-soft)}
+.chip{font-size:12px;font-weight:700;padding:3px 8px;border:1.5px solid var(--ink);background:var(--yel-soft);color:var(--ink)}
+.chip.ex{cursor:pointer;font:600 12.5px var(--f-b);text-align:left;padding:6px 9px;background:var(--surface)}
+.chip.ex:hover{background:var(--yel-soft)}
+.btn[aria-pressed="true"]{background:var(--yel);color:var(--on-yel)}
 .sub{font-family:var(--f-d);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:2px 0 0}
 .steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:var(--bw) solid var(--ink);background:var(--surface)}
 .steps li+li{border-top:1px solid var(--hair)}
@@ -340,6 +343,7 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
   <nav class="drawer" id="drawer" hidden>
     <button type="button" data-nav="editor">Изделие<span>→</span></button>
     <button type="button" data-nav="orders">Заказы<span>→</span></button>
+    <button type="button" data-nav="ai">ИИ по словам<span>→</span></button>
     <button type="button" data-nav="prices">Мои цены<span>→</span></button>
     <a href="../" data-ext>Корпусник — мебель<span>↗</span></a>
   </nav>
@@ -351,6 +355,7 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
         <section class="card route" id="orderBar"></section>
         <section class="card">
           <h2 class="lbl">Изделие</h2>
+          <button class="cta w" type="button" data-act="ai" style="margin-bottom:14px;min-height:50px"><span style="font-size:17px">ИИ: чертёж по словам</span><i><svg class="i" viewBox="0 0 24 24"><path d="M12 2l2.2 6.3L20 10l-5.8 1.7L12 18l-2.2-6.3L4 10l5.8-1.7z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg></i></button>
           <div class="cats" id="cats" role="tablist" aria-label="Категории"></div>
           <div class="tpls" id="tpls"></div>
           <p class="desc" id="tplDesc"></p>
@@ -460,7 +465,7 @@ const LAB={
   gate_swing:['Распашные ворота: изготовление и монтаж','шт',7000],gate_slide:['Откатные ворота: изготовление и монтаж','шт',12000],slfound:['Фундамент под откатные ворота','шт',3000],wicket:['Калитка: изготовление и монтаж','шт',3500],drive:['Установка автоматики','шт',3000],
   stair2:['Каркас лестницы на двух косоурах','ступень',1500],stairm:['Каркас лестницы на центральном косоуре','ступень',1800],spiral:['Винтовая лестница','ступень',2200],landing:['Площадка','шт',3000],tread:['Монтаж ступени из дерева','шт',300],rail:['Ограждение / перила','п.м',1200],
   grille:['Решётка: изготовление','м²',1100],grille_inst:['Установка решётки','шт',300],bbq:['Мангал: изготовление','шт',3500],bbqroof:['Крыша над мангалом','шт',2500],
-  gh:['Теплица: изготовление и монтаж','м²',350],woodshed:['Дровница: изготовление и монтаж','шт',4000],bench:['Верстак: изготовление','шт',3500],gazebo:['Беседка: каркас и монтаж','м²',1300],paint:['Покраска металла','м²',90]};
+  gh:['Теплица: изготовление и монтаж','м²',350],woodshed:['Дровница: изготовление и монтаж','шт',4000],bench:['Верстак: изготовление','шт',3500],gazebo:['Беседка: каркас и монтаж','м²',1300],custom:['Изготовление металлоконструкции','кг',45],node:['Сварной узел: подгонка и сварка','узел',35],cmount:['Монтаж на объекте','кг',15],paint:['Покраска металла','м²',90]};
 const PRICE_DEF=Object.assign({kg_tube:52,kg_pipe:53.5,kg_angle:45,kg_channel:52,kg_strip:45.5,kg_rod:46,kg_sheet:49,bym:5,
   w_oak:5600,w_ash:3900,w_beech:2600,w_larch:2800,w_pine:2200,w_wpc:1100,woil:180,conc:3200,
   electrode:130,disc:35,flap:70,primer:190,enamel:230,p3in1:330,hammer:420,heatpaint:650,solvent:120,powder:260,bend:250,delivery:0,markup:15},
@@ -495,7 +500,7 @@ function ctx(v){
   c.L=(k,q=1)=>{if(q>0) c.lab[k]=(c.lab[k]||0)+q;};
   c.warn=s=>c.warns.push(s); c.note=s=>c.notes.push(s);
   c.dim=(view,a,b,label,off=0)=>c.dims.push({view,a,b,label:String(label),off});
-  c.step=(ph,t,d,always)=>c.phases.push({ph,t,d,always:!!always});
+  c.step=(ph,t,d,always,after)=>c.phases.push({ph,t,d,always:!!always,after:!!after});
   // столб: в бетон (dep>0) или на пластину с анкерами
   c.post=(sec,x,z,top,o={})=>{
     const dep=o.dep||0, ph=o.ph||'found';
@@ -559,14 +564,14 @@ function packSheets(pieces,Ls=2500,Ws=1250){
 
 /* ---- Расчёт ---- */
 function compute(key,vals,P){
-  const T=TPL[key], v=normVals(key,vals), c=T.build(v);
+  const T=TPL[key], v=normVals(key,vals), c=T.build(v,vals||{});
   c.v=v; c.T=T; c.key=key;
   c.step('paint','Зачистка и покраска',finTxt(v),true);
   const order=T.order||null;
   let phases=c.phases;
   // покраска — перед обшивкой/кровлей/ступенями
   const pi=phases.findIndex(s=>s.ph==='paint'); const paint=phases.splice(pi,1)[0];
-  const before=phases.findIndex(s=>['roof','clad','treads','infill','sheets','deck'].includes(s.ph));
+  const before=phases.findIndex(s=>s.after||['roof','clad','treads','infill','sheets','deck'].includes(s.ph));
   phases.splice(before<0?phases.length:before,0,paint);
   const used=new Set([...c.parts.map(p=>p.ph),...c.fx.map(f=>f.ph)]);
   c.steps=phases.filter(s=>s.d&&(s.always||used.has(s.ph)));
@@ -596,15 +601,16 @@ function compute(key,vals,P){
   Object.entries(sheetsBy).forEach(([m,pcs])=>{const SS=STEELS[m], sh=packSheets(pcs), kgm2=SS.kgm2||SS.t*7.85, kg=sh.length*3.125*kgm2; kgAll+=pcs.reduce((s,p)=>s+p.a*p.b/1e6,0)*kgm2; paintA+=pcs.reduce((s,p)=>s+2*p.a*p.b/1e6,0);
     c.sheets.push({m,SS,pcs,sh}); add('metal',`${SS.n} 1250×2500`,sh.length,'лист',kg/sh.length*P.kg_sheet);});
   // дерево
-  const woodBy={}; c.parts.filter(p=>p.kind==='box'&&WOOD[p.mat]).forEach(p=>{const d=[p.sx,p.sy,p.sz].sort((a,b)=>b-a); woodBy[p.mat]=(woodBy[p.mat]||0)+d[0]*d[1]/1e6;});
-  c.parts.filter(p=>p.kind==='poly'&&WOOD[p.mat]).forEach(p=>{woodBy[p.mat]=(woodBy[p.mat]||0)+(p.blank||p.area)/1e6;});
-  let woodA=0; Object.entries(woodBy).forEach(([m,a])=>{const q=Math.ceil(a*1.1*10)/10; woodA+=a; add('wood',`${WOOD[m].n}${m==='wpc'?'':' — мебельный щит 40 мм'}`,q,'м²',P['w_'+m]);});
+  const woodBy={}; c.parts.filter(p=>p.kind==='box'&&WOOD[p.mat]).forEach(p=>{const d=[p.sx,p.sy,p.sz].sort((a,b)=>b-a), k=p.mat+'|'+Math.round(d[2]); woodBy[k]=(woodBy[k]||0)+d[0]*d[1]/1e6;});
+  c.parts.filter(p=>p.kind==='poly'&&WOOD[p.mat]).forEach(p=>{const k=p.mat+'|'+Math.round(p.t); woodBy[k]=(woodBy[k]||0)+(p.blank||p.area)/1e6;});
+  let woodA=0; Object.entries(woodBy).forEach(([k,a])=>{const [m,t]=k.split('|'), q=Math.ceil(a*1.1*10)/10; woodA+=a; add('wood',`${WOOD[m].n}${m==='wpc'?'':` — щит / доска ${t} мм`}`,q,'м²',Math.round(P['w_'+m]*clamp(+t/40,.45,1.6)));});
   if(woodA&&!c.info.noOil) add('wood','Масло / лак для дерева (2 стороны)',Math.ceil(woodA*2*10)/10,'м²',P.woil);
   // бетон
   let vol=0; c.parts.filter(p=>p.mat==='conc').forEach(p=>{vol+=p.kind==='cyl'?Math.PI*p.d*p.d/4*p.h/1e9:p.sx*p.sy*p.sz/1e9;});
   if(vol){const q=Math.ceil(vol*1.1*100)/100; add('conc','Бетон М200 — цемент, песок, щебень',q,'м³',P.conc); c.info.concVol=q;}
   // покупные позиции
   Object.entries(c.hw).forEach(([k,q])=>{const h=HW[k]; if(!h) return; const sec=/^(pc|pn|mch|shtak|mesh|twasher|rscrew|ridge|gutter|downpipe|gbracket|pc_)/.test(k)?'clad':/plate|anchor|flange|rebar|gpin/.test(k)?'conc':'hw'; add(sec,h[0],h[1]==='м'||h[1]==='м²'?Math.ceil(q*10)/10:Math.ceil(q),h[1],P[k]);});
+  (c.extra||[]).forEach(e=>add(e.sec,e.name,e.qty,e.unit,e.price));
   // расходники
   const welds=c.fx.filter(f=>f.type==='weld').length;
   if(kgAll){add('cons','Электроды 3 мм / проволока',Math.max(1,Math.ceil(kgAll*.013*2)/2),'кг',P.electrode); add('cons','Круги отрезные 125 мм',Math.ceil(cuts/15)+1,'шт',P.disc); add('cons','Круги лепестковые',Math.ceil(welds/50)+1,'шт',P.flap);}
@@ -1331,6 +1337,81 @@ function bGazebo(v){
   return c;
 }
 
+/* ===== Своя конструкция: собирается ИИ по описанию ===== */
+function demoSpec(){
+  // пример: стеллаж в гараж 1500×500×1800, 4 полки
+  const L=1500, D=500, H=1800, m=[], st=[], sh=[];
+  [[20,20],[L-20,20],[20,D-20],[L-20,D-20]].forEach(([x,z])=>m.push({n:'Стойка',s:'40x40x2',a:[x,0,z],b:[x,H,z],st:2}));
+  [300,800,1300,1780].forEach((y,i)=>{
+    [20,D-20].forEach(z=>m.push({n:'Полка: продольная',s:'40x20x2',a:[40,y,z],b:[L-40,y,z],st:3}));
+    [20,L-20].forEach(x=>m.push({n:'Полка: поперечная',s:'40x20x2',a:[x,y,40],b:[x,y,D-40],st:3}));
+    m.push({n:'Полка: средняя',s:'20x20x2',a:[L/2,y,40],b:[L/2,y,D-40],st:3});
+    sh.push({n:'Полка (доска)',m:'pine',p:[0,y+20,0],d:[L,20,D],st:5});
+  });
+  m.push({n:'Раскос задний',s:'20x20x2',a:[40,320,20],b:[L-40,1280,20],st:4});
+  st.push({t:'Разметка и нарезка',d:'Нарежьте стойки 40×40 по 1800 мм (4 шт), продольные 40×20 по 1420 мм (8 шт), поперечные 40×20 по 420 мм (8 шт), средние 20×20 по 420 мм (4 шт).'},
+    {t:'Боковины',d:'Сварите две боковые рамы: по 2 стойки и 4 поперечины на высотах 300, 800, 1300 и 1780 мм. Проверьте диагонали.'},
+    {t:'Полки',d:'Соедините боковины продольными трубами 40×20, по центру полок — перемычки 20×20. Варите крест-накрест, чтобы не повело.'},
+    {t:'Раскос',d:'Сзади — раскос 20×20 от нижней полки к верхней: стеллаж не будет «складываться».'},
+    {t:'Полки из доски',d:'Доска или фанера 18–20 мм на саморезы снизу через трубы.',after:true});
+  return {name:'Стеллаж в гараж 1500×500×1800 (пример)',summary:'Пример своей конструкции. Нажмите «ИИ по словам» и опишите, что нужно сварить.',members:m,sheets:sh,steps:st};
+}
+const PANEL_MATS=['pn8','pn20','mch','pc4','pc6','pc8','pc10','pcm4','mesh','glass','perfo'];
+function bCustom(v,raw){
+  const sp=raw&&raw.spec&&typeof raw.spec==='object'?raw.spec:demoSpec(), c=ctx(v);
+  c.title=String(sp.name||'Своя конструкция').slice(0,80); c.info.ai=String(sp.summary||'').slice(0,600); c.extra=[];
+  const steps=(Array.isArray(sp.steps)&&sp.steps.length?sp.steps:[{t:'Сборка',d:'Сварите каркас по чертежу: прихватки, проверка диагоналей, проварка.'}]).slice(0,12);
+  const ph=i=>'p'+clamp(Math.round(+i||1),1,steps.length);
+  const num=x=>{x=+x; return isFinite(x)?clamp(Math.round(x),-60000,60000):0;};
+  const pt=a=>Array.isArray(a)&&a.length>=3?[num(a[0]),num(a[1]),num(a[2])]:null;
+  const txt=(s,n=60)=>String(s==null?'':s).slice(0,n);
+  // каркас
+  const mem=[];
+  (Array.isArray(sp.members)?sp.members:[]).slice(0,400).forEach(m=>{
+    if(!m) return; const s=SEC[m.s]&&SEC[m.s].buy!==false?m.s:(SEC[m.s]?m.s:'40x40x2'), o={name:txt(m.n||SEC[s].n),ph:ph(m.st)};
+    const up=pt(m.up); if(up&&vlen(up)>0) o.up=vnorm(up); if(m.cut) o.cut=txt(m.cut,10);
+    if(Array.isArray(m.pts)&&m.pts.length>=3){const pts=m.pts.map(pt).filter(Boolean); if(pts.length>=3) mem.push(c.arc(s,pts,o)); return;}
+    const a=pt(m.a), b=pt(m.b); if(!a||!b||vlen(vsub(b,a))<5) return; mem.push(c.bar(s,a,b,o));
+  });
+  // сварные узлы: конец детали касается другой детали
+  const segOf=p=>p.kind==='bar'?[[p.p1,p.p2]]:p.pts.slice(1).map((q,i)=>[p.pts[i],q]);
+  const dSeg=(e,[a,b])=>{const ab=vsub(b,a), t=clamp(vdot(vsub(e,a),ab)/(vdot(ab,ab)||1),0,1); return vlen(vsub(e,vadd(a,vmul(ab,t))));};
+  const rad=p=>Math.max(SEC[p.sec].h,SEC[p.sec].w)/2;
+  let nodes=0;
+  mem.forEach((p,i)=>{const ends=p.kind==='bar'?[p.p1,p.p2]:[p.pts[0],p.pts[p.pts.length-1]];
+    ends.forEach(e=>{if(mem.some((q,j)=>j!==i&&segOf(q).some(sg=>dSeg(e,sg)<=rad(p)+rad(q)+12))){c.W(p.ph,e,2); nodes++;}});});
+  // листы, дерево, бетон
+  let kg=mem.reduce((s,p)=>s+(SEC[p.sec].buy===false?0:p.len/1000*SEC[p.sec].kg),0);
+  (Array.isArray(sp.sheets)?sp.sheets:[]).slice(0,120).forEach(s=>{
+    if(!s) return; const p=pt(s.p), d=pt(s.d); if(!p||!d) return; const m=STEELS[s.m]||WOOD[s.m]||s.m==='conc'?s.m:'s2';
+    const dd=d.map(x=>Math.max(1,Math.abs(x))); c.box(m,p[0],p[1],p[2],dd[0],dd[1],dd[2],{ph:ph(s.st),name:txt(s.n||'Лист')});
+    if(STEELS[m]){const t=Math.min(...dd); kg+=dd[0]*dd[1]*dd[2]/t/1e6*(STEELS[m].kgm2||t*7.85); c.W(ph(s.st),[p[0],p[1],p[2]],2); c.W(ph(s.st),[p[0]+dd[0],p[1]+dd[1],p[2]+dd[2]],2);}
+  });
+  (Array.isArray(sp.conc)?sp.conc:[]).slice(0,60).forEach(f=>{if(!f||!Array.isArray(f.p)) return; const dep=clamp(+f.dep||800,200,2500), d=clamp(+f.d||250,100,1200); c.cyl('conc',num(f.p[0]),num(f.p[1]),-dep,dep,d,{ph:ph(f.st),name:'Бетонная опора'}); c.L('footing',1);});
+  // обшивка
+  const area={};
+  (Array.isArray(sp.panels)?sp.panels:[]).slice(0,80).forEach(f=>{if(!f||!Array.isArray(f.pts)) return; const pts=f.pts.map(pt).filter(Boolean); if(pts.length<3) return; const m=PANEL_MATS.includes(f.m)?f.m:'pn8';
+    const fc=c.face(m,pts,{ph:ph(f.st),name:txt(f.n||'Обшивка')}); area[m]=(area[m]||0)+fc.area/1e6;});
+  Object.entries(area).forEach(([m,a])=>{
+    if(/^pc\d/.test(m)){c.H(m+'_6',Math.ceil(a*1.15/12.6)); c.H('twasher',Math.ceil(a*7)); c.H('pc_join',Math.ceil(a/1.5));}
+    else if(m==='pcm4'){c.H('pcm4',Math.ceil(a*1.15/6.25)); c.H('twasher',Math.ceil(a*7));}
+    else if(m==='pn8'||m==='pn20'||m==='mch'){c.H(m,a*1.15); c.H('rscrew',Math.ceil(a*8));}
+    else if(m==='mesh') c.H('mesh3d',a); else if(m==='glass'){c.H('glass',a); c.H('gclamp',Math.ceil(a*4));} else if(m==='perfo') c.H('perfo',a);
+  });
+  // крепёж и фурнитура
+  (Array.isArray(sp.fx)?sp.fx:[]).slice(0,300).forEach(f=>{if(!f) return; const p=pt(f.p); if(!p||!FX[f.t]||f.t==='weld') return; c.mark(f.t,ph(f.st),p,HW[f.k]?f.k:null);});
+  (Array.isArray(sp.hw)?sp.hw:[]).slice(0,40).forEach(h=>{if(!h) return; const q=Math.max(0,+h.q||0); if(!q) return;
+    if(HW[h.k]) c.H(h.k,q); else if(h.n) c.extra.push({sec:'hw',name:txt(h.n,70)+' — цена ИИ, проверьте',qty:Math.ceil(q*10)/10,unit:txt(h.u||'шт',6),price:Math.max(0,+h.p||0)});});
+  // размеры, предупреждения
+  (Array.isArray(sp.dims)?sp.dims:[]).slice(0,12).forEach(d=>{if(!d) return; const a=pt(d.a), b=pt(d.b); if(a&&b&&['front','side','top'].includes(d.v)) c.dim(d.v,a,b,txt(d.l||Math.round(vlen(vsub(b,a))),20),-1);});
+  (Array.isArray(sp.warn)?sp.warn:[]).slice(0,5).forEach(w=>c.warn(txt(w,300)));
+  if(!mem.length) c.warn('ИИ не прислал ни одной детали каркаса — попробуйте описать подробнее.');
+  // работа: по весу металла + сварные узлы (+ монтаж)
+  kg=Math.round(kg); c.L('custom',kg); c.L('node',nodes); if(sp.mount) c.L('cmount',kg);
+  steps.forEach((s,i)=>c.step('p'+(i+1),txt(s.t||('Шаг '+(i+1)),70),txt(s.d||'',900)||'По чертежу.',true,!!s.after));
+  return c;
+}
+
 /* ===== Реестр шаблонов ===== */
 const YN=[['yes','Да'],['no','Нет']];
 const ROOF_OPTS=Object.entries(ROOFS).map(([k,x])=>[k,x.n]);
@@ -1368,7 +1449,8 @@ const ICON={
   greenhouse:'M2 20V12a10 8 0 0 1 20 0v8M7 20V8M12 20V4M17 20V8M2 20h20',
   woodshed:'M2 8l20-3M4 7.7V20M20 5.3V20M7 17a2 2 0 1 0 0.1 0M12 17a2 2 0 1 0 0.1 0M17 17a2 2 0 1 0 0.1 0M9 13.5a2 2 0 1 0 0.1 0M14.5 13.5a2 2 0 1 0 0.1 0',
   bench:'M2 9h20M4 9v11M20 9v11M4 16h16M7 4v5M17 4v5M7 4h10',
-  gazebo:'M2 10l10-7 10 7M4 10v10M20 10v10M2 10h20M4 16h16'};
+  gazebo:'M2 10l10-7 10 7M4 10v10M20 10v10M2 10h20M4 16h16',
+  custom:'M4 20V8l8-5 8 5v12M4 13h16M9 20v-7M15 20v-7M12 3v5'};
 
 const TPL={
   canopy1:{name:'Навес односкатный',cat:'Навесы',desc:'Для авто, террасы, над входом. На столбах или примыкание к стене',build:bCanopy1,params:[
@@ -1470,9 +1552,10 @@ const TPL={
   gazebo:{name:'Беседка',cat:'Двор',desc:'Четырёхскатный шатёр, парапет, вход',build:bGazebo,defMc:'brown',params:[
     N('L','Длина',2000,6000,3000),N('B','Ширина',2000,6000,3000),N('H','Высота столбов',2100,2800,2300),N('ang','Уклон',15,40,25,'°'),N('ov','Свес',0,600,300),
     ...roofP('mch'),S('rs','Стропила',RAF_OPTS,'60x40x2'),S('ps','Столбы',POST_SECS,'80x80x3'),
-    S('par','Парапет',[['bars','Балясины 20×20'],['horiz','Ригели'],['none','Без парапета']],'bars'),S('found','Опоры',FOUND,'conc')]}
+    S('par','Парапет',[['bars','Балясины 20×20'],['horiz','Ригели'],['none','Без парапета']],'bars'),S('found','Опоры',FOUND,'conc')]},
+  custom:{name:'Своя конструкция',cat:'Свои',desc:'Собирается ИИ по описанию словами — любая рама, стеллаж, каркас, кронштейн',build:bCustom,params:[]}
 };
-const CATS=['Навесы','Заборы и ворота','Лестницы','Ограждения','Двор'];
+const CATS=['Навесы','Заборы и ворота','Лестницы','Ограждения','Двор','Свои'];
 
 </script>
 <script>
@@ -1507,7 +1590,7 @@ if(!TPL[state.tpl]) state.tpl='canopy1';
 if(!CATS.includes(state.cat)) state.cat=TPL[state.tpl].cat;
 let prices=Object.assign({},PRICE_DEF,LS.get('svar1.prices',{}));
 let M=null, step=1, noClad=false, showFx=false, dirty3D=true, resetCam=true;
-const save=()=>LS.set('svar1.state',{tpl:state.tpl,cat:state.cat,vals:state.vals,tab:state.tab,screen:state.screen,orderId:state.orderId,editItem:state.editItem,openOrder:state.openOrder,filter:state.filter,rot3d:state.rot3d});
+const save=()=>LS.set('svar1.state',{tpl:state.tpl,cat:state.cat,vals:state.vals,tab:state.tab,screen:state.screen,orderId:state.orderId,editItem:state.editItem,openOrder:state.openOrder,filter:state.filter,rot3d:state.rot3d,aiText:state.aiText,aiLast:state.aiLast});
 const tv=()=>state.vals[state.tpl]||(state.vals[state.tpl]={});
 
 /* ---------- Хранилище ---------- */
@@ -1554,6 +1637,7 @@ function go(scr){
 $('#bMenu').onclick=()=>{const d=$('#drawer'); d.hidden=!d.hidden; $('#bMenu').setAttribute('aria-expanded',String(!d.hidden));};
 $('#bOrders').onclick=()=>state.orderId&&Store.order(state.orderId)?(state.openOrder=state.orderId,go('order')):go('orders');
 $('#drawer').onclick=e=>{const b=e.target.closest('[data-nav]'); if(!b) return; const n=b.dataset.nav;
+  if(n==='ai'){openAI(); return;}
   if(n==='prices'){go('editor'); state.tab='est'; renderTab(); const d=$('details.prices'); if(d){d.open=true; d.scrollIntoView({block:'start'});} return;}
   go(n);};
 
@@ -1591,7 +1675,7 @@ function renderTpls(){
   $('#tpls').innerHTML=Object.entries(TPL).filter(([,T])=>T.cat===state.cat).map(([k,T])=>`<button class="tpl" type="button" data-k="${k}" aria-pressed="${k===state.tpl}" title="${esc(T.desc)}">${tplIcon(k)}<span>${T.name}</span></button>`).join('');
 }
 $('#tpls').onclick=e=>{const b=e.target.closest('.tpl'); if(!b) return; const k=b.dataset.k; if(k===state.tpl) return;
-  state.tpl=k; state.editItem=null; step=1; resetCam=true; renderTpls(); renderParams(); update();};
+  state.tpl=k; state.editItem=null; state.aiLast=false; step=1; resetCam=true; renderTpls(); renderParams(); update();};
 
 /* ---------- Параметры ---------- */
 function renderParams(){
@@ -1618,6 +1702,151 @@ $('#params').addEventListener('change',e=>{
   clearTimeout(timer); update();
 });
 
+/* ---------- ИИ: чертёж по словам ---------- */
+let aiRes=null, aiCtl=null, aiImg=null;
+const IC_AI='<svg class="i" viewBox="0 0 24 24"><path d="M12 2l2.2 6.3L20 10l-5.8 1.7L12 18l-2.2-6.3L4 10l5.8-1.7z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>';
+const IC_MIC='<svg class="i" viewBox="0 0 24 24"><path d="M9 4h6v10H9z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg>';
+const IC_CLIP='<svg class="i" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></svg>';
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const aiKey=()=>LS.get('svar1.apikey','')||LS.get('korp3.apikey','');
+const AI_EX=['Навес к стене дома 6×4 м, поликарбонат бронза 8 мм, водосток','Стеллаж в гараж 2000×600×2000, 5 полок, профиль 40×40','Откатные ворота 4 м, штакетник шоколад, с автоматикой','Подставка под бочку 1000 л на высоте 2 м','Стол лофт 1600×800, П-образные ноги 80×40, столешница дуб','Лестница на второй этаж 3 м, поворот налево, ступени дуб'];
+const AI_ERR={not_granted:'Доступ к Claude не разрешён для этой страницы.',sampling_disabled:'Claude недоступен для этого аккаунта.',rate_limited:'Слишком много запросов или закончился лимит на ключе. Попробуйте позже.',refused:'ИИ не стал это строить. Переформулируйте.',invalid_json:'Ответ получился неполным. Нажмите «Построить» ещё раз.',empty_completion:'Пустой ответ. Попробуйте ещё раз.',no_key:'Вставьте ключ Claude API — без него ИИ в приложении не работает.',bad_key:'Ключ API не подошёл. Проверьте его на console.anthropic.com.',overloaded:'Сервер ИИ перегружен. Попробуйте через минуту.',network:'Нет связи с сервером ИИ. Проверьте интернет.'};
+async function sampleFn(){try{return window.claude&&typeof window.claude.use==='function'&&window.self!==window.top?await window.claude.use('sample'):null;}catch(e){return null;}}
+function extractJSON(text){const a=text.indexOf('{'), b=text.lastIndexOf('}'); if(a<0||b<=a) throw {code:'invalid_json'}; try{return JSON.parse(text.slice(a,b+1));}catch(e){throw {code:'invalid_json'};}}
+async function askClaude(prompt,blob,onProg,signal){
+  const sm=await sampleFn();
+  if(sm) return await sm.json(prompt,{images:blob?[blob]:undefined,signal,onText:({text})=>onProg(text.length),cache:false,modelTier:'complex'});
+  const key=aiKey(); if(!key) throw {code:'no_key'};
+  const content=[];
+  if(blob){const b64=await new Promise(ok=>{const r=new FileReader(); r.onload=()=>ok(String(r.result).split(',')[1]); r.readAsDataURL(blob);}); content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}});}
+  content.push({type:'text',text:prompt});
+  let res;
+  try{res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal,headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-opus-5-5',max_tokens:16000,stream:true,messages:[{role:'user',content}]})});}catch(e){if(e&&e.name==='AbortError') throw e; throw {code:'network'};}
+  if(!res.ok){const t=await res.text().catch(()=>''); throw {code:res.status===401?'bad_key':res.status===429?'rate_limited':res.status===529?'overloaded':'upstream_error',message:t.slice(0,160)};}
+  const rd=res.body.getReader(), dec=new TextDecoder(); let buf='', text='';
+  for(;;){const {done,value}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true}); let i;
+    while((i=buf.indexOf('\n'))>=0){const line=buf.slice(0,i).trim(); buf=buf.slice(i+1); if(!line.startsWith('data:')) continue;
+      let ev; try{ev=JSON.parse(line.slice(5));}catch(e){continue;}
+      if(ev.type==='content_block_delta'&&ev.delta&&ev.delta.type==='text_delta'){text+=ev.delta.text; onProg(text.length);}
+      else if(ev.type==='error') throw {code:ev.error&&ev.error.type==='overloaded_error'?'overloaded':'upstream_error',message:ev.error&&ev.error.message};}}
+  if(!text.trim()) throw {code:'empty_completion'};
+  return extractJSON(text);
+}
+function aiPrompt(text,cur,hasImg){
+  const optS=p=>(typeof p.opts==='function'?[]:p.opts).map(o=>`${o[0]}=${String(o[1]).replace(/\s+/g,' ')}`).join(' | ');
+  const tl=Object.entries(TPL).filter(([k])=>k!=='custom').map(([k,T])=>`• ${k} — ${T.name} [${T.cat}]: ${T.desc}.\n  `+T.params.map(p=>p.type==='num'?`${p.k} (${p.l}, ${p.u}) ${p.min}..${p.max}, по умолч. ${p.def}`:`${p.k} (${p.l}): ${optS(p)}`).join('; ')).join('\n');
+  const secs=Object.entries(SEC).filter(([,x])=>x.buy!==false).map(([k,x])=>`${k}=${x.n}`).join('; ');
+  const hw=Object.entries(HW).map(([k,x])=>`${k}=${x[0]} (${x[1]})`).join('; ');
+  return `Ты — опытный сварщик-конструктор и технолог. Мастер описал словами металлоконструкцию, которую нужно изготовить. Переведи описание в модель для приложения «Сварщик», которое по ней построит 3D, чертёж, нарезку металла, шаги сварки и смету. Ответь ТОЛЬКО одним JSON-объектом, без текста вокруг.
+
+ОПИСАНИЕ МАСТЕРА: «${text||'(см. эскиз)'}»
+${hasImg?'К описанию приложен эскиз или фото — используй его для формы и размеров.\n':''}${cur?`ТЕКУЩЕЕ ИЗДЕЛИЕ — мастер просит его ИЗМЕНИТЬ (сохрани всё, о чём не сказано, и верни изделие целиком в том же формате):\n${cur}\n`:''}
+ВАРИАНТ А — ГОТОВЫЙ ШАБЛОН. Используй, если изделие по сути совпадает с шаблоном (навес, забор, ворота, калитка, лестница, ограждение, решётка, мангал, теплица, дровница, верстак, беседка). Заполни ВСЕ параметры, о которых сказано или которые следуют из описания; остальные — по умолчанию.
+${tl}
+Общие для всех: mc — цвет металла: ${Object.entries(MCOL).map(([k,x])=>`${k}=${x.n}`).join(' | ')}; fin — покраска: ${FIN_OPTS.map(o=>`${o[0]}=${o[1]}`).join(' | ')}.
+Формат: {"mode":"tpl","tpl":"ключ","vals":{"параметр":значение,...},"name":"название по-русски","summary":"2–3 предложения: что построил","assumptions":["допущение",...],"questions":["вопрос",...]}
+
+ВАРИАНТ Б — СВОЯ КОНСТРУКЦИЯ. Если ни один шаблон не передаёт форму (стеллаж, стол, рама, подставка под бак, кронштейн, тележка, козлы, мебель лофт, ограждение сложной формы, каркас будки и т. п.) — собери её из деталей:
+{"mode":"custom","name":"…","summary":"…","assumptions":[…],"questions":[…],"mc":"black","fin":"enamel","mount":true|false,
+ "members":[{"n":"Стойка","s":"40x40x2","a":[x,y,z],"b":[x,y,z],"st":1}],
+ "sheets":[{"n":"Полка","m":"s2","p":[x,y,z],"d":[dx,dy,dz],"st":2}],
+ "panels":[{"n":"Обшивка","m":"pn8","pts":[[x,y,z],[x,y,z],[x,y,z],[x,y,z]],"st":3}],
+ "conc":[{"p":[x,z],"d":250,"dep":800,"st":1}],
+ "fx":[{"t":"anchor","p":[x,y,z],"st":1,"k":"anchor12"}],
+ "hw":[{"k":"ghinge","q":2},{"n":"Колесо поворотное Ø100","q":4,"u":"шт","p":180}],
+ "steps":[{"t":"Заголовок шага","d":"Что делать: размеры, порядок, на что смотреть","after":false}],
+ "dims":[{"v":"front","a":[x,y,z],"b":[x,y,z],"l":"1500"}],
+ "warn":["предупреждение о прочности или безопасности"]}
+Правила для варианта Б:
+— Координаты в целых мм. y — вверх (пол или земля y=0), x — длина слева направо, z — глубина к зрителю. Изделие начинается от x=0, z=0.
+— members — ОСЕВЫЕ линии труб, уголков, полос, прутков. s — сечение строго из списка. Длина детали = длина реза: перемычку между стойками 40×40 с осями x=20 и x=1480 ставь от x=40 до x=1460. Стыкующиеся детали должны касаться торцом — так программа найдёт сварные узлы. Детали не должны проходить друг сквозь друга.
+— У горизонтальной трубы большая сторона сечения вертикальна (60×40 — 60 по высоте); чтобы положить плашмя — добавь "up":[0,0,1]. У вертикальной — большая сторона по z. Угол реза, если не 90°, — "cut":"45°".
+— Гнутые детали (дуги, кольца) — вместо a/b "pts": [[x,y,z],…] от 6 до 30 точек.
+— sheets — листы и деревянные детали (параллелепипед от угла p размерами d): s2|s3|s4|s10|rif4 — сталь; oak|ash|beech|larch|pine|wpc — дерево; conc — бетон.
+— panels — обшивка многоугольником из 3–4 точек: pn8 (профнастил стеновой), pn20 (кровельный), mch (металлочерепица), pc4|pc6|pc8|pc10 (сотовый поликарбонат), pcm4 (монолитный), mesh (сетка), glass (стекло), perfo (перфопанель).
+— conc — бетонные опоры под столбы: p=[x,z], d — диаметр, dep — глубина.
+— fx — анкеры, болты, петли, саморезы, отверстия, ролики: t = anchor|bolt|hinge|screw|hole|roller; k — ключ фурнитуры из списка (тогда она попадёт в смету).
+— hw — покупная фурнитура: по ключу k из списка или своя позиция с названием n, количеством q, единицей u и примерной ценой p в гривнах.
+— steps — 3–8 шагов работы по порядку: разметка и нарезка, сборка узлов на столе, сварка, монтаж. Покраску не пиши — программа добавит её сама. "after":true — шаг после покраски (обшивка, дерево, фурнитура). У каждой детали st — номер шага, на котором её ставят.
+— dims — 2–4 главных размера: v = front (вид спереди, x-y) | side (вид сбоку, z-y) | top (вид сверху, x-z).
+— "mount":true — если изделие монтируется на объекте (бетон, анкеры, крепление к стене).
+— Не больше 300 деталей members. Конструкция должна быть реальной и прочной: раскосы и косынки где нужно, сечения под нагрузку. Ориентиры: стеллаж — стойки 40×40×2, полки 40×20×2, средние перемычки 20×20; стол — ноги 60×60×2 или 80×40×3, царга 40×20×2; подставка под бак 1000 л (≈1 т) — стойки 80×80×3 или 100×100×4 с раскосами, обвязка 80×40×3 + лист; лёгкие рамы — 20×20, 25×25, 40×20. Под тяжёлую нагрузку добавь предупреждение в warn.
+Допустимые сечения (ключ=название): ${secs}
+Фурнитура (ключ=название, единица): ${hw}
+
+ОБЩЕЕ:
+— Если размер не назван — возьми стандартный и запиши в assumptions. В questions — до 3 уточнений, которые сильно влияют на цену или прочность (не спрашивай то, что уже сказано).
+— Все тексты — по-русски, коротко и по делу, как мастер мастеру.
+— Только JSON, без markdown.`;
+}
+function aiCurrent(){
+  if(state.tpl==='custom'){const sp=tv().spec||demoSpec(); return JSON.stringify(Object.assign({mode:'custom'},sp,{mc:M.v.mc,fin:M.v.fin}));}
+  return JSON.stringify({mode:'tpl',tpl:state.tpl,name:M.T.name,vals:normVals(state.tpl,tv())});
+}
+async function openAI(){
+  if(state.screen!=='editor') go('editor');
+  const sm=await sampleFn(), key=aiKey(); aiImg=null;
+  sheet(`<h2>ИИ по словам</h2>
+    <p class="note" style="margin:0">Опишите, что нужно сварить: размеры, профиль, материал, где стоит. ИИ возьмёт подходящий шаблон или соберёт свою конструкцию по деталям — дальше 3D, чертёж, нарезка и смета как обычно. Надиктовать можно микрофоном на клавиатуре.</p>
+    <div class="f"><label for="aiT">Описание</label><div class="in"><textarea id="aiT" rows="5" placeholder="Например: навес для машины 6 на 4 метра к стене дома, поликарбонат бронза 8 мм, с водостоком">${esc(state.aiText||'')}</textarea></div></div>
+    <div class="row">${SR?`<button class="btn" type="button" id="aiMic">${IC_MIC}Надиктовать</button>`:''}<label class="btn" style="cursor:pointer" for="aiFile">${IC_CLIP}Эскиз или фото</label><input type="file" id="aiFile" accept="image/*" hidden></div>
+    <p class="note" id="aiImgN" hidden></p>
+    <p class="sub" style="margin:0">Примеры</p>
+    <div class="chips">${AI_EX.map(x=>`<button class="chip ex" type="button" data-ex="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+    <label class="chk"><input type="checkbox" id="aiCur"${state.aiLast?' checked':''}> Изменить текущее «${esc(M.title||M.T.name)}», а не новое изделие</label>
+    ${!sm?`<div class="f"><label for="aiK">Ключ Claude API${key?' — сохранён':''}</label><div class="in"><input id="aiK" type="password" autocomplete="off" placeholder="${key?'•••••••• — можно вставить новый':'sk-ant-…'}"></div><p class="note" style="margin-top:4px">ИИ работает через ваш ключ с console.anthropic.com — тот же, что в Корпуснике. Ключ хранится только на этом телефоне.</p></div>`:''}
+    <p class="note" id="aiStat" aria-live="polite"></p>
+    <div id="aiRes"></div>
+    <button class="cta" type="button" id="aiGo"><span>Построить</span><i>${IC_AI}</i></button>`,
+  c=>{
+    const ta=c.querySelector('#aiT'), st=c.querySelector('#aiStat'), go=c.querySelector('#aiGo');
+    c.querySelector('.chips').onclick=e=>{const b=e.target.closest('[data-ex]'); if(!b) return; ta.value=b.dataset.ex; c.querySelector('#aiCur').checked=false; ta.focus();};
+    c.querySelector('#aiFile').onchange=async e=>{const f=e.target.files&&e.target.files[0]; if(!f) return; try{aiImg=await prepImage(f); const n=c.querySelector('#aiImgN'); n.hidden=false; n.textContent='Эскиз прикреплён: '+f.name;}catch(err){toast('Не удалось открыть картинку');}};
+    const mic=c.querySelector('#aiMic');
+    if(mic) mic.onclick=()=>{try{const r=new SR(), base=ta.value.trim(); r.lang='ru-RU'; r.interimResults=true; r.continuous=false;
+      r.onresult=e=>{let t=''; for(const x of e.results) t+=x[0].transcript; ta.value=(base?base+' ':'')+t;}; r.onerror=()=>toast('Микрофон недоступен — используйте микрофон на клавиатуре'); r.onend=()=>mic.removeAttribute('aria-pressed');
+      mic.setAttribute('aria-pressed','true'); r.start();}catch(e){toast('Микрофон недоступен — используйте микрофон на клавиатуре');}};
+    go.onclick=async()=>{
+      const text=ta.value.trim(); if(!text&&!aiImg){st.textContent='Опишите изделие хотя бы одной фразой.'; ta.focus(); return;}
+      state.aiText=text; save(); const k=c.querySelector('#aiK'); if(k&&k.value.trim()) LS.set('svar1.apikey',k.value.trim());
+      const refine=c.querySelector('#aiCur').checked;
+      go.disabled=true; st.textContent='Думаю над конструкцией… обычно 20–90 секунд.'; c.querySelector('#aiRes').innerHTML='';
+      aiCtl=new AbortController();
+      try{
+        const res=await askClaude(aiPrompt(text,refine?aiCurrent():null,!!aiImg),aiImg,n=>{st.textContent=`Собираю модель… ${n} символов`;},aiCtl.signal);
+        const ok=res&&((res.mode==='tpl'&&TPL[res.tpl]&&res.tpl!=='custom')||(res.mode==='custom'&&Array.isArray(res.members)&&res.members.length));
+        if(!ok) throw {code:'invalid_json'};
+        aiRes=Object.assign(res,{refine}); st.textContent=''; showAIRes(c);
+      }catch(e){if(e&&e.name==='AbortError') return; st.textContent=AI_ERR[e&&e.code]||('Не получилось. '+(e&&e.message?String(e.message).slice(0,140):'Попробуйте ещё раз.'));}
+      finally{go.disabled=false;}
+    };
+  });
+}
+async function prepImage(file){
+  const url=URL.createObjectURL(file);
+  const img=await new Promise((ok,no)=>{const i=new Image(); i.onload=()=>ok(i); i.onerror=no; i.src=url;});
+  const k=Math.min(1,1280/Math.max(img.naturalWidth,img.naturalHeight)), cv=document.createElement('canvas'); cv.width=Math.round(img.naturalWidth*k); cv.height=Math.round(img.naturalHeight*k);
+  cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height); URL.revokeObjectURL(url);
+  return await new Promise(ok=>cv.toBlob(ok,'image/jpeg',.85));
+}
+function showAIRes(c){
+  const r=aiRes, isT=r.mode==='tpl', T=isT?TPL[r.tpl]:TPL.custom, arr=x=>Array.isArray(x)?x.slice(0,6):[];
+  c.querySelector('#aiRes').innerHTML=`<div class="stepcard"><p class="sub">Понял так</p><h3>${esc(r.name||T.name)}</h3><p>${esc(r.summary||'')}</p>
+    ${arr(r.assumptions).length?`<p class="sub">Допущения</p><ul style="margin:0;padding-left:18px">${arr(r.assumptions).map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:''}
+    ${arr(r.questions).length?`<p class="sub">Уточните у клиента</p><ul style="margin:0;padding-left:18px">${arr(r.questions).map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:''}
+    <div class="chips"><span class="chip" style="background:var(--yel)">${isT?'Шаблон: '+esc(T.name):`Своя конструкция: ${r.members.length} ${plural(r.members.length,'деталь','детали','деталей')}`}</span></div></div>
+    <button class="cta" type="button" id="aiApply" style="margin-top:12px"><span>Открыть в конструкторе</span><i>${IC.refresh}</i></button>`;
+  c.querySelector('#aiGo span').textContent='Другой вариант';
+  c.querySelector('#aiApply').onclick=()=>{
+    if(isT){const k=r.tpl; state.tpl=k; state.vals[k]=Object.assign({},r.vals||{}); state.cat=T.cat;}
+    else{const spec=JSON.parse(JSON.stringify(r)); ['mode','refine','mc','fin'].forEach(x=>delete spec[x]); state.tpl='custom'; state.vals.custom={spec}; if(r.mc) state.vals.custom.mc=r.mc; if(r.fin) state.vals.custom.fin=r.fin; state.cat='Свои';}
+    if(!r.refine) state.editItem=null;
+    state.aiLast=true; step=1; resetCam=true; closeSheet(); renderCats(); renderTpls(); renderParams(); update(); go('editor'); window.scrollTo({top:0,behavior:'smooth'});
+    toast(r.refine?'Изделие изменено — проверьте размеры':'Готово — проверьте размеры и смету');
+  };
+}
+
 /* ---------- Пересчёт ---------- */
 function descr(m){
   const v=m.v, a=[];
@@ -1632,7 +1861,7 @@ function update(){
   M=compute(state.tpl,tv(),prices);
   step=clamp(step,1,M.steps.length);
   const [a,b,c]=M.size.map(Math.round);
-  $('#hTitle').textContent=M.T.name;
+  $('#hTitle').textContent=M.title||M.T.name; $('#tplDesc').textContent=M.info.ai||M.T.desc;
   $('#hSub').textContent=`${a}×${c}×${b} мм · ${fmt(M.kg)} кг металла · ${descr(M)}`;
   renderWarns(); save(); renderSum(); renderOrderBar(); renderCTA(); dirty3D=true; if(state.screen==='editor') renderTab();
 }
@@ -1941,7 +2170,7 @@ function sheetSVG(sh){
   return o+'</svg>';
 }
 function cutText(){
-  const L=[`Нарезка — ${M.T.name}`,''];
+  const L=[`Нарезка — ${M.title||M.T.name}`,''];
   M.metal.forEach(m=>{L.push(m.byM?`${m.S.n}: в размер ${fmt(m.buyLen)} м`:`${m.S.n}: ${m.bars.length} ${plural(m.bars.length,'хлыст','хлыста','хлыстов')} по 6 м`); m.list.forEach(c=>L.push(`  • ${c.name} — ${c.L} мм × ${c.q}${c.cut?` (рез ${c.cut})`:''}${c.sp?' — сращивать':''}`)); L.push('');});
   M.sheets.forEach(s=>{L.push(`${s.SS.n}: ${s.sh.length} ${plural(s.sh.length,'лист','листа','листов')} 1250×2500`); const g={}; s.pcs.forEach(p=>{const k=p.n+' '+p.a+'×'+p.b; g[k]=(g[k]||0)+1;}); Object.entries(g).forEach(([k,q])=>L.push(`  • ${k} мм × ${q}`)); L.push('');});
   return L.join('\n');
@@ -2017,7 +2246,7 @@ function sizeTxt(m){
   if(k==='grille') return `${v.W}×${v.H} мм`;
   return `${a}×${c}×${b} мм`;
 }
-function itemFromCurrent(){return {tpl:state.tpl,vals:clone(tv()),name:M.T.name,size:sizeTxt(M),mat:descr(M)};}
+function itemFromCurrent(){return {tpl:state.tpl,vals:clone(tv()),name:M.title||M.T.name,size:sizeTxt(M),mat:descr(M)};}
 function addToOrder(o){
   const ed=state.editItem&&o.items.find(i=>i.id===state.editItem);
   const it=Object.assign(ed||{id:uid('i')},itemFromCurrent()); if(!ed) o.items.push(it);
@@ -2069,7 +2298,7 @@ $('#scrOrder').addEventListener('click',e=>{
 
 /* ---------- Нижний лист ---------- */
 function sheet(html,bind){$('#sheetC').innerHTML=`<button class="ib sheetx" type="button" data-close aria-label="Закрыть">✕</button>`+html; $('#sheet').hidden=false; bind&&bind($('#sheetC')); const f=$('#sheetC').querySelector('input,textarea')||$('#sheetC').querySelector('.sheetx'); if(f) f.focus();}
-function closeSheet(){$('#sheet').hidden=true; $('#sheetC').innerHTML='';}
+function closeSheet(){$('#sheet').hidden=true; $('#sheetC').innerHTML=''; if(typeof aiCtl!=='undefined'&&aiCtl){aiCtl.abort(); aiCtl=null;}}
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet'||e.target.closest('[data-close]')) closeSheet();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sheet').hidden) closeSheet();});
 function confirmSheet(text,label,fn){
@@ -2117,12 +2346,13 @@ document.addEventListener('click',e=>{
   else if(act==='copy') copyText(summaryText(),'Смета скопирована');
   else if(act==='copyCut') copyText(cutText(),'Нарезка скопирована');
   else if(act==='export') exportData();
+  else if(act==='ai') openAI();
 });
 
 /* ---------- Тексты ---------- */
 function summaryText(){
   const L=[], [a,b,c]=M.size.map(Math.round);
-  L.push(`${M.T.name}, ${sizeTxt(M)}`,descr(M),`Металл ~${fmt(M.kg)} кг`,'');
+  L.push(`${M.title||M.T.name}, ${sizeTxt(M)}`,descr(M),`Металл ~${fmt(M.kg)} кг`,'');
   SEC_ORDER.forEach(s=>{const ls=M.lines.filter(l=>l.sec===s); if(!ls.length) return; L.push(SECN[s]+':'); ls.forEach(l=>L.push(`• ${l.name} — ${fmt(l.qty)} ${l.unit} = ${Math.round(l.sum)} грн`)); L.push('');});
   L.push(`Материалы: ${money(M.matSum+M.markup)}`,`Работа: ${money(M.labSum)}`,`ИТОГО: ${money(M.total)}`);
   return L.join('\n');
