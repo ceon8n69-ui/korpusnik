@@ -1145,6 +1145,7 @@ function bSpiral(v){
       else for(let u=ua;u<ub;u+=5*DEG) us.push(u);
       if(flatU>ua&&flatU<ub) us.push(flatU);
       us=[...new Set(us.map(u=>Math.round(u*1e6)/1e6))].sort((x,y)=>x-y);
+      if(mode!=='helix'&&us.length>2){const minU=.45*th, k=[us[0]]; for(let i=1;i<us.length-1;i++) if(us[i]-k[k.length-1]>=minU) k.push(us[i]); const last=us[us.length-1]; if(k.length>1&&last-k[k.length-1]<minU) k.pop(); k.push(last); us=k;}
       const pts=us.map(Q);
       if(mode==='helix'){const hp=c.arc(hrSec,pts,{name:'Поручень гнутый',ph:'rail'}); hrLen+=hp.len;}
       else{
@@ -1922,9 +1923,9 @@ function loadPdfLib(){
 const nb=s=>String(s).replace(/[  ]/g,' ');
 const pm=n=>nb(Math.round(n).toLocaleString('uk-UA'))+' грн';
 const PDF_CSS='text{font-family:Arial,Helvetica,sans-serif;fill:#111}.ttl{font-weight:700}.c{fill:#fff;stroke:#111;stroke-width:2px;vector-effect:non-scaling-stroke;stroke-linejoin:round}.sf{fill:#FFD9BD;fill-opacity:.45;stroke:#888;stroke-width:1.2px;vector-effect:non-scaling-stroke}.fs{fill:#E3C49A;stroke:#111;stroke-width:1.6px;vector-effect:non-scaling-stroke}.h{fill:#EEE;fill-opacity:.6;stroke:#888;stroke-width:1.4px;stroke-dasharray:8 6;vector-effect:non-scaling-stroke}.gl{stroke:#111;stroke-width:3px;vector-effect:non-scaling-stroke}.brk{fill:none;stroke:#C62A1E;stroke-width:2.4px;vector-effect:non-scaling-stroke}.dim line{stroke:#111;stroke-width:1.6px;vector-effect:non-scaling-stroke}.ext{stroke:#888;stroke-width:1.2px;vector-effect:non-scaling-stroke}.mut{fill:#888}';
-async function svgToImg(svg,W=1800){
-  const vb=svg.match(/viewBox="0 0 (\d+) (\d+)"/), H=Math.round(W*(+vb[2])/(+vb[1]));
-  const s=svg.replace(/<svg([^>]*)>/,`<svg$1 width="${W}" height="${H}"><style>${PDF_CSS}</style><rect width="100%" height="100%" fill="#fff"/>`);
+async function svgToImg(svg,W=1800,css=PDF_CSS){
+  const vb=svg.match(/viewBox="([-\d.]+) ([-\d.]+) ([\d.]+) ([\d.]+)"/), H=Math.round(W*(+vb[4])/(+vb[3]));
+  const s=svg.replace(/<svg([^>]*)>/,`<svg$1 width="${W}" height="${H}"><style>${css}</style><rect width="100%" height="100%" fill="#fff"/>`);
   const img=new Image(); await new Promise((ok,no)=>{img.onload=ok; img.onerror=no; img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);});
   const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,W,H); g.drawImage(img,0,0,W,H);
   return cv.toDataURL('image/jpeg',.9);
@@ -2045,11 +2046,105 @@ function openPdf(kind){
       }catch(e){st.textContent=e&&e.message==='load'?'Не загрузился модуль PDF — нужен интернет при первом создании.':'Не получилось сделать PDF. Попробуйте ещё раз.'; console.error(e);}
       finally{go.disabled=false;}
     };
-    c.querySelector('#pfShare').onclick=async()=>{
-      if(!pdfOut) return; const file=new File([pdfOut.blob],pdfOut.fname,{type:'application/pdf'});
-      try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:pdfOut.fname}); return;}}catch(e){if(e&&e.name==='AbortError') return;}
-      window.open(pdfOut.url,'_blank')||c.querySelector('#pfDl').click();
+    shareBind(c);
+  });
+}
+
+/* ---------- PDF для распила: хлысты, лист, дерево ---------- */
+const CUT_CSS='text{font-family:Arial,Helvetica,sans-serif;fill:#111}.sh{fill:#EEECE6;stroke:#111;stroke-width:2px;vector-effect:non-scaling-stroke}.pc{fill:#FFE3CC;stroke:#111;stroke-width:1.6px;vector-effect:non-scaling-stroke}.hatch line{stroke:#BBB;stroke-width:1.4px;vector-effect:non-scaling-stroke}.mut{fill:#777}';
+function shareBind(c){
+  c.querySelector('#pfShare').onclick=async()=>{
+    if(!pdfOut) return; const file=new File([pdfOut.blob],pdfOut.fname,{type:'application/pdf'});
+    try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:pdfOut.fname}); return;}}catch(e){if(e&&e.name==='AbortError') return;}
+    window.open(pdfOut.url,'_blank')||c.querySelector('#pfDl').click();
+  };
+}
+function pdfReady(c,blob,fname){
+  pdfOut={blob,fname,url:URL.createObjectURL(blob)};
+  const dl=c.querySelector('#pfDl'); dl.href=pdfOut.url; dl.download=fname;
+  c.querySelector('#pfStat').textContent=`Готово: ${fname} · ${Math.max(1,Math.round(blob.size/1024))} КБ`; c.querySelector('#pfDone').hidden=false;
+}
+const fileName=s=>s.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.pdf';
+const makeBlob=doc=>new Promise((ok,no)=>{try{pdfMake.createPdf(doc).getBlob(ok);}catch(e){no(e);}});
+// металл и лист: одно изделие или весь заказ (общий раскрой — экономит хлысты)
+function cutData(ms){
+  if(ms.length===1){const m=ms[0]; return {metal:m.metal,sheets:m.sheets.map(s=>({SS:s.SS,sh:s.sh,pcs:s.pcs})),wood:woodPieces(m)};}
+  const by={}, sb={}, wood=[];
+  ms.forEach((m,ii)=>{
+    m.metal.forEach(mt=>{const e=by[mt.k]=by[mt.k]||{k:mt.k,S:mt.S,byM:mt.byM,list:[],tot:0,kg:0,buyLen:0}; e.tot+=mt.tot; e.kg+=mt.kg; e.buyLen+=mt.buyLen||0; mt.list.forEach(x=>e.list.push(Object.assign({},x,{name:`${ii+1}) ${x.name}`})));});
+    m.sheets.forEach(s=>{const e=sb[s.SS.n]=sb[s.SS.n]||{SS:s.SS,pcs:[]}; s.pcs.forEach(p=>e.pcs.push(Object.assign({},p,{n:`${ii+1}) ${p.n}`})));});
+    woodPieces(m).forEach(w=>wood.push(Object.assign({},w,{name:`${ii+1}) ${w.name}`})));
+  });
+  Object.values(by).forEach(e=>{const kgm=e.S.kg; e.buyLen=Math.ceil(e.buyLen*10)/10;
+    const lens=[]; e.list.forEach(x=>{for(let i=0;i<x.q;i++){let r=x.L; while(r>6000&&!e.byM){lens.push(6000); r-=6000;} if(r>0) lens.push(r);}});
+    lens.sort((a,b)=>b-a); const bars=[]; if(!e.byM) lens.forEach(L=>{let b=bars.find(b=>b.used+3+L<=6000); if(!b){b={used:-3,cuts:[]}; bars.push(b);} b.used+=3+L; b.cuts.push(L);});
+    e.bars=bars; e.kgBuy=e.byM?e.buyLen*kgm:bars.length*6*kgm;});
+  return {metal:Object.values(by).sort((a,b)=>b.S.kg-a.S.kg),sheets:Object.values(sb).map(e=>Object.assign(e,{sh:packSheets(e.pcs)})),wood};
+}
+function cutDoc(d,imgs,meta){
+  const ac='#FF7A1A', content=[];
+  content.push({columns:[{stack:[{text:meta.firm||'Сварочные работы',style:'firm'},meta.phone?{text:meta.phone,style:'muted'}:''],width:'*'},{stack:[{text:'НАРЕЗКА И РАСКРОЙ',style:'kp'},{text:`от ${new Date().toLocaleDateString('uk-UA')}`,style:'muted',alignment:'right'}],width:'auto'}]});
+  content.push({canvas:[{type:'rect',x:0,y:0,w:515,h:4,color:ac}],margin:[0,8,0,10]});
+  content.push({text:meta.title,style:'h1'}); if(meta.sub) content.push({text:nb(meta.sub),style:'muted',margin:[0,2,0,8]});
+  const sum=[[{text:'Что купить',style:'th'},{text:'Количество',style:'th',alignment:'right'},{text:'В деталях',style:'th',alignment:'right'},{text:'Вес, кг',style:'th',alignment:'right'}]];
+  d.metal.forEach(m=>sum.push([m.S.n,{text:m.byM?`в размер ${fmt(m.buyLen)} м`:`${m.bars.length} ${plural(m.bars.length,'хлыст','хлыста','хлыстов')} по 6 м`,alignment:'right'},{text:`${fmt(m.tot)} м`,alignment:'right'},{text:fmt(m.kgBuy),alignment:'right'}]));
+  d.sheets.forEach(s=>sum.push([`${s.SS.n} 1250×2500`,{text:`${s.sh.length} ${plural(s.sh.length,'лист','листа','листов')}`,alignment:'right'},{text:`${s.pcs.length} дет.`,alignment:'right'},{text:fmt(s.sh.length*3.125*(s.SS.kgm2||s.SS.t*7.85)),alignment:'right'}]));
+  d.wood.forEach(w=>sum.push([`${WOOD[w.mat].n}: ${w.name}`,{text:`${w.q} шт`,alignment:'right'},{text:w.d.join('×'),alignment:'right'},'']));
+  const tl=n=>({hLineWidth:(i)=>i===0||i===n?0:.5,vLineWidth:()=>0,hLineColor:'#DDD',paddingTop:()=>4,paddingBottom:()=>4,fillColor:(r)=>r===0?'#111111':null});
+  content.push({table:{headerRows:1,widths:['*','auto','auto','auto'],body:sum},layout:tl(sum.length)});
+  content.push({text:'Хлысты по 6 м, пропил 3 мм. Сначала режьте длинные детали, из остатков — короткие. Угол реза — от перпендикуляра.',style:'small',margin:[0,6,0,0]});
+  d.metal.forEach((m,i)=>{
+    const head={text:`${m.S.n} — ${m.byM?`в размер ${fmt(m.buyLen)} м (порезка на базе)`:`${m.bars.length} ${plural(m.bars.length,'хлыст','хлыста','хлыстов')}`}`,style:'h2',margin:[0,14,0,4]};
+    content.push(imgs.bars[i]?{stack:[head,{image:imgs.bars[i],fit:[515,360],margin:[0,0,0,6]}],unbreakable:true}:head);
+    const body=[[{text:'Деталь',style:'th'},{text:'Длина, мм',style:'th',alignment:'right'},{text:'Рез',style:'th',alignment:'right'},{text:'Шт',style:'th',alignment:'right'}]].concat(m.list.map(c=>[nb(c.name)+(c.sp&&!m.byM?' — сращивать':''),{text:String(c.L),alignment:'right',bold:true},{text:c.cut||'90°',alignment:'right'},{text:String(c.q),alignment:'right',bold:true}]));
+    content.push({table:{headerRows:1,dontBreakRows:true,widths:['*','auto','auto','auto'],body},layout:tl(body.length)});
+  });
+  d.sheets.forEach((s,i)=>{
+    content.push({text:`${s.SS.n} — ${s.sh.length} ${plural(s.sh.length,'лист','листа','листов')} 1250×2500`,style:'h2',margin:[0,14,0,4],pageBreak:i===0&&d.metal.length?'before':undefined});
+    const im=imgs.sheets[i]; for(let j=0;j<im.length;j+=2) content.push({columns:[{image:im[j],fit:[250,140]},im[j+1]?{image:im[j+1],fit:[250,140]}:{text:''}],columnGap:15,margin:[0,0,0,8]});
+    const g={}; s.pcs.forEach(p=>{const k=p.n+'|'+p.a+'×'+p.b; (g[k]=g[k]||{n:p.n,sz:p.a+'×'+p.b,q:0}).q++;});
+    const body=[[{text:'Деталь',style:'th'},{text:'Размер, мм',style:'th',alignment:'right'},{text:'Шт',style:'th',alignment:'right'}]].concat(Object.values(g).map(x=>[nb(x.n),{text:x.sz,alignment:'right',bold:true},{text:String(x.q),alignment:'right',bold:true}]));
+    content.push({table:{headerRows:1,dontBreakRows:true,widths:['*','auto','auto'],body},layout:tl(body.length)});
+  });
+  if(d.wood.length){
+    const body=[[{text:'Деталь',style:'th'},{text:'Порода',style:'th'},{text:'Размер, мм',style:'th',alignment:'right'},{text:'Шт',style:'th',alignment:'right'}]].concat(d.wood.map(w=>[nb(w.name)+(w.wedge?' (клин, «валетом»)':''),WOOD[w.mat].n,{text:w.d.join('×'),alignment:'right',bold:true},{text:String(w.q),alignment:'right',bold:true}]));
+    content.push({text:'Дерево: заготовки',style:'h2',margin:[0,14,0,4]}); content.push({table:{headerRows:1,dontBreakRows:true,widths:['*','auto','auto','auto'],body},layout:tl(body.length)});
+  }
+  return {pageSize:'A4',pageMargins:[40,36,40,44],info:{title:meta.title},content,
+    footer:(p,n)=>({columns:[{text:nb(meta.title),style:'small'},{text:`стр. ${p} из ${n}`,style:'small',alignment:'right'}],margin:[40,12,40,0]}),
+    defaultStyle:{font:'Roboto',fontSize:9.5,color:'#111'},
+    styles:{firm:{fontSize:15,bold:true},kp:{fontSize:12,bold:true,color:ac,alignment:'right'},h1:{fontSize:17,bold:true},h2:{fontSize:12,bold:true},muted:{color:'#666'},small:{fontSize:8,color:'#777'},th:{bold:true,color:'#fff',fontSize:9}}};
+}
+function openCutPdf(kind){
+  const o=kind==='order'?Store.order(state.openOrder):null;
+  const its=o?o.items.filter(it=>TPL[it.tpl]):null;
+  if(o&&!its.length){toast('В заказе нет изделий'); return;}
+  pdfOut=null;
+  sheet(`<h2>PDF для распила</h2>
+    <p class="note" style="margin:0">${o?`Весь заказ «${esc(o.client)}» одним раскроем — детали всех изделий режутся из общих хлыстов и листов, так меньше отходов.`:`«${esc(M.title||M.T.name)}»`}: что купить, схемы нарезки хлыстов, раскрой листа и списки деталей с длинами и углами реза. Удобно отдать на металлобазу или в цех.</p>
+    <p class="note" id="pfStat" aria-live="polite"></p>
+    <div class="row" id="pfDone" hidden><button class="cta" type="button" id="pfShare" style="flex:1"><span>Отправить</span><i>${IC.share}</i></button><a class="btn" id="pfDl" download>Скачать</a></div>
+    <button class="cta w" type="button" id="pfGo"><span>Сделать PDF</span><i>${IC_PDF}</i></button>`,
+  c=>{
+    const st=c.querySelector('#pfStat'), go=c.querySelector('#pfGo');
+    shareBind(c);
+    go.onclick=async()=>{
+      go.disabled=true; c.querySelector('#pfDone').hidden=true;
+      try{
+        st.textContent='Загружаю модуль PDF… (первый раз ~2 МБ)'; await loadPdfLib();
+        const ms=o?its.map(itemCalc):[M], d=cutData(ms), imgs={bars:[],sheets:[]};
+        st.textContent='Рисую схемы нарезки…'; hid=0;
+        for(const m of d.metal) imgs.bars.push(m.bars.length?await svgToImg(barsSVG(m),1800,CUT_CSS):null);
+        for(const s of d.sheets){const a=[]; for(const sh of s.sh) a.push(await svgToImg(sheetSVG(sh),1400,CUT_CSS)); imgs.sheets.push(a);}
+        const F=LS.get('svar1.firm',{}), title=o?`Заказ «${o.client}» — ${its.length} ${plural(its.length,'изделие','изделия','изделий')}`:(M.title||M.T.name);
+        const sub=o?its.map((it,i)=>`${i+1}) ${it.name}`).join(' · '):`${sizeTxt(M)} · металл ~${fmt(M.kg)} кг`;
+        st.textContent='Собираю PDF…';
+        const blob=await makeBlob(cutDoc(d,imgs,{firm:F.firm,phone:F.phone,title,sub}));
+        pdfReady(c,blob,fileName(`Распил ${o?o.client:(M.title||M.T.name)} ${new Date().toISOString().slice(0,10)}`)); go.querySelector('span').textContent='Сделать заново';
+      }catch(e){st.textContent=e&&e.message==='load'?'Не загрузился модуль PDF — нужен интернет при первом создании.':'Не получилось сделать PDF. Попробуйте ещё раз.'; console.error(e);}
+      finally{go.disabled=false;}
     };
+    go.click();
   });
 }
 
@@ -2335,8 +2430,8 @@ function panelDraw(P){
 }
 
 /* ---------- Материалы ---------- */
-function woodPieces(){
-  const g={}; M.parts.filter(p=>(p.kind==='box'||p.kind==='poly')&&WOOD[p.mat]).forEach(p=>{
+function woodPieces(m=M){
+  const g={}; m.parts.filter(p=>(p.kind==='box'||p.kind==='poly')&&WOOD[p.mat]).forEach(p=>{
     const d=p.kind==='box'?[p.sx,p.sy,p.sz].sort((a,b)=>b-a).map(Math.round):[...(p.blankAB||[0,0]).map(Math.round).sort((a,b)=>b-a),p.t];
     const k=p.name+'|'+p.mat+'|'+d.join('×'); (g[k]=g[k]||{name:p.name,mat:p.mat,d,q:0,wedge:p.kind==='poly'}).q++;});
   return Object.values(g);
@@ -2385,7 +2480,7 @@ function cutText(){
 function panelCut(P){
   if(!M.metal.length&&!M.sheets.length){P.innerHTML='<p class="note">Для этого изделия нечего резать.</p>';return;}
   hid=0;
-  let h=`<div class="row"><button class="btn" type="button" data-act="copyCut">${IC.copy} Копировать нарезку</button></div>
+  let h=`<div class="row"><button class="btn y" type="button" data-act="cutPdf">${IC_PDF}PDF для распила</button><button class="btn" type="button" data-act="copyCut">${IC.copy} Копировать нарезку</button></div>
   <p class="note">Хлысты по 6 м, пропил 3 мм. Сначала режьте длинные детали, из остатков — короткие. Угол реза указан от перпендикуляра.</p>`;
   M.metal.forEach(m=>{
     h+=m.byM?`<h3>${m.S.n} — в размер ${fmt(m.buyLen)} м</h3><p class="note" style="margin-top:-8px">${fmt(m.tot)} м в деталях · ${fmt(m.kg)} кг. Тяжёлый профиль выгоднее брать с порезкой на базе, чем целым хлыстом.</p>`
@@ -2490,7 +2585,7 @@ function renderOrder(){
       <div class="acts"><button class="ib" type="button" data-openit="${it.id}" aria-label="Открыть ${esc(it.name)}">${IC.edit}</button><button class="ib" type="button" data-delit="${it.id}" aria-label="Удалить ${esc(it.name)}">${IC.trash}</button></div></div>`).join('')
       :'<div class="empty"><b>Пока пусто</b><p class="note">Откройте конструктор, настройте изделие и нажмите «Добавить в заказ».</p></div>'}</div>
     <button class="cta w" type="button" data-act="addItem"><span>Добавить изделие</span><i>${IC.plus}</i></button>
-    <button class="btn" type="button" data-act="copyKP" style="align-self:flex-start">${IC.copy}Скопировать КП текстом</button>
+    <div class="row"><button class="btn y" type="button" data-act="cutPdfOrder">${IC_PDF}PDF для распила — весь заказ</button><button class="btn" type="button" data-act="copyKP">${IC.copy}КП текстом</button></div>
     <button class="linkdel" type="button" data-act="delOrder">Удалить заказ</button>
   </div>`;
 }
@@ -2556,6 +2651,8 @@ document.addEventListener('click',e=>{
   else if(act==='export') exportData();
   else if(act==='ai') openAI();
   else if(act==='pdf') openPdf('item');
+  else if(act==='cutPdf') openCutPdf('item');
+  else if(act==='cutPdfOrder'&&o) openCutPdf('order');
   else if(act==='pdfOrder'&&o) openPdf('order');
   else if(act==='resetVals'){const nm=M.title||M.T.name, cust=state.tpl==='custom';
     confirmSheet(cust?`Убрать конструкцию «${esc(nm)}», собранную ИИ, и вернуть пример?`:`Вернуть «${esc(nm)}» к стандартным размерам и настройкам?`,'Сбросить',()=>{
