@@ -492,7 +492,7 @@ function addHandle(c,ph,{x,y,w,h,z,tf,drawer,left}){
 function addDoor(c,{x,y,w,h,z,left,ph='doors',name='Дверь',mk,dec}){
   const tf=mk?MAT[mk].t:c.tf;
   const o={name,grp:'front',x,y,z,sx:w,sy:h,sz:tf,edges:e4(h,w),ph}; if(mk){o.mk=mk;o.dec=dec;}
-  c.P(o);
+  c.P(o); addFrame(c,o);
   const n=hn(h), hx=left?x+22:x+w-22;
   const ys=n===2?[y+100,y+h-100]:Array.from({length:n},(_,i)=>y+100+i*(h-200)/(n-1));
   ys.forEach(yy=>c.F('hinge',ph,hx,yy,z+2,'z'));
@@ -605,7 +605,7 @@ function buildCase(v,cfg){
           }
           const fw=xR-xL, o={name:'Фасад ящика',grp:'front',x:xL,y:fy,z:D,sx:fw,sy:fh,sz:ftf,edges:e4(fw,fh),ph:'dfronts'};
           if(fmk){o.mk=fmk;o.dec=fdec;}
-          P(o); info.dfronts.push({w:r1(fw),h:fh});
+          P(o); addFrame(c,o); info.dfronts.push({w:r1(fw),h:fh});
           addHandle(c,'dfronts',{x:xL,y:fy,w:fw,h:fh,z:D,tf:ftf,drawer:true});
           Lb('drawer');
         }
@@ -628,11 +628,11 @@ function buildCase(v,cfg){
     Lb('back'); info.back={w:r1(pieces[0].x2-pieces[0].x),h:r1(pieces[0].top-yBot-4),n:pieces.length};
   }
   if(base.type==='legs'){
-    const lxs=W>900?[50,W/2,W-50]:[50,W-50]; let nl=0;
-    lxs.forEach(lx=>[50,D-50].forEach(lz=>{nl++;
-      P({name:'Опора',grp:'hw',shape:'cylY',x:lx-20,y:0,z:lz-20,sx:40,sy:bh,sz:40,ph:'support'});
+    const kl=cfg.legKind==='kleg', li=kl?50:legInset(v), lxs=W>900?[li,W/2,W-li]:[li,W-li]; let nl=0;
+    lxs.forEach(lx=>[li,D-li].forEach(lz=>{nl++;
+      if(kl) P({name:'Опора',grp:'hw',shape:'cylY',x:lx-20,y:0,z:lz-20,sx:40,sy:bh,sz:40,ph:'support'}); else legP(c,{cx:lx,cz:lz,h:bh,w:40,ph:'support',name:'Ножка'});
       [[-12,-12],[12,-12],[-12,12],[12,12]].forEach(([a,b])=>F('s16','support',lx+a,yBot,lz+b,'y'));}));
-    H(cfg.legKind||'fleg',nl); Lb('legs'); info.legs={n:nl,h:bh};
+    H(kl?'kleg':legKey(v,'fleg'),nl); Lb('legs'); info.legs={n:nl,h:bh};
   }else if(base.type==='wall'){
     [t+40,W-t-40].forEach(x=>F('hanger','support',x,(top==='overlay'?Hh:Math.min(ch(0),ch(n-1)))-t-30,20,'z')); Lb('hang'); info.wall=true;
   }else if(base.type==='none'){
@@ -698,8 +698,8 @@ function buildDining(v){
   if(dbl){P({name:'Столешница, нижний слой',x:0,y:Hh-2*t,z:0,sx:W,sy:t,sz:D,edges:e4(W,D),ph:'top1'});
     for(let x=150;x<W-100;x+=300) for(let z=150;z<D-100;z+=300) F('s30','top1',x,Hh-2*t,z,'y');}
   const lx=[30,W-90], lz=[30,D-90];
-  lx.forEach(x=>lz.forEach(z=>P({name:'Ножка стола',grp:'hw',x,y:0,z,sx:60,sy:ly,sz:60,ph:'base'})));
-  H('tleg',4);
+  lx.forEach(x=>lz.forEach(z=>legP(c,{cx:x+30,cz:z+30,h:ly,w:60,ph:'base',name:'Ножка стола'})));
+  H(legKey(v,'tleg'),4);
   const ay=ly-ah;
   P({name:'Царга длинная',x:90,y:ay,z:30,sx:W-180,sy:ah,sz:t,edges:[[0.4,W-180]],ph:'base'});
   P({name:'Царга длинная',x:90,y:ay,z:D-30-t,sx:W-180,sy:ah,sz:t,edges:[[0.4,W-180]],ph:'base'});
@@ -711,7 +711,7 @@ function buildDining(v){
   sp(150,D-150).forEach(z=>{F('corner','top',30+t+12,ly-12,z,'y');F('corner','top',W-30-t-12,ly-12,z,'y');});
   lx.forEach(x=>lz.forEach(z=>F('glide','support',x+30,0,z+30,'y')));
   Lb('table'); c.size=[W,Hh,D];
-  c.notes=[`Ножки покупные, длина ${ly} мм (металл или массив 60×60).`];
+  c.notes=[`Ножки покупные: ${legsTxt(v)}, длина ${ly} мм.`];
   c.phases=[
     {ph:'top1',t:dbl?'Склейка столешницы':'Столешница',d:dbl?`Два слоя ${W}×${D} мм склейте ПВА по всей площади и стяните снизу саморезами 4×30 сеткой около 300 мм. Дайте высохнуть сутки, затем обработайте кромку.`:'Подготовьте столешницу: торцы зашлифуйте или закромкуйте.'},
     {ph:'base',t:'Подстолье',d:`Царги высотой ${ah} мм вставьте между ножками на расстоянии 30 мм от края столешницы. В углах — угловые стяжки: пластина в пропилы царг на глубине 25 мм от торца, шпилька в ножку.`},
@@ -825,9 +825,9 @@ function buildSoft(v,kind){
   c.parts.filter(p=>p.grp==='soft'&&!p.fab).forEach(p=>p.fab=boxArea(p));
   // ножки
   const lx=W>1600?[60,W/2,W-60]:[60,W-60]; let nl=0;
-  const legAt=(x,z)=>{nl++; P({name:'Ножка',grp:'hw',shape:'cylY',x:x-20,y:0,z:z-20,sx:40,sy:bh,sz:40,ph:'legs'}); [[-12,-12],[12,-12],[-12,12],[12,12]].forEach(([a,b])=>F('s16','legs',x+a,bh,z+b,'y'));};
+  const legAt=(x,z)=>{nl++; legP(c,{cx:x,cz:z,h:bh,w:40,ph:'legs'}); [[-12,-12],[12,-12],[-12,12],[12,12]].forEach(([a,b])=>F('s16','legs',x+a,bh,z+b,'y'));};
   if(bh>0){lx.forEach(x=>[80,Df-60].forEach(z=>legAt(x,z))); if(corner){legAt(60,L2-80);legAt(v.CW-60,L2-80);}}
-  H('fleg',nl); Lb('frame'); c.size=[W,Hh,L2];
+  H(legKey(v,'fleg'),nl); Lb('frame'); c.size=[W,Hh,L2];
   const fab=FABRICS[v.fab].n;
   c.phases=[
     {ph:'frame',t:'Каркас сиденья',d:`Царги ${r1(seatW)}×${fh} мм и боковины ${Df-40-2*t} мм соберите на клей ПВА и саморезы 4×50, по 2 на соединение, предварительно сверлите 3 мм. ${nb?`Поперечин: ${nb}. `:''}${corner?`Оттоманку ${v.CW}×${L2} мм пристройте слева и стяните с основной рамой. `:''}Проверьте диагонали.`},
@@ -850,8 +850,8 @@ function buildPouf(v){
   softPart(c,{name:'Сиденье: поролон',x:0,y:bh+fh+t,z:0,sx:W,sy:ft,sz:D,ph:'cover',foamArea:W*D},ft);
   softPart(c,{name:'Боковины: обивка',x:-10,y:bh,z:-10,sx:W+20,sy:fh+t,sz:D+20,ph:'cover',foamArea:2*(W+D)*(fh+t),fab:2*(W+D)*(fh+t+ft)+W*D},10);
   c.parts.filter(p=>p.grp==='soft'&&!p.fab).forEach(p=>p.fab=W*D);
-  let nl=0; if(bh>0) [[50,50],[W-50,50],[50,D-50],[W-50,D-50]].forEach(([x,z])=>{nl++;P({name:'Ножка',grp:'hw',shape:'cylY',x:x-20,y:0,z:z-20,sx:40,sy:bh,sz:40,ph:'legs'});[[-12,-12],[12,12]].forEach(([a,b])=>F('s16','legs',x+a,bh,z+b,'y'));});
-  H('fleg',nl); Lb('frame'); c.size=[W,Hh,D];
+  let nl=0; if(bh>0) [[50,50],[W-50,50],[50,D-50],[W-50,D-50]].forEach(([x,z])=>{nl++;legP(c,{cx:x,cz:z,h:bh,w:40,ph:'legs'});[[-12,-12],[12,12]].forEach(([a,b])=>F('s16','legs',x+a,bh,z+b,'y'));});
+  H(legKey(v,'fleg'),nl); Lb('frame'); c.size=[W,Hh,D];
   c.phases=[
     {ph:'frame',t:'Каркас',d:`Короб из четырёх стенок высотой ${fh} мм на клей и саморезы 4×50, сверху щит сиденья ${W}×${D} мм.`},
     {ph:'cover',t:'Поролон и обивка',d:`Сверху ППУ ${ft} мм, по бокам 10 мм, синтепон, ткань. Скобы с изнанки через 20–30 мм, углы — конвертом.`},
@@ -1431,11 +1431,11 @@ const TPL={
     v=>({base:{type:'wall'},top:'between',cols:[[{doors:v.doors,sh:v.shelves}]]})),
   kpenal:C('Кухня: пенал под технику','Кухня',[...dims([400,650,600],[1800,2400,2100],[450,650,560]),N('niche','Ниша под технику',0,800,600),N('bh','Опоры',80,150,100)],
     v=>({base:{type:'legs',h:v.bh},legKind:'kleg',top:'between',cols:[v.niche>0?[{h:800,doors:1,sh:1},{h:v.niche},{doors:1,sh:1}]:[{h:800,doors:1,sh:1},{doors:1,sh:2}]]})),
-  loft:{name:'Кровать-чердак',cat:'Лофт',custom:buildLoft,noFront:true,defCm:'dsp18',defDec:'craft',params:[N('MW','Ширина матраса',700,1600,900),N('ML','Длина матраса',1800,2100,2000),N('Hc','Высота под кроватью',1200,2000,1600),N('rh','Ограждение над настилом',250,500,400),
+  loft:{defSty:'loft',name:'Кровать-чердак',cat:'Лофт',custom:buildLoft,noFront:true,defCm:'dsp18',defDec:'craft',params:[N('MW','Ширина матраса',700,1600,900),N('ML','Длина матраса',1800,2100,2000),N('Hc','Высота под кроватью',1200,2000,1600),N('rh','Ограждение над настилом',250,500,400),
     S('prof','Профиль каркаса',PROF_OPTS.filter(o=>o[0]!=='20x20'),'40x40'),S('st','Лестница-комод',[['L','Слева'],['R','Справа'],['none','Без лестницы']],'L'),S('stpos','Лестница стоит',[['end','У торца'],['front','Вдоль кровати']],'end',{when:v=>v.st!=='none'}),S('under','Под кроватью',[['coupe','Шкаф-купе'],['desk','Рабочий стол'],['none','Свободно']],'coupe'),
     N('WW','Ширина шкафа',800,2000,1100,'мм',{when:v=>v.under==='coupe'}),S('mir','Двери шкафа',[['mix','Зеркало + декор'],['mirror','Обе зеркальные'],['wood','Обе в декор']],'mix',{when:v=>v.under==='coupe'}),S('ends','Торцы ограждения',[['bars','Перемычки'],['wood','Деревянные вставки']],'bars')]},
-  lrack:{name:'Лофт-стеллаж',cat:'Лофт',custom:buildLoftRack,noFront:true,defCm:'dsp18',defDec:'craft',params:[...dims([400,2000,900],[600,2400,1800],[250,600,350]),N('shelves','Полки',2,8,5,'шт'),S('prof','Профиль стоек',PROF_OPTS,'40x20'),S('brace','Задние связи',[['yes','Есть'],['no','Нет']],'yes')]},
-  ltable:{name:'Лофт-стол',cat:'Лофт',custom:buildLoftTable,noFront:true,defCm:'oak40',params:[...dims([600,3000,1400],[450,1100,750],[400,1100,800]),S('prof','Профиль ножек',PROF_OPTS.filter(o=>o[0]!=='20x20'),'60x40'),S('low','Нижняя обвязка',[['yes','Есть'],['no','Нет']],'no')]},
+  lrack:{defSty:'loft',name:'Лофт-стеллаж',cat:'Лофт',custom:buildLoftRack,noFront:true,defCm:'dsp18',defDec:'craft',params:[...dims([400,2000,900],[600,2400,1800],[250,600,350]),N('shelves','Полки',2,8,5,'шт'),S('prof','Профиль стоек',PROF_OPTS,'40x20'),S('brace','Задние связи',[['yes','Есть'],['no','Нет']],'yes')]},
+  ltable:{defSty:'loft',name:'Лофт-стол',cat:'Лофт',custom:buildLoftTable,noFront:true,defCm:'oak40',params:[...dims([600,3000,1400],[450,1100,750],[400,1100,800]),S('prof','Профиль ножек',PROF_OPTS.filter(o=>o[0]!=='20x20'),'60x40'),S('low','Нижняя обвязка',[['yes','Есть'],['no','Нет']],'no')]},
   river:{name:'Стол-река',cat:'Столы',custom:buildRiver,noFront:true,noMat:true,params:[N('W','Длина',600,3200,2000),N('D','Ширина',400,1200,900),N('T','Толщина',25,80,40),N('H','Высота',350,1100,750),N('rmin','Река: самое узкое',40,700,150),N('rmax','Река: самое широкое',80,900,380),N('wav','Волнистость берегов',0,10,6,'из 10'),N('seed','Вариант берегов',1,99,7,'№'),
     S('slab','Слэб',Object.entries(SLABS).map(([k,x])=>[k,x.n]),'oak'),S('epx','Заливка',Object.entries(EPOXY).map(([k,x])=>[k,x.n]),'glow'),S('legs','Подстолье',Object.entries(RLEGS),'U'),S('fin','Покрытие',[['oil','Масло-воск'],['lak','Лак 2К']],'oil')]},
   dining:{name:'Стол обеденный',cat:'Столы',custom:buildDining,noFront:true,params:[...dims([800,2400,1400],[700,800,750],[600,1100,800]),S('dbl','Столешница',[['yes','Двойная (склейка)'],['no','Одинарная']],'yes')]},
@@ -1476,7 +1476,8 @@ const CATS=['Мои','Спальня','Мягкая мебель','Лофт','С
 function matParams(key){
   const T=TPL[key];
   if(T.noMat) return [];
-  const a=[S('cm',T.noFront?'Материал':'Материал корпуса',MAT_OPTS,T.defCm||'dsp16'),S('cdec','Декор / цвет',v=>decOpts(v.cm),T.defDec||'white',{when:v=>!!decOpts(v.cm)})];
+  const a=key==='free'?[]:[S('sty','Стиль',STY_OPTS,T.defSty||'modern')];
+  a.push(S('cm',T.noFront?'Материал':'Материал корпуса',MAT_OPTS,T.defCm||'dsp16'),S('cdec','Декор / цвет',v=>decOpts(v.cm),T.defDec||'white',{when:v=>!!decOpts(v.cm)}));
   if(!T.noFront) a.push(S('fm','Материал фасадов',MAT_OPTS,'dsp16'),S('fdec','Декор фасадов',v=>decOpts(v.fm),'sonoma',{when:v=>!!decOpts(v.fm)}),S('hnd','Ручки',[['std','Скобы'],['edge','Торцевой профиль'],['gola','Без ручек — Gola'],['push','Без ручек — push-to-open']],'std'));
   return a;
 }
@@ -1620,6 +1621,319 @@ function compute(key,vals,opts,P){
   return m;
 }
 
+/* ===== Стили и столы ===== */
+const STY={
+  modern:{n:'Современный',leg:'slim',case:{cm:'dsp16',cdec:'white',fm:'dsp16',fdec:'graphite',hnd:'push'},nf:{cm:'dsp18',cdec:'concrete'},tbl:{cm:'dsp18',cdec:'concrete'},soft:{fab:'velour',fcol:'grey'}},
+  loft:{n:'Лофт',leg:'metal',case:{cm:'dsp18',cdec:'craft',fm:'dsp16',fdec:'black',hnd:'edge'},nf:{cm:'dsp18',cdec:'craft'},tbl:{cm:'pine28'},soft:{fab:'eco',fcol:'brick'}},
+  scandi:{n:'Скандинавский',leg:'cone',case:{cm:'dsp16',cdec:'white',fm:'dsp16',fdec:'sonoma',hnd:'std'},nf:{cm:'ply18'},tbl:{cm:'ash20'},soft:{fab:'boucle',fcol:'milk'}},
+  classic:{n:'Классика',leg:'turn',case:{cm:'dsp18',cdec:'white',fm:'mdf19',fdec:'ivory',hnd:'std'},nf:{cm:'oak20'},tbl:{cm:'beech20'},soft:{fab:'velour',fcol:'olive'}},
+  minimal:{n:'Минимализм',leg:'hidden',case:{cm:'dsp16',cdec:'white',fm:'mdf19',fdec:'white',hnd:'gola'},nf:{cm:'dsp18',cdec:'white'},tbl:{cm:'dsp18',cdec:'white'},soft:{fab:'chenille',fcol:'beige'}}
+};
+const STY_OPTS=Object.entries(STY).map(([k,s])=>[k,s.n]);
+const styOf=v=>STY[v&&v.sty]||STY.modern;
+const LEGK={metal:'_loft',cone:'_cone',turn:'_turn'};
+const legKey=(v,base)=>base+(LEGK[styOf(v).leg]||'');
+function styleSet(key,s){const T=TPL[key], st=STY[s]; if(!T||!st) return {}; return T.cat==='Мягкая мебель'?st.soft:T.noFront?(T.cat==='Столы'||key==='ltable'?st.tbl:st.nf):st.case;}
+function shade(hex,k){const n=parseInt(String(hex).slice(1),16), f=x=>Math.max(0,Math.min(255,Math.round(x*(1+k)))); return '#'+[f(n>>16),f(n>>8&255),f(n&255)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+const legInset=v=>styOf(v).leg==='hidden'?110:50;
+// ножка по стилю: x,z — центр
+function legP(c,{cx,cz,h,y=0,w=40,ph='legs',name='Ножка'}){
+  const st=styOf(c.v).leg, v=c.v;
+  if(st==='metal') return c.P({name,grp:'hw',x:cx-w/2,y,z:cz-w/2,sx:w,sy:h,sz:w,ph,color:'#1E1E1E'});
+  if(st==='cone') return c.P({name,grp:'hw',shape:'coneY',x:cx-w*.6,y,z:cz-w*.6,sx:w*1.2,sy:h,sz:w*1.2,ph,color:'#D6B88C',wood:true});
+  if(st==='turn') return c.P({name,grp:'hw',shape:'turnY',x:cx-w*.8,y,z:cz-w*.8,sx:w*1.6,sy:h,sz:w*1.6,ph,color:colorOf(v.fm||v.cm,v.fm?v.fdec:v.cdec),wood:true});
+  if(st==='hidden') return c.P({name,grp:'hw',shape:'cylY',x:cx-14,y,z:cz-14,sx:28,sy:h,sz:28,ph,color:'#2A2A2A'});
+  return c.P({name,grp:'hw',shape:'cylY',x:cx-w*.4,y,z:cz-w*.4,sx:w*.8,sy:h,sz:w*.8,ph,color:'#2B2B2B'});
+}
+// классика: филёнка (рамка) на фасаде, фасад смотрит на +z
+function addFrame(c,o){
+  if(styOf(c.v).leg!=='turn'||o.sx<140||o.sy<110) return;
+  const b=Math.max(40,Math.min(70,Math.min(o.sx,o.sy)*.16)), d=6, z=o.z+o.sz, col=shade(colorOf(o.mk||c.v.fm||c.v.cm,o.mk?o.dec:(c.v.fm?c.v.fdec:c.v.cdec)),-.07);
+  [[o.x,o.y,o.sx,b],[o.x,o.y+o.sy-b,o.sx,b],[o.x,o.y+b,b,o.sy-2*b],[o.x+o.sx-b,o.y+b,b,o.sy-2*b]].forEach(([x,y,sx,sy])=>c.P({name:'Филёнка',grp:'deco',mk:null,x,y,z,sx,sy,sz:d,ph:o.ph,color:col}));
+  c.H('mill',Math.round(o.sx*o.sy/1e4)/100);
+}
+Object.assign(HW,{fleg_loft:['Ножка лофт, металл','шт'],fleg_cone:['Ножка конусная, бук','шт'],fleg_turn:['Ножка точёная (классика)','шт'],tleg_loft:['Ножка стола лофт, металл 60×60','шт'],tleg_cone:['Ножка стола конусная, бук','шт'],tleg_turn:['Ножка стола точёная, бук','шт'],
+  mill:['Фрезеровка фасадов под классику (филёнка)','м²'],extslide:['Механизм раздвижения стола (направляющие)','компл'],tlock:['Замок-стяжка половин столешницы','шт'],cardhinge:['Петля карточная (ломберная)','шт'],gatehinge:['Петля поворотной опоры','шт'],
+  liftmech:['Механизм стола-трансформера (подъём)','компл'],fbracket:['Кронштейн складной для стола, пара','компл'],pianohinge:['Петля рояльная','м'],pedestal:['Опора центральная (колонна + крестовина)','компл'],footrest:['Подножка: труба Ø32 + держатели','м']});
+Object.assign(PRICE_DEF,{fleg_loft:220,fleg_cone:160,fleg_turn:320,tleg_loft:650,tleg_cone:520,tleg_turn:900,mill:450,extslide:1600,tlock:90,cardhinge:35,gatehinge:60,liftmech:3800,fbracket:650,pianohinge:120,pedestal:2400,footrest:650});
+(()=>{const g=PRICE_META.find(x=>x[0]==='Фурнитура'); if(g) g[1].push(...['fleg_loft','fleg_cone','fleg_turn','tleg_loft','tleg_cone','tleg_turn','mill','extslide','tlock','cardhinge','gatehinge','liftmech','fbracket','pianohinge','pedestal','footrest'].map(k=>[k,HW[k][0],'грн/'+HW[k][1]]));})();
+
+/* ---- общие узлы стола ---- */
+const ovalPts=(x0,z0,L,D,n=56)=>{const r=D/2, out=[]; if(L<=D+1){for(let i=0;i<n;i++){const a=i/n*2*Math.PI; out.push([x0+L/2+L/2*Math.cos(a),z0+D/2+D/2*Math.sin(a)]);} return out;}
+  for(let i=0;i<=n/2;i++){const a=-Math.PI/2+i/(n/2)*Math.PI; out.push([x0+L-r+r*Math.cos(a),z0+r+r*Math.sin(a)]);}
+  for(let i=0;i<=n/2;i++){const a=Math.PI/2+i/(n/2)*Math.PI; out.push([x0+r+r*Math.cos(a),z0+r+r*Math.sin(a)]);} return out;};
+function topPart(c,{x=0,z=0,y,W,D,name='Столешница',ph='top',shape='rect',pts}){
+  const t=c.t, pvc=MAT[c.v.cm].fin==='pvc';
+  if(shape==='rect') return c.P({name,x,y,z,sx:W,sy:t,sz:D,edges:pvc?e4(W,D):[],ph});
+  const poly=pts||ovalPts(x,z,W,D); let per=0; for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length]; per+=Math.hypot(b[0]-a[0],b[1]-a[1]);}
+  return c.P({name,shape:'poly',poly,x,y,z,sx:W,sy:t,sz:D,edges:pvc?[[2,Math.round(per)]]:[],ph,curved:true});
+}
+function apronRing(c,{x0,z0,x1,z1,y,h=90,ph='frame',inset=50}){
+  const t=c.t, pvc=MAT[c.v.cm].fin==='pvc', e=L=>pvc?[[0.4,L]]:[];
+  const ax0=x0+inset, ax1=x1-inset, az0=z0+inset, az1=z1-inset;
+  c.P({name:'Царга длинная',x:ax0,y,z:az0,sx:ax1-ax0,sy:h,sz:t,edges:e(ax1-ax0),ph}); c.P({name:'Царга длинная',x:ax0,y,z:az1-t,sx:ax1-ax0,sy:h,sz:t,edges:e(ax1-ax0),ph});
+  c.P({name:'Царга короткая',x:ax0,y,z:az0+t,sx:t,sy:h,sz:az1-az0-2*t,edges:e(az1-az0-2*t),ph}); c.P({name:'Царга короткая',x:ax1-t,y,z:az0+t,sx:t,sy:h,sz:az1-az0-2*t,edges:e(az1-az0-2*t),ph});
+  [[ax0,az0],[ax1,az0],[ax0,az1],[ax1,az1]].forEach(([x,z])=>c.F('tbr',ph,x+(x===ax0?40:-40),y+h/2,z+(z===az0?40:-40)));
+  const sp=(a,b)=>{const k=Math.max(2,Math.ceil((b-a)/400)+1); return Array.from({length:k},(_,i)=>a+i*(b-a)/(k-1));};
+  sp(ax0+80,ax1-80).forEach(x=>{c.F('corner','top',x,y+h-12,az0+t+12,'y'); c.F('corner','top',x,y+h-12,az1-t-12,'y');});
+  return {ax0,ax1,az0,az1};
+}
+function legs4(c,{x0,z0,x1,z1,h,ph='frame',w=60}){
+  const ins=styOf(c.v).leg==='hidden'?110:w/2+20;
+  [[x0+ins,z0+ins],[x1-ins,z0+ins],[x0+ins,z1-ins],[x1-ins,z1-ins]].forEach(([x,z])=>{legP(c,{cx:x,cz:z,h,w,ph,name:'Ножка стола'}); c.F('glide','frame',x,0,z,'y');});
+  c.H(legKey(c.v,'tleg'),4); return ins;
+}
+function uFrames(c,{xs,z0,z1,h,ph='frame'}){
+  xs.forEach(x=>{[z0+40,z1-80].forEach(z=>c.P({name:'Подстолье П: стойка',grp:'hw',x:x-30,y:0,z,sx:60,sy:h,sz:40,ph,color:'#1E1E1E'}));
+    c.P({name:'Подстолье П: верх',grp:'hw',x:x-30,y:h-40,z:z0+40,sx:60,sy:40,sz:z1-z0-80,ph,color:'#1E1E1E'});
+    [z0+90,(z0+z1)/2,z1-90].forEach(z=>c.F('smet',ph,x,h,z,'y'));});
+  c.H('legU',1);
+}
+const legsTxt=v=>({slim:'тонкие металлические ножки',metal:'металлические ножки лофт 60×60',cone:'конусные ножки из бука',turn:'точёные ножки',hidden:'скрытые опоры с отступом от края'})[styOf(v).leg];
+
+/* 1. Раздвижной обеденный */
+function buildTableExt(v){
+  const c=ctx(v),{t,P,F,H,Lb}=c, W=v.W, D=v.D, Hh=v.H, ins=v.ins, open=v.st==='open', L=open?W+ins:W, half=W/2, y=Hh-t, oval=v.shape==='oval';
+  const r=D/2;
+  const halfPts=(x0,left)=>{const pts=[]; if(!oval) return null;
+    if(left){pts.push([x0+half,0]); for(let i=0;i<=24;i++){const a=-Math.PI/2-i/24*Math.PI; pts.push([x0+r+r*Math.cos(a),r+r*Math.sin(a)]);} pts.push([x0+half,D]);}
+    else{pts.push([x0,D]); for(let i=0;i<=24;i++){const a=Math.PI/2-i/24*Math.PI; pts.push([x0+half-r+r*Math.cos(a),r+r*Math.sin(a)]);} pts.push([x0,0]);}
+    return pts;};
+  topPart(c,{x:0,y,W:half,D,name:'Половина столешницы',shape:oval?'poly':'rect',pts:halfPts(0,true)});
+  topPart(c,{x:L-half,y,W:half,D,name:'Половина столешницы',shape:oval?'poly':'rect',pts:halfPts(L-half,false)});
+  if(open) topPart(c,{x:half,y,W:ins,D,name:'Вставка'}); else P({name:'Вставка',x:half/2,y:y-t-70,z:120,sx:ins,sy:t,sz:D-240,edges:MAT[v.cm].fin==='pvc'?e4(ins,D):[],ph:'top'});
+  const ah=90, ay=y-ah, inset=oval?Math.max(70,r*.32):60;
+  // царги: короткие на торцах, длинные — по половине на каждую сторону (раздвигаются вместе с половинами)
+  const e=Lx=>MAT[v.cm].fin==='pvc'?[[0.4,Lx]]:[];
+  [[inset,0],[L-inset-t,0]].forEach(([x])=>P({name:'Царга торцевая',x,y:ay,z:inset+t,sx:t,sy:ah,sz:D-2*inset-2*t,edges:e(D-2*inset),ph:'frame'}));
+  const sl=half-inset-40;
+  [[inset,sl],[L-inset-sl,sl]].forEach(([x,len])=>[inset,D-inset-t].forEach(z=>P({name:'Царга продольная',x,y:ay,z,sx:len,sy:ah,sz:t,edges:e(len),ph:'frame'})));
+  let ki=0;
+  if(v.base==='U') uFrames(c,{xs:[inset+40,L-inset-40],z0:inset-20,z1:D-inset+20,h:ay});
+  else{[[inset+40,inset+40],[L-inset-40,inset+40],[inset+40,D-inset-40],[L-inset-40,D-inset-40]].forEach(([x,z])=>{legP(c,{cx:x,cz:z,h:ay+ah,w:60,ph:'frame',name:'Ножка стола'}); F('tbr','frame',x,ay+ah/2,z); F('glide','frame',x,0,z,'y'); ki++;}); H(legKey(v,'tleg'),4);}
+  // механизм
+  [inset+t+60,D-inset-t-60-40].forEach(z=>P({name:'Механизм раздвижения',grp:'hw',x:inset+t,y:y-30,z,sx:L-2*inset-2*t,sy:30,sz:40,ph:'mech',color:'#9AA0A6'}));
+  for(let x=inset+80;x<L-inset;x+=300){F('s16','mech',x,y-2,inset+t+80,'y'); F('s16','mech',x,y-2,D-inset-t-80,'y');}
+  F('insert','top',half-30,y,D*.3,'x'); F('insert','top',half-30,y,D*.7,'x');
+  H('extslide'); H('tlock',2); Lb('table');
+  const seats=Math.max(4,Math.floor((L-(oval?200:0))/600)*2+(D>=900?2:0));
+  c.size=[L,Hh,D];
+  c.notes=[`Сложенный — ${W}×${D} мм, разложенный — ${W+ins}×${D} мм${oval?' (овал)':''}. За разложенным столом ${seats} ${plural(seats,'человек','человека','человек')}. Опоры: ${v.base==='U'?'П-образные металлические':legsTxt(v)}.`];
+  c.phases=[
+    {ph:'frame',t:'Подстолье',d:`${v.base==='U'?'Два П-образных подстолья — к половинам столешницы саморезами по металлу.':`4 ножки (${legsTxt(v)}) высотой ${ay+ah} мм на угловые стяжки.`} Торцевые царги ${D-2*inset} мм и продольные по ${r1(sl)} мм — каждая половина стола со своими царгами, так они разъезжаются.`},
+    {ph:'mech',t:'Механизм раздвижения',d:`Направляющие ${r1(L-2*inset-2*t)} мм — к царгам изнутри, параллельно, саморезы 4×16 через каждые 300 мм. Проверьте ход: половины должны расходиться на ${ins} мм без перекоса.`},
+    {ph:'top',t:'Столешница и вставка',d:`Две половины ${half}×${D} мм${oval?' с полукруглыми торцами (радиус '+r1(r)+' мм, выпиливается фрезером по циркулю)':''} — к направляющим. Вставка ${ins}×${D} мм — на шканты-фиксаторы, в сложенном виде хранится под столешницей. Половины стягиваются замками снизу.`}];
+  return c;
+}
+
+/* 2. Стол-книжка */
+function buildTableBook(v){
+  const c=ctx(v),{t,P,F,H,Lb}=c, Lo=v.L, D=v.D, Hh=v.H, cw=v.cw, L1=Math.round((Lo-cw)/2), y=Hh-t;
+  const x0=Lo/2-cw/2, x1=x0+cw, pvc=MAT[v.cm].fin==='pvc', e4p=(a,b)=>pvc?e4(a,b):[];
+  if(L1>Hh-60) c.err=`Половинка ${L1} мм не помещается вниз при сложенном столе (высота ${Hh} мм). Уменьшите длину до ${cw+2*(Hh-60)} мм или увеличьте тумбу.`;
+  // тумба
+  [x0,x1-t].forEach(x=>P({name:'Тумба: боковина',x,y:0,z:60,sx:t,sy:y,sz:D-120,edges:pvc?[[2,y],[2,D-120]]:[],ph:'case'}));
+  P({name:'Тумба: крышка',x:x0,y,z:0,sx:cw,sy:t,sz:D,edges:e4p(cw,D),ph:'case'});
+  P({name:'Тумба: полка',x:x0+t,y:300,z:60,sx:cw-2*t,sy:t,sz:D-120,edges:pvc?[[2,cw-2*t]]:[],ph:'case'});
+  P({name:'Тумба: цоколь',x:x0+t,y:0,z:80,sx:cw-2*t,sy:80,sz:t,edges:[],ph:'case'});
+  [x0+t/2,x1-t/2].forEach(x=>[y-t/2,300+t/2].forEach(yy=>[D*.3,D*.7].forEach(z=>F('conf','case',x,yy,z,'x'))));
+  // половинки
+  const st=v.st, openL=st!=='closed', openR=st==='open';
+  [[openL,-1],[openR,1]].forEach(([op,s])=>{
+    const hx=s<0?x0:x1;
+    if(op){topPart(c,{x:s<0?x0-L1:x1,y,W:L1,D,name:'Половинка столешницы',ph:'leaves'});
+      const lx=s<0?x0-L1+130:x1+L1-130; legP(c,{cx:lx,cz:D/2,h:y,w:45,ph:'legs',name:'Поворотная опора'});
+      P({name:'Опора: перекладина',grp:'hw',x:Math.min(hx,lx),y:y-45,z:D/2-15,sx:Math.abs(lx-hx),sy:35,sz:30,ph:'legs',color:'#2B2B2B'});
+      [D/2-200,D/2+200].forEach(z=>F('hinge','legs',hx+(s<0?-4:4),y-30,z,'x'));}
+    else P({name:'Половинка столешницы',x:s<0?x0-t:x1,y:y-L1,z:0,sx:t,sy:L1,sz:D,edges:e4p(L1,D),ph:'leaves'});
+    [D*.15,D*.5,D*.85].forEach(z=>F('hinge','leaves',hx,y+t/2,z,'z'));
+  });
+  H('cardhinge',6); H('gatehinge',4); H(legKey(v,'tleg'),2); Lb('table');
+  c.size=[openL&&openR?Lo:openL?L1+cw:cw,Hh,D];
+  c.notes=[`Сложенный — ${cw}×${D} мм, как тумба у стены. Половинка — ${Lo-L1}×${D}, разложенный — ${Lo}×${D} мм на ${Lo>=1600?6:4} человек.`];
+  c.phases=[
+    {ph:'case',t:'Тумба',d:`Две боковины ${y}×${D-120} мм, крышка ${cw}×${D} мм, полка и цоколь. Конфирматы 7×50, проверьте прямой угол.`},
+    {ph:'leaves',t:'Половинки',d:`Две половинки ${L1}×${D} мм на карточных (ломберных) петлях к торцам крышки тумбы — по 3 петли, ось петли точно по кромке, иначе половинка не ляжет в плоскость.`},
+    {ph:'legs',t:'Поворотные опоры',d:`Под каждую половинку — опора на петлях: ${legsTxt(v)} высотой ${y} мм и перекладина к боковине тумбы. В сложенном виде опоры поворачиваются внутрь тумбы.`}];
+  return c;
+}
+
+/* 3. Журнальный стол-трансформер */
+function buildTableLift(v){
+  const c=ctx(v),{t,P,F,H,Lb}=c, W=v.W, D=v.D, Hh=v.H, up=v.st==='up', bh=110, pvc=MAT[v.cm].fin==='pvc';
+  const yb=bh, ch=Hh-t-bh, ytop=up?v.Hup-t:Hh-t;
+  [0,W-t].forEach(x=>P({name:'Корпус: боковина',x,y:yb,z:30,sx:t,sy:ch,sz:D-60,edges:pvc?[[2,ch],[2,D-60]]:[],ph:'case'}));
+  [30,D-30-t].forEach(z=>P({name:'Корпус: царга',x:t,y:yb,z,sx:W-2*t,sy:ch,sz:t,edges:pvc?[[0.4,W-2*t]]:[],ph:'case'}));
+  P({name:'Корпус: дно',x:t,y:yb,z:30+t,sx:W-2*t,sy:t,sz:D-60-2*t,edges:[],ph:'case'});
+  [t/2,W-t/2].forEach(x=>[yb+ch*.3,yb+ch*.7].forEach(yy=>[30+t/2,D-30-t/2].forEach(z=>F('conf','case',x,yy,z,'x'))));
+  topPart(c,{x:0,y:ytop,W,D,ph:'top'});
+  if(up){const ah=ytop-(Hh-t); [W*.25,W*.75].forEach(x=>[D*.3,D*.7].forEach(z=>P({name:'Механизм: рычаг',grp:'hw',x:x-12,y:Hh-t-40,z:z-12,sx:24,sy:ah+40,sz:24,ph:'mech',color:'#8E949B'})));}
+  [W*.25,W*.75].forEach(x=>F('s16','mech',x,Hh-t-30,D/2,'y'));
+  const ins=styOf(v).leg==='hidden'?110:60;
+  [[ins,ins],[W-ins,ins],[ins,D-ins],[W-ins,D-ins]].forEach(([x,z])=>{legP(c,{cx:x,cz:z,h:bh,w:40,ph:'legs',name:'Ножка'}); [[-10,-10],[10,10]].forEach(([a,b])=>F('s16','legs',x+a,bh,z+b,'y'));});
+  H(legKey(v,'fleg'),4); H('liftmech'); Lb('table'); Lb('legs');
+  c.size=[W,up?v.Hup:Hh,D];
+  c.notes=[`Журнальный ${W}×${D}×${Hh} мм, поднимается до обеденной высоты ${v.Hup} мм. Внутри — ниша для хранения.`];
+  c.phases=[
+    {ph:'case',t:'Корпус',d:`Боковины и царги высотой ${ch} мм, дно ${W-2*t}×${D-60-2*t} мм. Конфирматы, проверьте диагонали.`},
+    {ph:'legs',t:'Ножки',d:`${legsTxt(v)} ${bh} мм по углам, по 4 самореза 4×16.`},
+    {ph:'mech',t:'Механизм трансформера',d:`Механизм — к царгам изнутри по разметке производителя, обычно в 50 мм от торцов. Проверьте подъём до ${v.Hup} мм.`},
+    {ph:'top',t:'Столешница',d:`Столешница ${W}×${D} мм — к площадкам механизма саморезами 4×16 с внутренней стороны.`}];
+  return c;
+}
+
+/* 4. Откидной настенный */
+function buildTableWall(v){
+  const c=ctx(v),{t,P,F,H,Lb}=c, W=v.W, D=v.D, Hh=v.H, open=v.st==='open', y=Hh-t, pvc=MAT[v.cm].fin==='pvc';
+  P({name:'Рейка на стену',x:0,y:y-110,z:0,sx:W,sy:110,sz:t,edges:pvc?[[2,W]]:[],ph:'wall'});
+  [W*.15,W/2,W*.85].forEach(x=>F('anchor','wall',x,y-55,t,'z')); H('anchor',3);
+  if(open){topPart(c,{x:0,z:t,y,W,D,ph:'top'});}
+  else P({name:'Столешница',x:0,y:y-D,z:t,sx:W,sy:D,sz:t,edges:pvc?e4(W,D):[],ph:'top'});
+  H('pianohinge',W/1000); for(let x=60;x<W;x+=150) F('s16','top',x,y,t+3,'y');
+  if(v.sup==='bracket'){
+    [80,W-80-30].forEach(x=>{P({name:'Кронштейн: стенка',grp:'hw',x,y:y-300,z:t,sx:30,sy:300,sz:4,ph:'sup',color:'#2B2B2B'});
+      if(open) P({name:'Кронштейн: полка',grp:'hw',x,y:y-30,z:t,sx:30,sy:30,sz:Math.min(D-60,380),ph:'sup',color:'#2B2B2B'});
+      [y-250,y-120].forEach(yy=>F('anchor','sup',x+15,yy,t,'z'));});
+    H('fbracket'); H('anchor',4);
+  }else{
+    if(open){legP(c,{cx:W/2,cz:t+D-120,h:y,w:40,ph:'sup',name:'Откидная ножка'}); F('hinge','sup',W/2,y-20,t+D-120,'y');}
+    H(legKey(v,'tleg'),1); H('gatehinge',1);
+  }
+  Lb('table'); Lb('hang');
+  c.size=[W,Hh,open?D+t:2*t];
+  c.notes=[`Откинут — ${W}×${D} мм на высоте ${Hh} мм, сложенный выступает от стены всего на ${2*t+20} мм.`];
+  c.phases=[
+    {ph:'wall',t:'Рейка на стену',d:`Рейка ${W}×110 мм по уровню, верх на ${y} мм от пола. 3 анкера 10×100 (в газоблок — химический анкер).`},
+    {ph:'top',t:'Столешница',d:`Столешница ${W}×${D} мм на рояльной петле к рейке, саморезы через 150 мм. Ось петли — по верхней кромке рейки.`},
+    {ph:'sup',t:v.sup==='bracket'?'Складные кронштейны':'Откидная ножка',d:v.sup==='bracket'?'Пара складных кронштейнов под столешницу, на стену — по 2 анкера на кронштейн. Нагрузка до 40–50 кг.':`Ножка на петле к столешнице снизу, в 120 мм от края. ${legsTxt(v)}.`}];
+  return c;
+}
+
+/* 5. Круглый / овальный */
+function buildTableRound(v){
+  const c=ctx(v),{t,P,F,H,Lb}=c, W=v.W, D=v.shape==='oval'?Math.min(v.D,W):W, Hh=v.H, y=Hh-t, st=styOf(v).leg;
+  topPart(c,{x:0,y,W,D,shape:'poly',pts:ovalPts(0,0,W,D)});
+  if(v.base==='pedestal'){
+    const cx=W/2, cz=D/2, ch=y-50, metal=st==='metal'||st==='slim'||st==='hidden';
+    if(st==='turn') P({name:'Опора: колонна',grp:'hw',shape:'turnY',x:cx-90,y:50,z:cz-90,sx:180,sy:ch,sz:180,ph:'base',color:colorOf(v.cm,v.cdec),wood:true});
+    else P({name:'Опора: колонна',grp:'hw',shape:st==='cone'?'coneY':'cylY',x:cx-(metal?50:70),y:50,z:cz-(metal?50:70),sx:metal?100:140,sy:ch,sz:metal?100:140,ph:'base',color:metal?'#1E1E1E':'#D6B88C',wood:!metal});
+    const fl=Math.min(W,D)*.72;
+    P({name:'Опора: крестовина',grp:'hw',x:cx-fl/2,y:0,z:cz-30,sx:fl,sy:50,sz:60,ph:'base',color:metal?'#1E1E1E':colorOf(v.cm,v.cdec),wood:!metal});
+    P({name:'Опора: крестовина',grp:'hw',x:cx-30,y:0,z:cz-fl/2,sx:60,sy:50,sz:fl,ph:'base',color:metal?'#1E1E1E':colorOf(v.cm,v.cdec),wood:!metal});
+    P({name:'Опора: площадка',grp:'hw',x:cx-Math.min(W,D)*.25,y:y-30,z:cz-30,sx:Math.min(W,D)*.5,sy:30,sz:60,ph:'base',color:'#2B2B2B'});
+    [-1,1].forEach(s=>F('s16','top',cx+s*Math.min(W,D)*.2,y,cz,'y'));
+    H('pedestal');
+    if(W!==D) c.notes=[`Овальный стол на одной опоре — длину больше ${Math.round(D*1.5)} мм лучше ставить на две опоры или ножки.`];
+  }else{
+    const s=Math.min(W,D)/Math.SQRT2*.86, x0=W/2-(W>D?(W-D)/2+s/2:s/2), x1=W-x0, z0=D/2-s/2, z1=D/2+s/2;
+    apronRing(c,{x0,z0,x1,z1,y:y-90,h:90,inset:0});
+    legs4(c,{x0,z0,x1,z1,h:y,ph:'frame'});
+  }
+  Lb('table');
+  c.size=[W,Hh,D];
+  const seats=Math.max(2,Math.floor(Math.PI*(W+D)/2/600));
+  c.notes=(c.notes||[]).concat([`${W===D?`Круглый Ø${W}`:`Овальный ${W}×${D}`} мм на ${seats} ${plural(seats,'человека','человека','человек')}. Опора: ${v.base==='pedestal'?'центральная колонна с крестовиной':legsTxt(v)}.`]);
+  c.phases=[
+    {ph:'top',t:'Столешница',d:`${W===D?`Круг Ø${W} мм`:`Овал ${W}×${D} мм`}: заготовка ${W}×${D} мм, фрезер на циркуле, затем кромка${MAT[v.cm].fin==='pvc'?' ПВХ 2 мм (кромкооблицовка по криволинейке — в цеху)':', шлифовка и масло'}.`},
+    {ph:v.base==='pedestal'?'base':'frame',t:'Опора',d:v.base==='pedestal'?'Центральная опора: крестовина + колонна + площадка под столешницу. Площадку крепите к столешнице саморезами 4×16, ровно по центру.':`Квадрат из царг и 4 ножки (${legsTxt(v)}) на угловых стяжках, сверху столешница на мебельные уголки.`}];
+  return c;
+}
+
+/* 6. Барный стол / стойка */
+function buildTableBar(v){
+  const c=ctx(v),{t,P,F,H,Lb}=c, W=v.W, D=v.D, Hh=v.H, y=Hh-t, wall=v.mount==='wall';
+  topPart(c,{x:0,y,W,D});
+  if(wall){P({name:'Рейка на стену',x:40,y:y-90,z:0,sx:W-80,sy:90,sz:t,edges:[],ph:'frame'}); [W*.2,W/2,W*.8].forEach(x=>F('anchor','frame',x,y-45,t,'z')); H('anchor',3);
+    const ins=styOf(v).leg==='hidden'?110:70; [[ins,D-ins],[W-ins,D-ins]].forEach(([x,z])=>{legP(c,{cx:x,cz:z,h:y,w:60,ph:'frame',name:'Ножка стола'}); F('glide','frame',x,0,z,'y');}); H(legKey(v,'tleg'),2);
+    P({name:'Царга передняя',x:70,y:y-90,z:D-70-t-30,sx:W-140,sy:90,sz:t,edges:[],ph:'frame'});}
+  else{apronRing(c,{x0:0,z0:0,x1:W,z1:D,y:y-90,h:90,inset:60}); legs4(c,{x0:30,z0:30,x1:W-30,z1:D-30,h:y});}
+  if(v.foot==='yes'){P({name:'Подножка',grp:'hw',shape:'cylX',x:60,y:300,z:D-90,sx:W-120,sy:32,sz:32,ph:'foot',color:'#9AA0A6'}); H('footrest',(W-120)/1000);}
+  Lb('table');
+  c.size=[W,Hh,D];
+  c.notes=[`Барная высота ${Hh} мм — под барные стулья с сиденьем 750–800 мм. ${wall?'Одна сторона опирается на стену.':'Отдельностоящая.'}`];
+  c.phases=[
+    {ph:'frame',t:wall?'Рейка и ножки':'Подстолье',d:wall?`Рейка на стену по уровню на ${y-90} мм, 3 анкера 10×100. Спереди две ножки ${y} мм (${legsTxt(v)}) и царга.`:`4 ножки ${y} мм (${legsTxt(v)}) и царги по периметру на угловых стяжках.`},
+    {ph:'top',t:'Столешница',d:`Столешница ${W}×${D} мм на мебельные уголки снизу.`},
+    {ph:'foot',t:'Подножка',d:v.foot==='yes'?`Труба Ø32 на высоте 300 мм вдоль передних ножек на держателях — без неё на барной высоте неудобно сидеть.`:''}];
+  return c;
+}
+
+/* 7. Туалетный столик */
+function buildVanity(v){
+  const c=ctx(v),{t,P,F,H,Lb}=c, W=v.W, D=v.D, Hh=v.H, ah=170, n=v.drawers;
+  const sub=buildCase(Object.assign({},v,{H:ah,base:'none'}),{base:{type:'none'},top:'overlay',back:true,cols:Array.from({length:n},()=>[{drawers:1}])});
+  mergeSub(c,sub,0,Hh-ah,0);
+  sub.parts.forEach(p=>{if(p.ph==='support') p.ph='case';}); c.fx=c.fx.filter(f=>f.type!=='glide');
+  const ins=legInset(v);
+  [[ins,ins],[W-ins,ins],[ins,D-ins],[W-ins,D-ins]].forEach(([x,z])=>{legP(c,{cx:x,cz:z,h:Hh-ah,w:45,ph:'legs',name:'Ножка'}); [[-10,-10],[10,10]].forEach(([a,b])=>F('s16','legs',x+a,Hh-ah,z+b,'y'));});
+  H(legKey(v,'tleg'),4);
+  if(v.mirror==='yes'){const mw=Math.min(W-120,900), mh=v.MH; P({name:'Зеркало',grp:'mirror',mk:null,x:(W-mw)/2,y:Hh+60,z:0,sx:mw,sy:mh,sz:6,ph:'mirror',color:'#C7D3DA'}); H('mirrorm2',Math.round(mw*mh/1e4)/100); F('anchor','mirror',W/2-mw/3,Hh+60+mh-40,6,'z'); F('anchor','mirror',W/2+mw/3,Hh+60+mh-40,6,'z');}
+  Lb('legs');
+  c.err=sub.err; c.info=Object.assign(c.info,sub.info);
+  c.size=[W,v.mirror==='yes'?Hh+60+v.MH:Hh,D];
+  c.phases=sub.phases.concat([
+    {ph:'legs',t:'Ножки',d:`4 ножки (${legsTxt(v)}) высотой ${Hh-ah} мм под дно короба, по 4 самореза 4×16.`},
+    {ph:'mirror',t:'Зеркало',d:v.mirror==='yes'?`Зеркало ${Math.min(W-120,900)}×${v.MH} мм на стену над столиком — на клей-герметик и 2 держателя.`:''}]);
+  return c;
+}
+
+/* 8. Компьютерный угловой */
+function buildTableCorner(v){
+  const c=ctx(v),{t,P,F,H,Lb}=c, W=v.W, L2=v.L2, D=v.D, D2=v.D2, Hh=v.H, y=Hh-t, pvc=MAT[v.cm].fin==='pvc', e4p=(a,b)=>pvc?e4(a,b):[];
+  // столешница: основная вдоль стены + крыло вдоль боковой стены
+  P({name:'Столешница основная',x:0,y,z:0,sx:W-D2,sy:t,sz:D,edges:e4p(W-D2,D),ph:'top'});
+  P({name:'Столешница: крыло',x:W-D2,y,z:0,sx:D2,sy:t,sz:L2,edges:e4p(D2,L2),ph:'top'});
+  [D*.3,D*.7].forEach(z=>F('insert','top',W-D2,y-t/2,z,'x'));
+  let x0=0, sub=null;
+  if(v.ped!=='0'){const pw=420; sub=buildCase(Object.assign({},v,{W:pw,H:y,D:D-60,base:'none'}),{base:{type:'none'},top:'between',back:true,cols:[[{drawers:+v.ped}]]});
+    mergeSub(c,sub,0,0,0); x0=pw; c.info=Object.assign(c.info,sub.info);}
+  else P({name:'Опора-боковина',x:0,y:0,z:0,sx:t,sy:y,sz:D-40,edges:pvc?[[2,y],[2,D-40]]:[],ph:'base'});
+  P({name:'Опора-боковина крыла',x:W-D2,y:0,z:L2-t-30,sx:D2-30,sy:y,sz:t,edges:pvc?[[2,y],[2,D2-30]]:[],ph:'base'});
+  P({name:'Опора в углу',x:W-t-20,y:0,z:20,sx:t,sy:y,sz:D-40,edges:pvc?[[2,y],[2,D-40]]:[],ph:'base'});
+  P({name:'Царга задняя',x:x0||t,y:y-350,z:40,sx:W-20-t-(x0||t),sy:350,sz:t,edges:pvc?[[0.4,W]]:[],ph:'base'});
+  P({name:'Царга крыла',x:W-t-20-t,y:y-350,z:D,sx:t,sy:350,sz:L2-D-t-30,edges:pvc?[[0.4,L2-D]]:[],ph:'base'});
+  [[x0+40,y-12,60],[W-D2-40,y-12,60],[W-D2+40,y-12,L2-60],[W-40,y-12,D/2]].forEach(([x,yy,z])=>F('corner','top',x,yy,z,'y'));
+  Lb('table');
+  if(v.side==='L'){c.parts.forEach(p=>{p.x=W-p.x-p.sx; if(p.poly) p.poly=p.poly.map(([x,z])=>[W-x,z]);}); c.fx.forEach(f=>f.x=W-f.x);}
+  c.size=[W,Hh,L2];
+  c.notes=[`Угловой ${W}×${L2} мм: основная часть ${W-D2}×${D}, крыло ${D2}×${L2} мм ${v.side==='L'?'слева':'справа'}${v.ped!=='0'?`, тумба с ${v.ped} ящиками`:''}.`];
+  c.phases=(sub?sub.phases:[]).concat([
+    {ph:'base',t:'Опоры и царги',d:`Боковины и опора в углу высотой ${y} мм, задние царги 350 мм — держат стол от расшатывания. Конфирматы и уголки.`},
+    {ph:'top',t:'Столешница',d:`Основная часть и крыло стыкуются в углу на шкантах и стяжках снизу, затем крепятся к опорам уголками.`}]);
+  return c;
+}
+
+/* ---- регистрация ---- */
+const STY_ST=[['open','Разложенным'],['closed','Сложенным']];
+Object.assign(TPL,{
+  textend:{name:'Стол раздвижной',cat:'Столы',custom:buildTableExt,noFront:true,defCm:'dsp18',params:[N('W','Длина сложенного',900,2000,1400),N('H','Высота',700,800,750),N('D','Ширина',700,1100,850),N('ins','Вставка',300,700,450),
+    S('shape','Форма',[['rect','Прямоугольный'],['oval','Овальный']],'rect'),S('base','Опоры',[['legs','4 ножки'],['U','П-образные металл']],'legs'),S('st','Показать',STY_ST,'open')]},
+  tbook:{name:'Стол-книжка',cat:'Столы',custom:buildTableBook,noFront:true,defCm:'dsp18',params:[N('L','Длина разложенного',1000,2000,1600),N('D','Ширина',600,900,800),N('H','Высота',700,800,750),N('cw','Тумба (в сложенном)',250,500,360),
+    S('st','Показать',[['open','Разложенным'],['half','Одна половинка'],['closed','Сложенным']],'open')]},
+  tlift:{name:'Стол-трансформер журнальный',cat:'Столы',custom:buildTableLift,noFront:true,defCm:'dsp18',params:[N('W','Длина',800,1400,1100),N('D','Ширина',500,800,600),N('H','Высота журнальная',400,550,450),N('Hup','Высота обеденная',650,780,750),
+    S('st','Показать',[['up','Поднятым'],['down','Опущенным']],'up')]},
+  twall:{name:'Стол откидной настенный',cat:'Столы',custom:buildTableWall,noFront:true,defCm:'dsp18',params:[N('W','Ширина',500,1400,800),N('D','Глубина',300,700,500),N('H','Высота',650,800,750),
+    S('sup','Опора',[['bracket','Складные кронштейны'],['leg','Откидная ножка']],'bracket'),S('st','Показать',STY_ST,'open')]},
+  tround:{name:'Стол круглый / овальный',cat:'Столы',custom:buildTableRound,noFront:true,defCm:'dsp18',params:[N('W','Диаметр / длина',600,2000,1000),N('D','Ширина (овал)',600,1200,900,'мм',{when:v=>v.shape==='oval'}),N('H','Высота',450,800,750),
+    S('shape','Форма',[['round','Круглый'],['oval','Овальный']],'round'),S('base','Опора',[['pedestal','Центральная колонна'],['legs','4 ножки + царга']],'pedestal')]},
+  tbar:{name:'Барный стол / стойка',cat:'Столы',custom:buildTableBar,noFront:true,defCm:'dsp18',params:[N('W','Длина',700,2400,1400),N('D','Глубина',300,800,450),N('H','Высота',900,1150,1050),
+    S('mount','Установка',[['wall','Пристенная'],['free','Отдельностоящая']],'wall'),S('foot','Подножка',[['yes','Есть'],['no','Нет']],'yes')]},
+  vanity:C('Туалетный столик','Столы',[...dims([600,1400,1000],[700,800,760],[350,550,450]),N('drawers','Ящики в ряд',1,3,2,'шт'),S('mirror','Зеркало',[['yes','Есть'],['no','Нет']],'yes'),N('MH','Высота зеркала',300,1000,700,'мм',{when:v=>v.mirror==='yes'})],null,{custom:buildVanity}),
+  tcorner:C('Стол компьютерный угловой','Столы',[N('W','Длина вдоль стены',1000,2200,1400),N('L2','Длина крыла',800,2000,1200),N('D','Глубина основной',500,800,600),N('D2','Глубина крыла',400,700,500),N('H','Высота',700,800,750),
+    S('side','Крыло',[['R','Справа'],['L','Слева']],'R'),S('ped','Тумба',[['3','3 ящика'],['2','2 ящика'],['0','Без тумбы']],'3')],null,{custom:buildTableCorner})
+});
+Object.assign(IC,{
+  textend:'<path d="M2 10h9M13 10h3M18 10h8M11 9v2M13 9v2M16 9v2M18 9v2M5 11v13M23 11v13M5 14h18"/>',
+  tbook:'<path d="M11 6v18M17 6v18M11 7h6M3 7l8 0M17 7h8M4 8v15M24 8v15M11 13h6"/>',
+  tlift:'<rect x="4" y="14" width="20" height="7" rx="1"/><path d="M3 6h22M9 7v7M19 7v7M6 21v3M22 21v3"/>',
+  twall:'<path d="M4 3v22M4 8h18M7 8l-3 6M18 8v1"/><path d="M4 14h2"/>',
+  tround:'<ellipse cx="14" cy="8" rx="11" ry="3"/><path d="M14 11v11M8 24h12"/>',
+  tbar:'<path d="M3 7h22M6 8v17M22 8v17M6 19h16"/>',
+  vanity:'<rect x="8" y="2" width="12" height="9" rx="4"/><path d="M3 13h22M4 14v10M24 14v10M4 17h20M12 15h4"/>',
+  tcorner:'<path d="M3 9h22v15M3 9v14M18 14h7M3 13h15v11"/>'
+});
+['textend','tbook','tlift','twall','tround','tbar','vanity','tcorner'].forEach(k=>TPL[k].icon=`<svg viewBox="0 0 28 28">${IC[k]}</svg>`);
+
 </script>
 <script>
 /* ===== Интерфейс v3 ===== */
@@ -1723,7 +2037,7 @@ function ctaHTML(){
     return `<button class="cta" type="button" data-act="saveItem"><span>${o?'Добавить в заказ':'Сохранить в заказ'}</span><i>${ICON.plus}</i></button>`;
   }
   if(state.screen==='orders') return `<button class="cta" type="button" data-act="newOrder"><span>Новый заказ</span><i>${ICON.plus}</i></button>`;
-  if(state.screen==='order') return `<button class="cta o" type="button" data-act="copyKP"><span>Копировать КП клиенту</span><i>${ICON.share}</i></button>`;
+  if(state.screen==='order') return `<button class="cta o" type="button" data-act="pdfOrder"><span>PDF клиенту</span><i>${ICON.share}</i></button>`;
   return '';
 }
 function renderCTA(){const h=ctaHTML(); $('#ctaBar').innerHTML=h; $('#ctaDesk').innerHTML=state.screen==='editor'?h:'';}
@@ -1781,7 +2095,7 @@ $('#params').addEventListener('input',e=>{const k=e.target.dataset.k; if(!k||e.t
 $('#params').addEventListener('change',e=>{
   const k=e.target.dataset.k; if(!k) return; const p=allParams(state.tpl).find(q=>q.k===k);
   if(p.type==='num'){const v=normVals(state.tpl,Object.assign({},tv(),{[k]:e.target.value}))[k]; e.target.value=v; tv()[k]=v;}
-  else{tv()[k]=e.target.value; renderParams();}
+  else{tv()[k]=e.target.value; if(k==='sty'){const ks=new Set(allParams(state.tpl).map(q=>q.k)); Object.entries(styleSet(state.tpl,e.target.value)).forEach(([a,b])=>{if(ks.has(a)) tv()[a]=b;}); toast('Стиль «'+STY[e.target.value].n+'»: материалы, фасады и ножки подобраны');} renderParams();}
   clearTimeout(timer); update();
 });
 
@@ -2101,6 +2415,219 @@ function renderRef(){
   el.innerHTML=`<button type="button" data-act="refBig" aria-label="Открыть фото-референс"><img src="${refImg}" alt="Фото-референс"></button><button type="button" class="x" data-act="refClose" aria-label="Убрать фото">×</button>`;
 }
 
+/* ---------- PDF: КП клиенту и раскрой для цеха ---------- */
+const PDF_JS='https://cdn.jsdelivr.net/npm/pdfmake@0.2.20/build/pdfmake.min.js', PDF_FONTS='https://cdn.jsdelivr.net/npm/pdfmake@0.2.20/build/vfs_fonts.js';
+const IC_PDF='<svg class="i" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>';
+let pdfLib=null, pdfOut=null;
+function loadPdfLib(){
+  if(window.pdfMake&&pdfMake.vfs&&pdfMake.vfs['Roboto-Regular.ttf']) return Promise.resolve();
+  if(pdfLib) return pdfLib;
+  const load=src=>new Promise((ok,no)=>{const s=document.createElement('script'); s.src=src; s.onload=ok; s.onerror=()=>no(new Error('load')); document.head.appendChild(s);});
+  pdfLib=load(PDF_JS).then(()=>load(PDF_FONTS)).catch(e=>{pdfLib=null; throw e;});
+  return pdfLib;
+}
+const nb=s=>String(s).replace(/[  ]/g,' ');
+const pm=n=>nb(Math.round(n).toLocaleString('uk-UA'))+' грн';
+const VNS='vector-effect:non-scaling-stroke';
+const DRAW_CSS=`text{font-family:Arial,Helvetica,sans-serif;fill:#111}.ttl{font-weight:700}.c{fill:#ECEAE4;stroke:#111;stroke-width:2px;${VNS}}.hw{fill:#D8D5CC;stroke:#111;stroke-width:1.4px;${VNS}}.f{fill:none;stroke:#FF5A1F;stroke-width:2.4px;stroke-dasharray:10 6;${VNS}}.fs{fill:#FFF1C2;stroke:#111;stroke-width:1.8px;${VNS}}.mt{fill:#111;stroke:#111;stroke-width:1px;${VNS}}.sf{fill:#FFF1C2;stroke:#5C5C5C;stroke-width:1.4px;${VNS};opacity:.9}.h{fill:none;stroke:#5C5C5C;stroke-width:1.4px;stroke-dasharray:8 6;${VNS}}.dim line{stroke:#111;stroke-width:1.6px;${VNS}}.ext{stroke:#5C5C5C;stroke-width:1.2px;${VNS};opacity:.7}`;
+const SHEET_CSS=`text{font-family:Arial,Helvetica,sans-serif;fill:#111}.sh{fill:#ECEAE4;stroke:#111;stroke-width:2px;${VNS}}.pc{fill:#FFF1C2;stroke:#111;stroke-width:1.6px;${VNS}}.dv{fill:#fff}.hatch line{stroke:#CFCBC0;stroke-width:1.4px;${VNS}}`;
+async function svgToImg(svg,W=1800,css=DRAW_CSS){
+  const vb=svg.match(/viewBox="([-\d.]+) ([-\d.]+) ([\d.]+) ([\d.]+)"/), H=Math.round(W*(+vb[4])/(+vb[3]));
+  const s=svg.replace(/<svg([^>]*)>/,`<svg$1 width="${W}" height="${H}"><style>${css}</style><rect x="${vb[1]}" y="${vb[2]}" width="100%" height="100%" fill="#fff"/>`);
+  const img=new Image(); await new Promise((ok,no)=>{img.onload=ok; img.onerror=no; img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);});
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,W,H); g.drawImage(img,0,0,W,H);
+  return cv.toDataURL('image/jpeg',.9);
+}
+function renderSnap(W=1600,H=1100){
+  const r=R.renderer, cv=r.domElement, sz=new THREE.Vector2(); r.getSize(sz); const pr=r.getPixelRatio(), asp=R.cam.aspect;
+  const tab=state.tab, nf=noFronts; state.tab='3d'; noFronts=false; applyVis(); state.tab=tab; noFronts=nf;
+  R.marks.forEach(m=>m.g.visible=false);
+  r.setPixelRatio(1); r.setSize(W,H,false); R.cam.aspect=W/H; R.cam.updateProjectionMatrix(); r.setClearColor(0xffffff,1);
+  R.group.updateMatrixWorld(true); const box=new THREE.Box3(); R.items.forEach(it=>{if(it.mesh.visible) box.expandByObject(it.mesh);});
+  const cp=R.cam.position.clone(), tp=R.ctr.target.clone(), c=box.getCenter(new THREE.Vector3()), rad=box.getSize(new THREE.Vector3()).length()/2;
+  const vf=R.cam.fov*Math.PI/360, hf=Math.atan(Math.tan(vf)*W/H), dist=rad/Math.sin(Math.min(vf,hf)), d=cp.clone().sub(tp).normalize();
+  R.cam.position.copy(c).add(d.multiplyScalar(dist)); R.cam.lookAt(c);
+  r.render(R.scene,R.cam); const url=cv.toDataURL('image/jpeg',.9);
+  R.cam.position.copy(cp); R.cam.lookAt(tp);
+  r.setClearColor(0x000000,0); r.setPixelRatio(pr); r.setSize(Math.max(1,sz.x),Math.max(1,sz.y),false); R.cam.aspect=asp; R.cam.updateProjectionMatrix(); applyVis();
+  return url;
+}
+async function captureItem(m,o,fresh){
+  const keep=M, out={}; M=m;
+  try{
+    if(o.img3d){init3D(); if(R&&!R.fail){if(fresh){resetCam=true; build3D();} else if(dirty3D){build3D(); dirty3D=false;} out.img3d=renderSnap();}}
+    if(o.draw) out.draw=await svgToImg(drawSVG());
+  }finally{M=keep;}
+  if(fresh&&R&&!R.fail){resetCam=true; build3D(); applyVis();}
+  return out;
+}
+function clientRows(m,o){
+  const k=1+prices.markup/100, rows=[];
+  ['mat','metal','soft','svc','hw'].forEach(s=>{const ls=m.lines.filter(l=>l.sec===s); if(!ls.length) return; rows.push({sec:SEC[s]}); ls.forEach(l=>rows.push({n:l.name,q:`${fmt(l.qty)} ${l.unit}`,p:l.price*k,s:l.sum*k}));});
+  const lab=m.lines.filter(l=>l.sec==='labor');
+  if(lab.length){rows.push({sec:'Работа'}); if(o.labDetail) lab.forEach(l=>rows.push({n:l.name,q:`${fmt(l.qty)} ${l.unit}`.trim(),p:l.price,s:l.sum})); else rows.push({n:'Изготовление, сборка и доставка',q:'',p:null,s:m.labSum});}
+  return rows;
+}
+const tLay=n=>({hLineWidth:(i)=>i===0||i===n?0:.5,vLineWidth:()=>0,hLineColor:'#DDD',paddingTop:()=>4,paddingBottom:()=>4,fillColor:(r)=>r===0?'#111111':null});
+const ACK='#F5B400';
+const pdfHead=(meta,kind)=>[{columns:[{stack:[{text:meta.firm||'Мебель на заказ',style:'firm'},meta.phone?{text:meta.phone,style:'muted'}:''],width:'*'},{stack:[{text:kind,style:'kp'},{text:`от ${new Date().toLocaleDateString('uk-UA')}`,style:'muted',alignment:'right'}],width:'auto'}]},{canvas:[{type:'rect',x:0,y:0,w:515,h:4,color:ACK}],margin:[0,8,0,10]}];
+const pdfStyles={firm:{fontSize:15,bold:true},kp:{fontSize:12,bold:true,color:'#B07F00',alignment:'right'},h1:{fontSize:17,bold:true},h2:{fontSize:12.5,bold:true,margin:[0,4,0,2]},muted:{color:'#666'},small:{fontSize:8,color:'#777'},th:{bold:true,color:'#fff',fontSize:9},sec:{bold:true,fillColor:'#EFEDE8',fontSize:9},note:{fontSize:9,color:'#444'}};
+const pdfWrap=(content,meta)=>({pageSize:'A4',pageMargins:[40,36,40,44],info:{title:meta.title},content,
+  footer:(p,n)=>({columns:[{text:nb([meta.firm,meta.phone].filter(Boolean).join(' · ')||meta.title),style:'small'},{text:`стр. ${p} из ${n}`,style:'small',alignment:'right'}],margin:[40,12,40,0]}),
+  defaultStyle:{font:'Roboto',fontSize:9.5,color:'#111'},styles:pdfStyles});
+function kpDoc(items,meta,o){
+  const content=pdfHead(meta,'КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ');
+  if(meta.client) content.push({text:[{text:'Клиент: ',color:'#666'},{text:meta.client,bold:true},meta.address?{text:' · '+meta.address,color:'#666'}:'']},{text:' ',fontSize:4});
+  items.forEach((it,i)=>{
+    const m=it.m;
+    content.push({text:(items.length>1?`${i+1}. `:'')+it.name,style:'h1',pageBreak:i?'before':undefined});
+    content.push({text:nb(`${it.size} мм · ${it.mat}`),style:'muted',margin:[0,2,0,10]});
+    if(it.img3d) content.push({image:it.img3d,fit:[515,410],alignment:'center',margin:[0,0,0,10]});
+    content.push({table:{widths:['*','auto'],body:[[{text:items.length>1?'Стоимость изделия':'Стоимость под ключ',bold:true,fontSize:13,color:'#fff',fillColor:'#111111',margin:[6,5,0,5]},{text:pm(m.total),bold:true,fontSize:15,color:'#111',fillColor:ACK,alignment:'right',noWrap:true,margin:[10,4,6,4]}],
+      [{text:'в том числе материалы и фурнитура',color:'#666',margin:[6,3,0,0]},{text:pm(m.matSum+m.markup),alignment:'right',margin:[0,3,6,0]}],[{text:'изготовление, сборка, доставка',color:'#666',margin:[6,0,0,3]},{text:pm(m.labSum),alignment:'right',margin:[0,0,6,3]}]]},layout:'noBorders',unbreakable:true,margin:[0,6,0,0]});
+    if(it.draw){content.push({stack:[{text:'Чертёж',style:'h1'},{text:it.name,style:'muted',margin:[0,0,0,8]},{image:it.draw,fit:[515,560],alignment:'center'}],pageBreak:'before',unbreakable:true});
+      content.push({text:'Размеры в миллиметрах. Чертёж ориентировочный — точные размеры уточняются на замере.',style:'small',margin:[0,6,0,0]});}
+    if(o.mat){
+      const body=[[{text:'Наименование',style:'th'},{text:'Кол-во',style:'th',alignment:'right'},{text:'Цена',style:'th',alignment:'right'},{text:'Сумма',style:'th',alignment:'right'}]];
+      clientRows(m,o).forEach(r=>{if(r.sec) body.push([{text:r.sec,colSpan:4,style:'sec'},'','','']); else body.push([nb(r.n),{text:nb(r.q),alignment:'right',noWrap:true},{text:r.p==null?'':pm(r.p),alignment:'right',noWrap:true},{text:pm(r.s),alignment:'right',noWrap:true}]);});
+      body.push([{text:'Материалы и фурнитура',colSpan:3,alignment:'right',color:'#666',margin:[0,6,0,0]},'','',{text:pm(m.matSum+m.markup),alignment:'right',noWrap:true,margin:[0,6,0,0]}]);
+      body.push([{text:'Работа',colSpan:3,alignment:'right',color:'#666'},'','',{text:pm(m.labSum),alignment:'right',noWrap:true}]);
+      body.push([{text:items.length>1?'Стоимость изделия':'ИТОГО',colSpan:3,alignment:'right',bold:true,fontSize:13},'','',{text:pm(m.total),bold:true,fontSize:13,alignment:'right',noWrap:true}]);
+      const n=body.length;
+      content.push({text:'Материалы и работа',style:'h1',pageBreak:'before',margin:[0,0,0,8]});
+      content.push({table:{headerRows:1,dontBreakRows:true,widths:['*','auto','auto','auto'],body},layout:{hLineWidth:(i)=>i===0||i>=n-3?0:.5,vLineWidth:()=>0,hLineColor:'#DDD',paddingTop:()=>4,paddingBottom:()=>4,fillColor:(r)=>r===0?'#111111':r===n-1?'#FFF1C2':null}});
+    }
+  });
+  if(items.length>1){const tot=items.reduce((s,it)=>s+it.m.total,0);
+    content.push({text:'Итого по заказу',style:'h1',pageBreak:'before'});
+    content.push({table:{headerRows:1,widths:['*','auto'],body:[[{text:'Изделие',style:'th'},{text:'Стоимость',style:'th',alignment:'right'}],...items.map((it,i)=>[nb(`${i+1}. ${it.name} — ${it.size} мм`),{text:pm(it.m.total),alignment:'right',noWrap:true}]),[{text:'ИТОГО',bold:true,fontSize:14},{text:pm(tot),bold:true,fontSize:14,alignment:'right',noWrap:true}]]},layout:{hLineWidth:()=>.5,vLineWidth:()=>0,hLineColor:'#DDD',paddingTop:()=>6,paddingBottom:()=>6,fillColor:(r,nd)=>r===0?'#111111':r===nd.table.body.length-1?ACK:null}});}
+  content.push({text:meta.note||'',style:'note',margin:[0,16,0,0]});
+  return pdfWrap(content,meta);
+}
+// раскрой: одно изделие или весь заказ одним раскроем
+function cutData(ms){
+  if(ms.length===1){const m=ms[0]; return {groups:m.groups.map(g=>Object.assign({},g,{lab:String(g.n)})),sg:m.sheetGroups.map(s=>Object.assign({},s)),metal:m.metal?m.metal.cutList:[],e2:m.e2m,e04:m.e04m,cut:m.cutm};}
+  const groups=[], byMat=new Map(); let e2=0,e04=0,cut=0; const metal=[];
+  ms.forEach((m,ii)=>{e2+=m.e2m; e04+=m.e04m; cut+=m.cutm; if(m.metal) m.metal.cutList.forEach(x=>metal.push(Object.assign({},x,{prof:`${ii+1}) ${x.prof}`})));
+    m.groups.forEach(g=>{const lab=`${ii+1}.${g.n}`, gg=Object.assign({},g,{lab}); groups.push(gg); const k=g.mk+'|'+(g.dec||''); let s=byMat.get(k); if(!s){s={mk:g.mk,dec:g.dec,pieces:[]}; byMat.set(k,s);} for(let i=0;i<g.qty;i++) s.pieces.push({L:g.L,W:g.W,n:lab});});});
+  const sg=[...byMat.values()].map(s=>Object.assign(s,pack(s.pieces,s.mk,s.mk==='dvp'?true:MAT[s.mk].grain?false:!state.grain)));
+  return {groups,sg,metal,e2,e04,cut};
+}
+function cutDocK(d,imgs,meta){
+  const content=pdfHead(meta,'РАСКРОЙ И ДЕТАЛИРОВКА');
+  content.push({text:meta.title,style:'h1'}); if(meta.sub) content.push({text:nb(meta.sub),style:'muted',margin:[0,2,0,8]});
+  const sum=[[{text:'Материал',style:'th'},{text:'Количество',style:'th',alignment:'right'},{text:'Формат',style:'th',alignment:'right'}]];
+  d.sg.forEach(s=>{const Mt=MAT[s.mk], q=s.sheets.length; sum.push([matName(s.mk,s.dec),{text:`${q} ${Mt.grain?plural(q,'щит','щита','щитов'):plural(q,'лист','листа','листов')}`,alignment:'right',bold:true},{text:`${Mt.L}×${Mt.W}`,alignment:'right'}]);});
+  if(d.e2>0) sum.push(['Кромка ПВХ 2 мм',{text:`${Math.ceil(d.e2)} м`,alignment:'right',bold:true},'']);
+  if(d.e04>0) sum.push(['Кромка ПВХ 0,4 мм',{text:`${Math.ceil(d.e04)} м`,alignment:'right',bold:true},'']);
+  sum.push(['Длина резов',{text:`${Math.ceil(d.cut)} м`,alignment:'right'},'']);
+  content.push({table:{headerRows:1,widths:['*','auto','auto'],body:sum},layout:tLay(sum.length)});
+  content.push({text:`Пропил 4 мм. Номера на картах совпадают с таблицей деталей${d.multi?' (первая цифра — изделие в заказе)':''}. Длина детали — вдоль текстуры. ${state.grain?'Детали ДСП не поворачиваются (текстура).':'ДСП без учёта текстуры — детали можно поворачивать.'}`,style:'small',margin:[0,6,0,0]});
+  d.sg.forEach((s,i)=>{
+    const Mt=MAT[s.mk], q=s.sheets.length;
+    content.push({text:`${matName(s.mk,s.dec)} — ${q} ${Mt.grain?plural(q,'щит','щита','щитов'):plural(q,'лист','листа','листов')} ${Mt.L}×${Mt.W}`,style:'h2',margin:[0,14,0,4],pageBreak:i===0?'before':undefined});
+    if(s.glued&&s.glued.length) content.push({text:`Склеиваются из частей: ${s.glued.map(x=>'#'+x).join(', ')} (припуск 10 мм на фугование).`,color:'#B45309',margin:[0,0,0,4]});
+    const im=imgs[i]; for(let j=0;j<im.length;j+=2) content.push({columns:[{stack:[{image:im[j],fit:[250,200]},{text:`${Mt.grain?'Щит':'Лист'} ${j+1} · занято ${Math.round(s.sheets[j].util*100)}%`,style:'small'}]},im[j+1]?{stack:[{image:im[j+1],fit:[250,200]},{text:`${Mt.grain?'Щит':'Лист'} ${j+2} · занято ${Math.round(s.sheets[j+1].util*100)}%`,style:'small'}]}:{text:''}],columnGap:15,margin:[0,0,0,8],unbreakable:true});
+  });
+  // деталировка
+  const body=[[{text:'№',style:'th'},{text:'Деталь',style:'th'},{text:'Длина',style:'th',alignment:'right'},{text:'Ширина',style:'th',alignment:'right'},{text:'Шт',style:'th',alignment:'right'},{text:'Кромка',style:'th'}]];
+  let cur='';
+  d.groups.forEach(g=>{const sec=matName(g.mk,g.dec); if(sec!==cur){cur=sec; body.push([{text:sec,colSpan:6,style:'sec'},'','','','','']);}
+    body.push([{text:'#'+g.lab,bold:true},nb(g.name),{text:String(g.L),alignment:'right',bold:true},{text:String(g.W),alignment:'right',bold:true},{text:String(g.qty),alignment:'right',bold:true},nb(edgeTxt(g))]);});
+  content.push({text:'Деталировка для цеха',style:'h1',pageBreak:'before',margin:[0,0,0,8]});
+  content.push({table:{headerRows:1,dontBreakRows:true,widths:['auto','*','auto','auto','auto','auto'],body},layout:tLay(body.length)});
+  if(d.metal.length){const mb=[[{text:'Профиль',style:'th'},{text:'Длина, мм',style:'th',alignment:'right'},{text:'Шт',style:'th',alignment:'right'}]].concat(d.metal.map(x=>[nb(x.prof),{text:String(x.L),alignment:'right',bold:true},{text:String(x.q),alignment:'right',bold:true}]));
+    content.push({text:'Нарезка металла',style:'h2',margin:[0,14,0,4]}); content.push({table:{headerRows:1,dontBreakRows:true,widths:['*','auto','auto'],body:mb},layout:tLay(mb.length)});
+    content.push({text:'Хлысты по 6 м, пропил 3 мм.',style:'small',margin:[0,4,0,0]});}
+  return pdfWrap(content,meta);
+}
+function shareBind(c){
+  c.querySelector('#pfShare').onclick=async()=>{
+    if(!pdfOut) return; const file=new File([pdfOut.blob],pdfOut.fname,{type:'application/pdf'});
+    try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:pdfOut.fname}); return;}}catch(e){if(e&&e.name==='AbortError') return;}
+    window.open(pdfOut.url,'_blank')||c.querySelector('#pfDl').click();
+  };
+}
+function pdfReady(c,blob,fname){
+  pdfOut={blob,fname,url:URL.createObjectURL(blob)};
+  const dl=c.querySelector('#pfDl'); dl.href=pdfOut.url; dl.download=fname;
+  c.querySelector('#pfStat').textContent=`Готово: ${fname} · ${Math.max(1,Math.round(blob.size/1024))} КБ`; c.querySelector('#pfDone').hidden=false;
+}
+const fileName=s=>s.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.pdf';
+const makeBlob=doc=>new Promise((ok,no)=>{try{pdfMake.createPdf(doc).getBlob(ok);}catch(e){no(e);}});
+const pdfErr=e=>e&&e.message==='load'?'Не загрузился модуль PDF — нужен интернет при первом создании.':'Не получилось сделать PDF. Попробуйте ещё раз.';
+const doneRow=`<p class="note" id="pfStat" aria-live="polite"></p><div class="row" id="pfDone" hidden><button class="cta" type="button" id="pfShare" style="flex:1"><span>Отправить</span><i>${ICON.share}</i></button><a class="btn" id="pfDl" download>Скачать</a></div>`;
+const firmGet=()=>LS.get('korp3.firm',LS.get('svar1.firm',{}));
+function orderItems(o){return o.items.filter(it=>TPL[it.tpl]);}
+function openPdf(kind){
+  const o=kind==='order'?Store.order(state.openOrder):null;
+  if(kind==='order'&&(!o||!orderItems(o).length)){toast('В заказе нет изделий'); return;}
+  const cur=state.orderId&&Store.order(state.orderId), F=firmGet(), O=LS.get('korp3.pdfopt',{img3d:true,draw:true,mat:true,labDetail:false});
+  pdfOut=null;
+  sheet(`<h2>PDF клиенту</h2>
+    <p class="note" style="margin:0">Коммерческое предложение${o?` по заказу «${esc(o.client)}» — ${orderItems(o).length} ${plural(orderItems(o).length,'изделие','изделия','изделий')}`:` на «${esc(state.myName||M.T.name)}»`}: 3D, чертёж, материалы с ценами и итог. Ваша наценка уже внутри цен материалов.</p>
+    <div class="params">
+      <div class="f"><label for="pfF">Ваше имя или фирма</label><div class="in"><input id="pfF" value="${esc(F.firm||'')}" placeholder="Мебель на заказ"></div></div>
+      <div class="f"><label for="pfP">Телефон</label><div class="in"><input id="pfP" type="tel" value="${esc(F.phone||'')}" placeholder="+380"></div></div>
+      ${o?'':`<div class="f wide"><label for="pfC">Клиент (необязательно)</label><div class="in"><input id="pfC" value="${esc(cur?cur.client:'')}" placeholder="Имя клиента"></div></div>`}
+      <div class="f wide"><label for="pfN">Примечание внизу</label><div class="in"><textarea id="pfN" rows="2">${esc(F.knote||'Цены действительны 14 дней. В стоимость входят материалы, фурнитура, изготовление, доставка и сборка. Срок изготовления — по согласованию.')}</textarea></div></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="po3"${O.img3d?' checked':''}> 3D-вид (как сейчас повёрнут на экране)</label>
+    <label class="chk"><input type="checkbox" id="poD"${O.draw?' checked':''}> Чертёж</label>
+    <label class="chk"><input type="checkbox" id="poM"${O.mat?' checked':''}> Материалы с ценами</label>
+    <label class="chk"><input type="checkbox" id="poL"${O.labDetail?' checked':''}> Работа построчно (иначе одной суммой)</label>
+    ${doneRow}
+    <button class="cta w" type="button" id="pfGo"><span>Сделать PDF</span><i>${IC_PDF}</i></button>`,
+  c=>{
+    const st=c.querySelector('#pfStat'), go=c.querySelector('#pfGo'); shareBind(c);
+    go.onclick=async()=>{
+      const F2=Object.assign(firmGet(),{firm:c.querySelector('#pfF').value.trim(),phone:c.querySelector('#pfP').value.trim(),knote:c.querySelector('#pfN').value.trim()}); LS.set('korp3.firm',F2);
+      const opt={img3d:c.querySelector('#po3').checked,draw:c.querySelector('#poD').checked,mat:c.querySelector('#poM').checked,labDetail:c.querySelector('#poL').checked}; LS.set('korp3.pdfopt',opt);
+      const meta={firm:F2.firm,phone:F2.phone,note:F2.knote,client:o?o.client:c.querySelector('#pfC').value.trim()}; meta.address=o?o.address:(cur&&cur.client===meta.client?cur.address:'');
+      go.disabled=true; c.querySelector('#pfDone').hidden=true;
+      try{
+        st.textContent='Загружаю модуль PDF… (первый раз ~2 МБ)'; await loadPdfLib();
+        const items=[];
+        if(o){const its=orderItems(o); for(let i=0;i<its.length;i++){st.textContent=`Готовлю изделие ${i+1} из ${its.length}…`; const m=itemCalc(its[i]); items.push(Object.assign({m,name:its[i].name,size:its[i].size,mat:its[i].mat},await captureItem(m,opt,true)));}}
+        else{st.textContent='Снимаю 3D и чертёж…'; const it=itemFromCurrent(); items.push(Object.assign({m:M,name:it.name,size:it.size,mat:it.mat},await captureItem(M,opt,false)));}
+        st.textContent='Собираю PDF…'; meta.title=`КП — ${meta.client||items[0].name}`;
+        const blob=await makeBlob(kpDoc(items,meta,opt));
+        pdfReady(c,blob,fileName(`КП ${meta.client||items[0].name} ${new Date().toISOString().slice(0,10)}`)); go.querySelector('span').textContent='Сделать заново';
+      }catch(e){st.textContent=pdfErr(e); console.error(e);}
+      finally{go.disabled=false;}
+    };
+  });
+}
+function openCutPdf(kind){
+  const o=kind==='order'?Store.order(state.openOrder):null, its=o?orderItems(o):null;
+  if(o&&!its.length){toast('В заказе нет изделий'); return;}
+  pdfOut=null;
+  sheet(`<h2>PDF для распила</h2>
+    <p class="note" style="margin:0">${o?`Весь заказ «${esc(o.client)}» одним раскроем — детали всех изделий кроятся из общих листов, так меньше отходов.`:`«${esc(state.myName||M.T.name)}»`}: карты раскроя по листам, деталировка с кромкой и сводка — что купить. Можно сразу отправить в цех на распил.</p>
+    ${doneRow}
+    <button class="cta w" type="button" id="pfGo"><span>Сделать PDF</span><i>${IC_PDF}</i></button>`,
+  c=>{
+    const st=c.querySelector('#pfStat'), go=c.querySelector('#pfGo'); shareBind(c);
+    go.onclick=async()=>{
+      go.disabled=true; c.querySelector('#pfDone').hidden=true;
+      try{
+        st.textContent='Загружаю модуль PDF… (первый раз ~2 МБ)'; await loadPdfLib();
+        const ms=o?its.map(itemCalc):[M], d=cutData(ms); d.multi=!!o;
+        if(!d.sg.length&&!d.metal.length){st.textContent='Нечего кроить — в изделии нет плит и металла.'; return;}
+        st.textContent='Рисую карты раскроя…'; const imgs=[];
+        for(const s of d.sg){const a=[]; for(let i=0;i<s.sheets.length;i++) a.push(await svgToImg(sheetSVG(s.sheets[i],s.mk,i),1500,SHEET_CSS)); imgs.push(a);}
+        const F=firmGet(), title=o?`Заказ «${o.client}» — ${its.length} ${plural(its.length,'изделие','изделия','изделий')}`:(state.myName||M.T.name);
+        const sub=o?its.map((it,i)=>`${i+1}) ${it.name} ${it.size}`).join(' · '):`${itemFromCurrent().size} мм · ${itemFromCurrent().mat}`;
+        st.textContent='Собираю PDF…';
+        const blob=await makeBlob(cutDocK(d,imgs,{firm:F.firm,phone:F.phone,title,sub}));
+        pdfReady(c,blob,fileName(`Распил ${o?o.client:(state.myName||M.T.name)} ${new Date().toISOString().slice(0,10)}`)); go.querySelector('span').textContent='Сделать заново';
+      }catch(e){st.textContent=pdfErr(e); console.error(e);}
+      finally{go.disabled=false;}
+    };
+    go.click();
+  });
+}
+
 /* ---------- Пересчёт ---------- */
 function update(){
   M=compute(state.tpl,tv(),{grain:state.grain,drill:state.drill},prices);
@@ -2116,7 +2643,8 @@ function renderSum(){
   const fxn=Object.values(M.fxCount).reduce((a,b)=>a+b,0);
   $('#sum').innerHTML=`<div class="sumrow"><div><h2 class="lbl">Цена для клиента</h2><div class="big">${money(M.total)}</div><div class="cap">Материалы ${money(M.matSum+M.markup)} · работа ${money(M.labSum)}</div></div>
     <button class="ib" type="button" data-act="copy" aria-label="Копировать смету" title="Копировать смету">${ICON.copy}</button></div>
-  <dl class="stats"><div><dt>Плит</dt><dd>${sheets}</dd></div><div><dt>Деталей</dt><dd>${M.nPanels}</dd></div><div><dt>Крепёж</dt><dd>${fxn}<small>шт</small></dd></div></dl>`;
+  <dl class="stats"><div><dt>Плит</dt><dd>${sheets}</dd></div><div><dt>Деталей</dt><dd>${M.nPanels}</dd></div><div><dt>Крепёж</dt><dd>${fxn}<small>шт</small></dd></div></dl>
+  <div class="row" style="margin-top:12px"><button class="btn y" type="button" data-act="pdf" style="flex:1;min-height:44px">${IC_PDF}PDF клиенту</button><button class="btn" type="button" data-act="cutPdf" style="flex:1;min-height:44px">${IC_PDF}Для распила</button></div>`;
 }
 
 /* ---------- Вкладки ---------- */
@@ -2183,6 +2711,7 @@ function partColor(p){
   if(p.mk==='dvp') return MAT.dvp.c;
   return colorOf(p.mk,p.dec);
 }
+const TURN=[[0,0],[.45,0],[.5,.03],[.38,.07],[.55,.14],[.68,.2],[.5,.27],[.34,.31],[.4,.35],[.5,.7],[.58,.76],[.42,.8],[.7,.83],[.7,.86],[1,.87],[1,1],[0,1]];
 function build3D(){
   if(!R||R.fail) return;
   R.group.children.slice().forEach(o=>{R.group.remove(o); o.traverse&&o.traverse(x=>{x.geometry&&x.geometry.dispose(); x.material&&x.material.dispose();});});
@@ -2193,8 +2722,10 @@ function build3D(){
     if(p.shape==='poly'){const sh=new THREE.Shape(p.poly.map(([x,z])=>new THREE.Vector2(x,-z))); geo=new THREE.ExtrudeGeometry(sh,{depth:p.sy,bevelEnabled:false,curveSegments:1}); geo.rotateX(-Math.PI/2);}
     else if(p.shape==='cylX'){geo=new THREE.CylinderGeometry(p.sy/2,p.sy/2,p.sx,20); geo.rotateZ(Math.PI/2);}
     else if(p.shape==='cylY') geo=new THREE.CylinderGeometry(p.sx/2,p.sx/2,p.sy,20);
+    else if(p.shape==='coneY') geo=new THREE.CylinderGeometry(p.sx/2,p.sx*.3,p.sy,20);
+    else if(p.shape==='turnY'){geo=new THREE.LatheGeometry(TURN.map(([r,h])=>new THREE.Vector2(r*p.sx/2,h*p.sy-p.sy/2)),20);}
     else geo=new THREE.BoxGeometry(p.sx,p.sy,p.sz);
-    const hw=p.grp==='hw', soft=p.grp==='soft', base=partColor(p);
+    const hw=p.grp==='hw'&&!p.wood, soft=p.grp==='soft', base=partColor(p);
     const mat=p.grp==='mirror'?new THREE.MeshStandardMaterial({color:base,roughness:.12,metalness:.15,emissive:'#33424B'}):p.grp==='metal'?new THREE.MeshStandardMaterial({color:base,roughness:.55,metalness:.4}):p.grp==='led'?new THREE.MeshBasicMaterial({color:base}):p.grp==='epoxy'?new THREE.MeshStandardMaterial({color:base,transparent:true,opacity:p.opacity,emissive:p.emissive,roughness:.08,metalness:.05}):new THREE.MeshStandardMaterial({color:base,roughness:hw?.35:soft?.95:.8,metalness:hw?.6:0});
     const mesh=new THREE.Mesh(geo,mat);
     if(p.shape==='poly') mesh.position.set(0,p.y,0); else mesh.position.set(p.x+p.sx/2,p.y+p.sy/2,p.z+p.sz/2); R.group.add(mesh);
@@ -2213,14 +2744,15 @@ function build3D(){
     R.group.add(g); R.marks.push({f,g});
   });
   R.group.position.set(-(mx+nx)/2,0,-(mz+nz)/2);
-  if(resetCam){R.cam.position.set(s*1.0,my*.55+s*.5,s*1.9); R.ctr.target.set(0,my/2,0); R.cam.near=s/200; R.cam.far=s*30; R.cam.updateProjectionMatrix(); R.ctr.update(); resetCam=false;}
+  if(resetCam){const rad=.5*Math.hypot(mx-nx,my,mz-nz), vf=R.cam.fov*Math.PI/360, hf=Math.atan(Math.tan(vf)*(R.cam.aspect||1)), dist=rad/Math.sin(Math.min(vf,hf))*.92, d=new THREE.Vector3(.5,.36,.95).normalize();
+    R.cam.position.set(d.x*dist,my/2+d.y*dist,d.z*dist); R.ctr.target.set(0,my/2,0); R.cam.near=s/200; R.cam.far=s*30; R.cam.updateProjectionMatrix(); R.ctr.update(); resetCam=false;}
 }
 function applyVis(){
   if(!R||R.fail) return;
   const asm=state.tab==='asm';
   R.items.forEach(it=>{
     let vis=true,hi=false;
-    if(asm){vis=it.p.step<=step; hi=it.p.step===step;} else {if(noFronts&&(it.p.grp==='front'||it.p.grp==='soft')) vis=false; if(state.tpl==='free'&&it.p.pid&&it.p.pid===state.sel) hi=true;}
+    if(asm){vis=it.p.step<=step; hi=it.p.step===step;} else {if(noFronts&&(it.p.grp==='front'||it.p.grp==='soft'||it.p.grp==='deco')) vis=false; if(state.tpl==='free'&&it.p.pid&&it.p.pid===state.sel) hi=true;}
     if(it.p.tmp){vis=asm&&it.p.step===step; hi=false;}
     it.mesh.visible=vis; if(it.line) it.line.visible=vis;
     const mt=it.mesh.material; mt.color.set(hi&&it.p.grp!=='led'?ACCENT:it.base); if(mt.emissive) mt.emissive.set(hi?'#2a1e00':it.baseE);
@@ -2260,11 +2792,11 @@ function drawSVG(){
   const tick=(x,y)=>`<line x1="${x-fs*.3}" y1="${y+fs*.3}" x2="${x+fs*.3}" y2="${y-fs*.3}"/>`;
   const dimH=(x1,x2,y,lab,ey)=>`<g class="dim"><line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"/>${tick(x1,y)}${tick(x2,y)}<text x="${(x1+x2)/2}" y="${y-fs*.35}" text-anchor="middle" font-size="${fs}">${lab}</text></g><line class="ext" x1="${x1}" y1="${ey}" x2="${x1}" y2="${y+fs*.4}"/><line class="ext" x1="${x2}" y1="${ey}" x2="${x2}" y2="${y+fs*.4}"/>`;
   const dimV=(x,y1,y2,lab,ex,fsz=fs)=>`<g class="dim"><line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}"/>${tick(x,y1)}${tick(x,y2)}${lab!==''?`<text x="${x-fsz*.35}" y="${(y1+y2)/2}" text-anchor="middle" font-size="${fsz}" transform="rotate(-90 ${x-fsz*.35} ${(y1+y2)/2})">${lab}</text>`:''}</g><line class="ext" x1="${ex}" y1="${y1}" x2="${x-fs*.4}" y2="${y1}"/><line class="ext" x1="${ex}" y1="${y2}" x2="${x-fs*.4}" y2="${y2}"/>`;
-  const leg=p=>p.shape==='cylY'||p.name.startsWith('Ножка');
+  const leg=p=>/^(cylY|coneY|turnY)$/.test(p.shape)||p.name.startsWith('Ножка')||(p.grp==='hw'&&/^(Опора|Поворотная|Откидная|Подстолье|Кронштейн)/.test(p.name));
   o.push(`<text class="ttl" x="${mL}" y="${mT-fs*1.5}" font-size="${fs}">ВИД СПЕРЕДИ</text>`);
-  ps.filter(p=>p.grp!=='back'&&p.grp!=='front'&&p.grp!=='mirror'&&!p.name.startsWith('Ящик')&&!p.name.startsWith('Ступень: д')&&(p.grp!=='hw'||leg(p))).sort((a,b)=>a.z-b.z)
+  ps.filter(p=>p.grp!=='back'&&p.grp!=='front'&&p.grp!=='mirror'&&p.grp!=='deco'&&!p.name.startsWith('Ящик')&&!p.name.startsWith('Ступень: д')&&(p.grp!=='hw'||leg(p))).sort((a,b)=>a.z-b.z)
     .forEach(p=>o.push(rect(fx+p.x,Y(p.y+p.sy),p.sx,p.sy,p.grp==='hw'?'hw':p.grp==='soft'?'sf':p.grp==='metal'?'mt':'c')));
-  ps.filter(p=>p.grp==='front'||p.grp==='mirror').forEach(p=>o.push(rect(fx+p.x,Y(p.y+p.sy),p.sx,p.sy,'f')));
+  ps.filter(p=>p.grp==='front'||p.grp==='mirror'||p.grp==='deco').forEach(p=>o.push(rect(fx+p.x,Y(p.y+p.sy),p.sx,p.sy,'f')));
   o.push(dimH(mL,mL+Wt,Y(0)+fs*2.4,Math.round(Wt),Y(0)+fs*.4));
   o.push(dimV(mL-fs*2.2,Y(mY),Y(0),Math.round(mY),mL-fs*.4));
   const hz=[]; ps.filter(p=>p.grp==='corpus'&&p.mk&&Math.round(p.sy)===MAT[p.mk].t&&p.sx>=Wt*.5).sort((a,b)=>a.y-b.y).forEach(p=>{if(!hz.some(h=>Math.abs(h.y-p.y)<1)) hz.push(p);});
@@ -2276,8 +2808,8 @@ function drawSVG(){
   const sx=z=>sx0+(z-nZ);
   o.push(`<text class="ttl" x="${sx0}" y="${mT-fs*1.5}" font-size="${fs}">ВИД СБОКУ</text>`);
   const visS=p=>p.x<=nX+.5||p.grp==='front'||p.grp==='soft'||(p.mk==='dvp'&&p.z<0)||leg(p);
-  ps.filter(p=>!visS(p)&&p.grp!=='hw').forEach(p=>o.push(rect(sx(p.z),Y(p.y+p.sy),p.sz,p.sy,'h')));
-  ps.filter(p=>visS(p)&&p.grp!=='soft').forEach(p=>o.push(rect(sx(p.z),Y(p.y+p.sy),p.sz,p.sy,p.grp==='front'?'fs':p.grp==='hw'?'hw':p.grp==='metal'?'mt':'c')));
+  ps.filter(p=>!visS(p)&&p.grp!=='hw'&&p.grp!=='deco').forEach(p=>o.push(rect(sx(p.z),Y(p.y+p.sy),p.sz,p.sy,'h')));
+  ps.filter(p=>visS(p)&&p.grp!=='soft'&&p.grp!=='deco').forEach(p=>o.push(rect(sx(p.z),Y(p.y+p.sy),p.sz,p.sy,p.grp==='front'?'fs':p.grp==='hw'?'hw':p.grp==='metal'?'mt':'c')));
   ps.filter(p=>p.grp==='soft').forEach(p=>o.push(rect(sx(p.z),Y(p.y+p.sy),p.sz,p.sy,'sf')));
   o.push(dimH(sx(nZ),sx(xZ),Y(0)+fs*2.4,Math.round(Dt),Y(0)+fs*.4));
   return `<svg class="dw" viewBox="0 0 ${Math.round(VW)} ${Math.round(VH)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Чертёж: вид спереди и сбоку">${o.join('')}</svg>`;
@@ -2329,7 +2861,7 @@ function sheetSVG(sh,mk,i){
 }
 function panelCut(P){
   if(!M.sheetGroups.length){P.innerHTML='<p class="note">Для этого изделия нечего кроить.</p>';return;}
-  let html=`<label class="chk"><input type="checkbox" id="cGrain"${state.grain?' checked':''}> Учитывать текстуру ДСП и фанеры (детали не поворачиваются)</label>
+  let html=`<div class="row"><button class="btn y" type="button" data-act="cutPdf">${IC_PDF}PDF для распила</button></div><label class="chk"><input type="checkbox" id="cGrain"${state.grain?' checked':''}> Учитывать текстуру ДСП и фанеры (детали не поворачиваются)</label>
   <p class="note">Пропил 4 мм. Мебельный щит всегда кроится вдоль волокон. Раскрой примерный — для подсчёта плит; точную карту сделает цех.</p>`;
   let n=0;
   M.sheetGroups.forEach(s=>{
@@ -2436,6 +2968,7 @@ function renderOrder(){
       <div class="acts"><button class="ib" type="button" data-openit="${it.id}" aria-label="Открыть ${esc(it.name)}">${ICON.edit}</button><button class="ib" type="button" data-delit="${it.id}" aria-label="Удалить ${esc(it.name)}">${ICON.trash}</button></div></div>`).join('')
       :'<div class="empty"><b>Пока пусто</b><p class="note">Откройте конструктор, настройте изделие и нажмите «Добавить в заказ».</p></div>'}</div>
     <button class="cta w" type="button" data-act="addItem"><span>Добавить изделие</span><i>${ICON.plus}</i></button>
+    <div class="row"><button class="btn y" type="button" data-act="cutPdfOrder">${IC_PDF}PDF для распила — весь заказ</button><button class="btn" type="button" data-act="copyKP">${ICON.copy}КП текстом</button></div>
     <button class="linkdel" type="button" data-act="delOrder">Удалить заказ</button>
   </div>`;
 }
@@ -2502,6 +3035,10 @@ document.addEventListener('click',e=>{
     c=>c.querySelector('#myOk').onclick=()=>{const n=c.querySelector('#myN').value.trim(); if(!n){c.querySelector('#myErr').hidden=false; return;}
       const ex=Store.tpls.find(t=>t.name===n); const d=ex||{id:uid('t'),kind:'tpl',created:Date.now()}; d.name=n; d.tpl=state.tpl; d.vals=clone(tv()); state.myName=n; state.cat='Мои'; closeSheet(); Store.put(d); renderCats(); renderTpls(); update(); toast('Шаблон сохранён');});
   else if(act==='export') exportData();
+  else if(act==='pdf') openPdf('item');
+  else if(act==='cutPdf') openCutPdf('item');
+  else if(act==='pdfOrder'&&o) openPdf('order');
+  else if(act==='cutPdfOrder'&&o) openCutPdf('order');
   else if(act==='photo') openPhoto();
   else if(act==='refBig'&&photoURL) sheet(`<h2>Референс</h2><img src="${photoURL}" alt="Фото-референс" style="width:100%;border:var(--bw) solid var(--ink)">`);
   else if(act==='refClose'){refImg=null; renderRef();}
