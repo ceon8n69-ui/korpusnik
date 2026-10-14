@@ -361,7 +361,7 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
           <p class="desc" id="tplDesc"></p>
         </section>
         <section class="card">
-          <h2 class="lbl">Размеры и параметры</h2>
+          <div class="cardh"><h2 class="lbl" style="margin:0">Размеры и параметры</h2><button class="btn" type="button" data-act="resetVals" id="bResetV"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5"/></svg>По умолчанию</button></div>
           <div class="params" id="params"></div>
           <p class="err" id="err" hidden></p>
         </section>
@@ -1749,17 +1749,18 @@ function renderParams(){
     const raw=tv()[p.k], val=raw!==undefined&&raw!==''?raw:vals[p.k];
     return `<div class="f" data-k="${p.k}"><label for="${id}">${p.l}</label><div class="in"><input id="${id}" data-k="${p.k}" type="number" inputmode="numeric" min="${p.min}" max="${p.max}" step="1" value="${val}"><span class="u">${p.u}</span></div></div>`;
   }).join('');
-  applyShow(vals);
+  applyShow(vals); markChanged();
   $('#tplDesc').textContent=TPL[state.tpl].desc;
 }
+function markChanged(){const b=$('#bResetV'); if(!b) return; const v=tv(), d=Object.keys(v).some(k=>v[k]!==''&&v[k]!==undefined); b.disabled=!d;}
 function applyShow(vals){vals=vals||normVals(state.tpl,tv()); allParams(state.tpl).forEach(p=>{if(p.show){const el=$(`#params .f[data-k="${p.k}"]`); if(el) el.hidden=!p.show(vals);}});}
 let timer=null;
-$('#params').addEventListener('input',e=>{const k=e.target.dataset.k; if(!k||e.target.tagName==='SELECT') return; tv()[k]=e.target.value; clearTimeout(timer); timer=setTimeout(update,400);});
+$('#params').addEventListener('input',e=>{const k=e.target.dataset.k; if(!k||e.target.tagName==='SELECT') return; tv()[k]=e.target.value; markChanged(); clearTimeout(timer); timer=setTimeout(update,400);});
 $('#params').addEventListener('change',e=>{
   const k=e.target.dataset.k; if(!k) return; const p=allParams(state.tpl).find(q=>q.k===k);
   if(p.type==='num'){const v=normVals(state.tpl,Object.assign({},tv(),{[k]:e.target.value}))[k]; e.target.value=v; tv()[k]=v;}
   else{tv()[k]=e.target.value; applyShow();}
-  clearTimeout(timer); update();
+  markChanged(); clearTimeout(timer); update();
 });
 
 /* ---------- ИИ: чертёж по словам ---------- */
@@ -2407,6 +2408,9 @@ document.addEventListener('click',e=>{
   else if(act==='copyCut') copyText(cutText(),'Нарезка скопирована');
   else if(act==='export') exportData();
   else if(act==='ai') openAI();
+  else if(act==='resetVals'){const nm=M.title||M.T.name, cust=state.tpl==='custom';
+    confirmSheet(cust?`Убрать конструкцию «${esc(nm)}», собранную ИИ, и вернуть пример?`:`Вернуть «${esc(nm)}» к стандартным размерам и настройкам?`,'Сбросить',()=>{
+      state.vals[state.tpl]={}; state.aiLast=false; step=1; resetCam=true; renderParams(); update(); toast('Параметры сброшены по умолчанию');});}
 });
 
 /* ---------- Тексты ---------- */
