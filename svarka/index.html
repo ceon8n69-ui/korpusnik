@@ -416,6 +416,7 @@ function pipe(d,t){const I=Math.PI*(d**4-(d-2*t)**4)/64; SEC[`d${d}x${t}`]={cat:
 [10,12,14,16].forEach(a=>{SEC['q'+a]={cat:'rod',n:`Квадрат ${a}`,h:a,w:a,kg:ST*a*a,per:4*a/1000,I:0,W:0};});
 [10,12,16].forEach(d=>{SEC['r'+d]={cat:'rod',round:true,n:`Пруток Ø${d}`,h:d,w:d,kg:ST*Math.PI*d*d/4,per:Math.PI*d/1000,I:0,W:0};});
 SEC.rail70={cat:'rail',n:'Направляющая 70×60×3,5',h:70,w:60,kg:6.6,per:.26,I:0,W:0,buy:false};
+SEC.tw12={cat:'rod',n:'Балясина кованая витая 12×12',h:12,w:12,kg:1.13,per:.048,I:0,W:0,buy:false};
 SEC.hrw={cat:'wood',n:'Поручень деревянный 60×50',h:50,w:60,kg:0,per:0,I:0,W:0,buy:false,round:false};
 const CATN={tube:'Труба профильная',pipe:'Труба круглая',angle:'Уголок',channel:'Швеллер',strip:'Полоса',rod:'Пруток / квадрат'};
 const secOpts=(keys)=>keys.map(k=>[k,SEC[k].n.replace('Труба круглая ','').replace('Труба ','')]);
@@ -452,7 +453,7 @@ const HW={
   ghinge:['Петля гаражная Ø30 мм','шт',140],ghinge_s:['Петля приварная Ø20 мм','шт',60],latch:['Шпингалет в землю','шт',350],gstop:['Упор ворот','шт',250],glock:['Замок врезной + ручки','компл',1600],lockeye:['Проушины под навесной замок','компл',120],closer:['Доводчик уличный','шт',1500],
   skit400:['Фурнитура откатных ворот до 400 кг','компл',8500],skit700:['Фурнитура откатных ворот до 700 кг','компл',11000],skit1000:['Фурнитура откатных ворот до 1000 кг','компл',15000],srail:['Направляющая консольная 70×60','м',650],rebar:['Арматура Ø12','м',38],grack:['Зубчатая рейка','м',380],drive_slide:['Привод откатных ворот, комплект','шт',14000],drive_swing:['Привод распашных ворот, комплект','шт',17000],
   tbolt:['Болт мебельный М8×60 с гайкой','шт',8],hrwood:['Поручень деревянный (бук) 60×50','м',650],hrbracket:['Кронштейн поручня','шт',90],
-  gpin:['Штырь крепления теплицы','шт',30],dhinge:['Петля дверная','шт',80],dhandle:['Ручка + задвижка','компл',180],grate:['Решётка-гриль','шт',450],glass:['Стекло закалённое 8 мм','м²',2500],gclamp:['Зажим для стекла','шт',120],perfo:['Перфопанель для инструмента','м²',900]};
+  gpin:['Штырь крепления теплицы','шт',30],dhinge:['Петля дверная','шт',80],dhandle:['Ручка + задвижка','компл',180],grate:['Решётка-гриль','шт',450],baltw:['Балясина кованая витая 12×12, 1 м','шт',150],glass:['Стекло закалённое 8 мм','м²',2500],gclamp:['Зажим для стекла','шт',120],perfo:['Перфопанель для инструмента','м²',900]};
 const LAB={
   canopy:['Каркас навеса: изготовление и монтаж','м²',650],roofinst:['Монтаж кровли','м²',150],footing:['Бетонирование опоры','шт',300],visor:['Козырёк: изготовление и монтаж','шт',3500],
   fence_pn:['Забор из профнастила: монтаж','п.м',600],fence_shtak:['Забор из штакетника: монтаж','п.м',700],fence_bars:['Секционный забор: изготовление и монтаж','п.м',1100],fence_mesh3d:['3D-забор: монтаж','п.м',350],
@@ -460,15 +461,15 @@ const LAB={
   stair2:['Каркас лестницы на двух косоурах','ступень',1500],stairm:['Каркас лестницы на центральном косоуре','ступень',1800],spiral:['Винтовая лестница','ступень',2200],landing:['Площадка','шт',3000],tread:['Монтаж ступени из дерева','шт',300],rail:['Ограждение / перила','п.м',1200],
   grille:['Решётка: изготовление','м²',1100],grille_inst:['Установка решётки','шт',300],bbq:['Мангал: изготовление','шт',3500],bbqroof:['Крыша над мангалом','шт',2500],
   gh:['Теплица: изготовление и монтаж','м²',350],woodshed:['Дровница: изготовление и монтаж','шт',4000],bench:['Верстак: изготовление','шт',3500],gazebo:['Беседка: каркас и монтаж','м²',1300],paint:['Покраска металла','м²',90]};
-const PRICE_DEF=Object.assign({kg_tube:52,kg_pipe:52,kg_angle:46,kg_channel:62,kg_strip:47,kg_rod:46,kg_sheet:46,
-  w_oak:5500,w_ash:4200,w_beech:3600,w_larch:2800,w_pine:1600,w_wpc:1100,woil:180,conc:3200,
+const PRICE_DEF=Object.assign({kg_tube:52,kg_pipe:53.5,kg_angle:45,kg_channel:52,kg_strip:45.5,kg_rod:46,kg_sheet:49,bym:5,
+  w_oak:5600,w_ash:3900,w_beech:2600,w_larch:2800,w_pine:2200,w_wpc:1100,woil:180,conc:3200,
   electrode:130,disc:35,flap:70,primer:190,enamel:230,p3in1:330,hammer:420,heatpaint:650,solvent:120,powder:260,bend:250,delivery:0,markup:15},
   ...Object.entries(HW).map(([k,x])=>({[k]:x[2]})),...Object.entries(LAB).map(([k,x])=>({['L_'+k]:x[2]})));
 const PRICE_META=[
   ['Металл, грн/кг',[['kg_tube','Труба профильная','грн/кг'],['kg_pipe','Труба круглая','грн/кг'],['kg_angle','Уголок','грн/кг'],['kg_channel','Швеллер','грн/кг'],['kg_strip','Полоса','грн/кг'],['kg_rod','Квадрат / пруток','грн/кг'],['kg_sheet','Лист стальной','грн/кг']]],
   ['Дерево и бетон',[['w_oak','Щит дуб 40 мм','грн/м²'],['w_ash','Щит ясень 40 мм','грн/м²'],['w_beech','Щит бук 40 мм','грн/м²'],['w_larch','Лиственница 40 мм','грн/м²'],['w_pine','Щит сосна 40 мм','грн/м²'],['w_wpc','ДПК','грн/м²'],['woil','Масло / лак для дерева','грн/м²'],['conc','Бетон М200 (самозамес)','грн/м³']]],
   ['Кровля, обшивка, фурнитура',Object.entries(HW).map(([k,x])=>[k,x[0],'грн/'+x[1]])],
-  ['Расходники и услуги',[['electrode','Электроды / проволока','грн/кг'],['disc','Круг отрезной','грн/шт'],['flap','Круг лепестковый','грн/шт'],['primer','Грунт ГФ-021','грн/л'],['enamel','Эмаль ПФ-115','грн/л'],['p3in1','Грунт-эмаль 3в1','грн/л'],['hammer','Молотковая эмаль','грн/л'],['heatpaint','Термостойкая эмаль','грн/л'],['solvent','Растворитель','грн/л'],['powder','Порошковая покраска','грн/м²'],['bend','Гибка трубы на трубогибе','грн/шт'],['delivery','Доставка / выезд','грн'],['markup','Наценка на материалы','%']]],
+  ['Расходники и услуги',[['electrode','Электроды / проволока','грн/кг'],['disc','Круг отрезной','грн/шт'],['flap','Круг лепестковый','грн/шт'],['primer','Грунт ГФ-021','грн/л'],['enamel','Эмаль ПФ-115','грн/л'],['p3in1','Грунт-эмаль 3в1','грн/л'],['hammer','Молотковая эмаль','грн/л'],['heatpaint','Термостойкая эмаль','грн/л'],['solvent','Растворитель','грн/л'],['powder','Порошковая покраска','грн/м²'],['bend','Гибка трубы на трубогибе','грн/шт'],['bym','Брать в размер (с порезкой) трубу тяжелее','кг/м'],['delivery','Доставка / выезд','грн'],['markup','Наценка на материалы','%']]],
   ['Работа',Object.entries(LAB).map(([k,x])=>['L_'+k,x[0],'грн/'+x[1]])]];
 
 /* ---- Проверка сечения на снег (ориентир) ---- */
@@ -576,15 +577,17 @@ function compute(key,vals,P){
   const bySec={}; c.parts.filter(p=>(p.kind==='bar'||p.kind==='arc')&&SEC[p.sec].buy!==false).forEach(p=>(bySec[p.sec]=bySec[p.sec]||[]).push(p));
   c.metal=[]; let kgAll=0, paintA=0, cuts=0, bends=0;
   Object.entries(bySec).sort((a,b)=>SEC[b[0]].kg-SEC[a[0]].kg).forEach(([k,ps])=>{
-    const Sx=SEC[k], stock=6000, lens=[];
+    const Sx=SEC[k], byM=P.bym>0&&Sx.kg>=P.bym, stock=byM?12000:6000, lens=[];
     ps.forEach(p=>{const L=Math.ceil(p.cutLen||p.len); if(L<=stock) lens.push(L); else {let r=L; while(r>stock){lens.push(stock); r-=stock;} if(r>0) lens.push(r); p.spliced=true;}});
     const sorted=lens.slice().sort((a,b)=>b-a), bars=[];
     sorted.forEach(L=>{let b=bars.find(b=>b.used+3+L<=stock); if(!b){b={used:-3,cuts:[]}; bars.push(b);} b.used+=3+L; b.cuts.push(L);});
     const tot=lens.reduce((a,b)=>a+b,0)/1000, kgBuy=bars.length*stock/1000*Sx.kg;
     kgAll+=tot*Sx.kg; paintA+=tot*Sx.per; cuts+=lens.length; bends+=ps.filter(p=>p.bend).length;
     const g={}; ps.forEach(p=>{const L=Math.ceil(p.cutLen||p.len); const key=p.name+'|'+L+'|'+(p.cut||''); (g[key]=g[key]||{name:p.name,L,cut:p.cut||'',q:0,sp:p.spliced}).q++;});
-    c.metal.push({k,S:Sx,tot,kg:tot*Sx.kg,kgBuy,bars,list:Object.values(g).sort((a,b)=>b.L-a.L)});
-    add('metal',`${Sx.n} — хлыст 6 м`,bars.length,'шт',stock/1000*Sx.kg*P['kg_'+Sx.cat]);
+    const buyLen=Math.ceil((tot*1000+lens.length*20)/100)/10;
+    c.metal.push({k,S:Sx,tot,kg:tot*Sx.kg,kgBuy:byM?buyLen*Sx.kg:kgBuy,bars:byM?[]:bars,byM,buyLen,list:Object.values(g).sort((a,b)=>b.L-a.L)});
+    if(byM) add('metal',`${Sx.n} — в размер (порезка на базе)`,buyLen,'м',Sx.kg*P['kg_'+Sx.cat]);
+    else add('metal',`${Sx.n} — хлыст 6 м`,bars.length,'шт',stock/1000*Sx.kg*P['kg_'+Sx.cat]);
   });
   // стальной лист
   const sheetsBy={}; c.parts.filter(p=>p.kind==='box'&&STEELS[p.mat]&&!p.buyAs).forEach(p=>{const d=[p.sx,p.sy,p.sz].sort((a,b)=>b-a); (sheetsBy[p.mat]=sheetsBy[p.mat]||[]).push({a:r1(d[0]),b:r1(d[1]),n:p.name});});
@@ -1065,39 +1068,79 @@ function bStairL(v){
 function bSpiral(v){
   const c=ctx(v), H=v.H, R=v.D/2, PO=SEC[v.pole], rp=PO.h/2, n=Math.max(8,Math.round(H/200)), h=H/n, nt=n-1;
   const rw=rp+.6*(R-rp); let th=v.ang>0?v.ang*DEG:clamp(215/rw,16*DEG,32*DEG);
-  const dir=v.dir==='cw'?-1:1, wood=!!WOOD[v.tread], tt=wood?40:4, P=(r,f,y)=>[r*Math.cos(f),y,r*Math.sin(f)];
-  c.bar(v.pole,[0,0,0],[0,H+120,0],{name:'Центральная стойка',ph:'pole',up:[0,0,1]});
-  c.box('s10',-150,0,-150,300,10,300,{ph:'pole',name:'Пластина стойки 300×300×10',buyAs:'plate300'}); c.H('plate300'); [[-110,-110],[110,-110],[-110,110],[110,110]].forEach(([x,z])=>c.mark('anchor','pole',[x,10,z],'anchor12'));
+  const dir=v.dir==='cw'?-1:1, wood=!!WOOD[v.tread], plate=v.kons==='plate', tt=wood?40:4, ts=plate&&wood?4:0, foot=v.base==='footing', land=v.land==='yes';
+  const P=(r,f,y)=>[r*Math.cos(f),y,r*Math.sin(f)], r0=rp+10, ov=3*DEG;
+  // клин ступени: заготовка считается с раскладкой «валетом» (два клина на прямоугольник)
+  const wedge=(fa,fb,y,t,mat,name,ph)=>{const lo=Math.min(fa,fb), hi=Math.max(fa,fb), out=lin(lo,hi,Math.max(7,Math.ceil((hi-lo)/(5*DEG)))).map(f=>[R*Math.cos(f),R*Math.sin(f)]);
+    const p=c.poly(mat,[[r0*Math.cos(lo),r0*Math.sin(lo)],...out,[r0*Math.cos(hi),r0*Math.sin(hi)]],y,t,{ph,name}), sp=hi-lo;
+    p.blankAB=sp>.7?[R-r0+20,R*Math.sin(Math.min(sp,Math.PI/2))+20]:[R-r0+20,(R+r0)*Math.sin(sp/2)+20]; p.blank=p.blankAB[0]*p.blankAB[1]; return p;};
+  // стойка и основание
+  c.bar(v.pole,[0,10,0],[0,H+120,0],{name:'Центральная стойка',ph:'pole',up:[0,0,1]});
+  if(foot){c.cyl('conc',0,0,-800,800,500,{ph:'pole',name:'Опора под стойку'}); c.L('footing',1);}
+  c.box('s10',-150,0,-150,300,10,300,{ph:'pole',name:'Пластина стойки 300×300×10',buyAs:'plate300'}); c.H('plate300');
+  [[-110,-110],[110,-110],[-110,110],[110,110]].forEach(([x,z])=>c.mark('anchor','pole',[x,10,z],'anchor12'));
   c.mark('anchor','pole',[0,H+100,0],'anchor12',2); c.W('pole',[0,10,0],2);
-  const HR=v.hr==='wood'?SEC.hrw:SEC[v.hr]; let balN=0;
+  const HR=v.hr==='wood'?SEC.hrw:SEC[v.hr], rail=v.rail==='yes', bn=+v.bn||2, balSec=v.bal==='tw'?'tw12':v.bal==='q12'?'q12':'20x20x2';
+  let balN=0;
+  const baluster=(f,y0,yh)=>{c.bar(balSec,P(R-40,f,y0),P(R-40,f,yh-HR.h/2),{name:v.bal==='tw'?'Балясина витая':'Балясина',ph:'rail',up:[0,1,0]}); c.W('rail',P(R-40,f,y0),2); c.W('rail',P(R-40,f,yh-HR.h/2)); balN++;};
   for(let k=1;k<=nt;k++){
-    const f0=dir*(k-1)*th, fc=f0+dir*th/2, yt=k*h, yc=yt-tt-30;
-    c.bar('60x40x3',P(rp,fc,yc),P(R-60,fc,yc),{name:'Консоль ступени',ph:'consoles',up:[0,1,0]}); c.W('consoles',P(rp,fc,yc),2);
-    const a=P(R-90,f0+dir*.06,yt-tt-10), bb=P(R-90,f0+dir*(th-.06),yt-tt-10); c.bar('40x20x2',a,bb,{name:'Ступень: поперечина',ph:'consoles',up:[0,1,0]}); c.W('consoles',P(R-90,fc,yt-tt-10),2);
-    c.bar('20x20x2',P(rp,fc,yc-260),P((rp+R)/2,fc,yc-20),{name:'Консоль: подкос',ph:'consoles',up:[0,1,0]}); c.W('consoles',P(rp,fc,yc-260)); c.W('consoles',P((rp+R)/2,fc,yc-20));
-    const fs=f0-dir*3*DEG, fe=f0+dir*(th+3*DEG), out=lin(fs,fe,7).map(f=>[R*Math.cos(f),R*Math.sin(f)]), r0=rp+10;
-    const tp=c.poly(wood?v.tread:'rif4',[[r0*Math.cos(fs),r0*Math.sin(fs)],...out,[r0*Math.cos(fe),r0*Math.sin(fe)]],yt-tt,tt,{ph:'treads',name:'Ступень (клин)'});
-    tp.blankAB=[R-r0,2*R*Math.sin((th+6*DEG)/2)]; tp.blank=tp.blankAB[0]*tp.blankAB[1];
+    const f0=dir*(k-1)*th, fc=f0+dir*th/2, yt=k*h, yb=yt-tt-ts;
+    if(plate){
+      if(ts) wedge(f0-dir*ov,f0+dir*(th+ov),yb,ts,'s4','Лоток ступени 4 мм','consoles');
+      c.bar('s50x5',P(rp,fc,yb-25),P(R-90,fc,yb-25),{name:'Ребро ступени 50×5',ph:'consoles',up:[0,1,0]});
+      c.bar('s40x4',P(rp,f0+dir*.02,yb-20),P(R-15,f0+dir*.02,yb-20),{name:'Борт ступени 40×4',ph:'consoles',up:[0,1,0]});
+      c.W('consoles',P(rp,fc,yb-25),2); c.W('consoles',P(rp,f0,yb-20),2); c.W('consoles',P((rp+R)/2,fc,yb-2),2);
+    }else{
+      const yc=yt-tt-30;
+      c.bar('60x40x3',P(rp,fc,yc),P(R-60,fc,yc),{name:'Консоль ступени',ph:'consoles',up:[0,1,0]}); c.W('consoles',P(rp,fc,yc),2);
+      c.bar('40x20x2',P(R-90,f0+dir*.06,yt-tt-10),P(R-90,f0+dir*(th-.06),yt-tt-10),{name:'Ступень: поперечина',ph:'consoles',up:[0,1,0]}); c.W('consoles',P(R-90,fc,yt-tt-10),2);
+      c.bar('20x20x2',P(rp,fc,yc-260),P((rp+R)/2,fc,yc-20),{name:'Консоль: подкос',ph:'consoles',up:[0,1,0]}); c.W('consoles',P(rp,fc,yc-260)); c.W('consoles',P((rp+R)/2,fc,yc-20));
+    }
+    wedge(f0-dir*ov,f0+dir*(th+ov),yt-tt,tt,wood?v.tread:'rif4','Ступень (клин)','treads');
     if(wood) c.mark('bolt','treads',P((rp+R)/2,fc,yt-tt),'tbolt',4);
-    if(v.rail==='yes'){const nb=Math.max(1,Math.ceil(R*th/150)); for(let j=0;j<nb;j++){const f=f0+dir*th*(j+.5)/nb, prog=(k-1)+(j+.5)/nb, yh=(prog+.5)*h+900; c.bar('20x20x2',P(R-40,f,yt),P(R-40,f,yh-HR.h/2),{name:'Балясина',ph:'rail',up:[0,1,0]}); c.W('rail',P(R-40,f,yt),2); c.W('rail',P(R-40,f,yh-HR.h/2)); balN++;}}
+    if(rail) for(let j=0;j<bn;j++){const f=f0+dir*th*(j+.5)/bn, prog=(k-1)+(j+.5)/bn; baluster(f,yt,(prog+.5)*h+900);}
   }
+  // площадка выхода (90°)
+  const fl0=dir*nt*th, fl1=fl0+dir*Math.PI/2;
+  if(land){
+    const yl=H-tt-ts;
+    [fl0,fl1].forEach(f=>{c.bar('60x40x3',P(rp,f,yl-20),P(R-30,f,yl-20),{name:'Площадка: балка',ph:'landing',up:[0,1,0]}); c.W('landing',P(rp,f,yl-20),2);});
+    c.arc('40x40x2',lin(fl0,fl1,10).map(f=>P(R-30,f,yl-20)),{name:'Площадка: дуга',ph:'landing'}); c.W('landing',P(R-30,fl0,yl-20),2); c.W('landing',P(R-30,fl1,yl-20),2);
+    if(ts) wedge(fl0,fl1,yl,ts,'s4','Площадка: лист 4 мм','landing');
+    wedge(fl0,fl1,H-tt,tt,wood?v.tread:'rif4','Площадка: настил','treads');
+    [P(R-60,fl0+dir*.3,yl-20),P(R-60,fl1-dir*.3,yl-20)].forEach(p=>c.mark('anchor','landing',p,'anchor12',2));
+    c.L('landing',1);
+  }
+  // поручень по винтовой линии + по площадке
   let hrLen=0;
-  if(v.rail==='yes'){const steps=Math.ceil(nt*th/(5*DEG)), pts=[]; for(let i=0;i<=steps;i++){const prog=nt*i/steps; pts.push(P(R-40,dir*prog*th,(prog+.5)*h+900));}
-    const hp=c.arc(v.hr==='wood'?'hrw':v.hr,pts,{name:'Поручень винтовой',ph:'rail'}); hrLen=hp.len/1000; if(v.hr==='wood'){c.H('hrwood',hrLen); c.H('hrbracket',nt);}}
-  // покупка дерева — по прямоугольной заготовке
-  const turn=h*2*Math.PI/th, clear=turn-tt-30-60;
-  c.L('spiral',nt); if(wood) c.L('tread',nt); if(hrLen) c.L('rail',hrLen);
-  c.info.stairs={h:r1(h),go:r1(rw*th),ang:(th/DEG).toFixed(1),turn:r1(turn)};
+  if(rail){
+    const steps=Math.ceil(nt*th/(5*DEG)), pts=[]; for(let i=0;i<=steps;i++){const prog=nt*i/steps; pts.push(P(R-40,dir*prog*th,(prog+.5)*h+900));}
+    if(land){const yTop=(nt+.5)*h+900; lin(fl0,fl1,12).slice(1).forEach(f=>pts.push(P(R-40,f,yTop))); const nb=Math.max(2,Math.round(R*Math.PI/2/(R*th/bn))); for(let j=0;j<nb;j++) baluster(fl0+dir*(Math.PI/2)*(j+.5)/nb,H,yTop);}
+    const hp=c.arc(v.hr==='wood'?'hrw':v.hr,pts,{name:'Поручень винтовой',ph:'rail'}); hrLen=hp.len/1000; if(v.hr==='wood'){c.H('hrwood',hrLen); c.H('hrbracket',nt);}
+    if(v.bal==='tw') c.H('baltw',balN);
+  }
+  // ограждение проёма на втором этаже
+  let topM=0;
+  if(v.topr>0){const fe=land?fl1:fl0, t=[-Math.sin(fe)*dir,0,Math.cos(fe)*dir], A=P(R+60,fe,H), B=vadd(A,vmul(t,v.topr));
+    topM=railRun(c,{A,B,hrH:950,infill:'bars',hr:v.hr==='wood'?'wood':v.hr,ph:'toprail'});}
+  const turn=h*2*Math.PI/th, clear=turn-tt-ts-30-60;
+  c.L('spiral',nt); if(wood) c.L('tread',nt+(land?1:0)); if(hrLen+topM) c.L('rail',hrLen+topM);
+  c.info.stairs={h:r1(h),go:r1(rw*th),ang:(th/DEG).toFixed(1),turn:r1(turn),nt};
   if(clear<1950) c.warn(`Над головой ~${r1(clear)} мм за один виток — меньше 2000 мм. Увеличьте угол ступени или диаметр.`);
   if(v.D<1400) c.warn(`Диаметр ${v.D} мм — тесно для жилой лестницы (удобно от 1600 мм, минимум 1400).`);
   if(rw*th<180) c.warn(`Глубина ступени на линии хода ${r1(rw*th)} мм — мелко, нога не помещается. Увеличьте угол ступени.`);
+  if(h>215) c.warn(`Подъём ступени ${r1(h)} мм — круто даже для винтовой (норма 170–210).`);
+  const gap=r1(R*th/bn-12);
+  if(rail&&gap>110) c.warn(`Между балясинами ~${gap} мм — ребёнок пролезет (безопасно до 110 мм). Если в доме дети — ставьте ${Math.ceil(R*th/122)} балясины на ступень.`);
+  c.note(`Проём в перекрытии — круг не меньше Ø${v.D+100} мм (или квадрат ${v.D+100}×${v.D+100}). Центр стойки — не ближе ${R+60} мм к стенам. Высоту меряйте от чистого пола внизу до чистого пола наверху — с учётом будущей стяжки, плитки, ламината.`);
   c.size=[v.D,H+1000,v.D];
-  const tbl=Array.from({length:Math.min(nt,5)},(_,i)=>`${i+1}: ${r1((i)*th/DEG)}°, ${r1((i+1)*h-tt-30)} мм`).join('; ');
-  c.step('mark','Расчёт и разметка',`Высота ${H} мм → ${n} подъёмов по ${r1(h)} мм, ${nt} ступеней, поворот на ступень ${(th/DEG).toFixed(1)}°, глубина на линии хода ${r1(rw*th)} мм. Полный виток — ${r1(turn)} мм по высоте. Проём в перекрытии — круг не меньше Ø${v.D+100} мм.`,true);
-  c.step('pole','Стойка',`Стойка ${PO.n} длиной ${H+120} мм на пластине 300×300×10 (4 анкера М12), строго по отвесу в двух плоскостях. Верх — кронштейном к перекрытию.`);
-  c.step('consoles','Консоли',`${nt} одинаковых консолей на стапеле: консоль 60×40×3 длиной ${r1(R-60-rp)} мм + поперечина 40×20 + подкос 20×20. Привариваются к стойке по таблице «ступень: угол, высота оси»: ${tbl}${nt>5?'…':''} Шаг по углу ${(th/DEG).toFixed(1)}°, по высоте ${r1(h)} мм — разметьте на стойке заранее.`);
-  if(v.rail==='yes') c.step('rail','Ограждение',`Балясины 20×20 на концах консолей (${balN} шт), поручень ${v.hr==='wood'?'гнутый клееный (заказ у столяра)':SEC[v.hr].n} гнётся по винтовой линии: радиус ${R-40} мм, подъём ${r1(turn)} мм на виток, длина ~${r1(hrLen*1000)} мм. Гнуть на трубогибе по месту, прихватывая к балясинам.`);
-  c.step('treads','Ступени',wood?`${nt} клиновидных ступеней ${WOOD[v.tread].n.toLowerCase()} 40 мм: внутренний радиус ${r1(rp+10)} мм, наружный ${R} мм, угол ${(th/DEG+6).toFixed(1)}° (с нахлёстом). Заготовка ${R-rp-10}×${r1(2*R*Math.sin((th+6*DEG)/2))} мм. Масло до монтажа, крепление болтами М8 к консоли.`:'Клиновидные ступени из рифлёного листа 4 мм — по шаблону, проварка к консоли.');
+  const tbl=Array.from({length:Math.min(nt,5)},(_,i)=>`${i+1}: ${r1(i*th/DEG)}°, ${r1((i+1)*h-tt-ts)} мм`).join('; ');
+  c.step('mark','Расчёт и разметка',`Высота ${H} мм (чистый пол — чистый пол) → ${n} подъёмов по ${r1(h)} мм: ${nt} ступеней${land?' + площадка выхода':''}, поворот на ступень ${(th/DEG).toFixed(1)}°, глубина на линии хода ${r1(rw*th)} мм. Полный виток — ${r1(turn)} мм по высоте. Проём — не меньше Ø${v.D+100} мм, центр стойки — не ближе ${R+60} мм к стенам.`,true);
+  c.step('pole','Основание и стойка',`${foot?'Под стойкой — опора: яма Ø500 на 800 мм, щебень 100 мм, бетон М250 вровень с полом, выдержать 7 дней. ':''}Стойка ${PO.n} длиной ${H+110} мм на пластине 300×300×10 (4 анкера М12), строго по отвесу в двух плоскостях. Верх — кронштейном к перекрытию: анкеры в бетон или шурупы-глухари в деревянную балку.`);
+  c.step('consoles',plate?'Лотки ступеней':'Консоли',plate?`${nt} одинаковых ступеней на стапеле: ${ts?`лоток из листа 4 мм по шаблону (клин ${(th/DEG+6).toFixed(1)}°, радиус ${R} мм), `:''}снизу ребро 50×5 длиной ${r1(R-90-rp)} мм, по переднему краю борт 40×4. Ребро и борт приварить к стойке по таблице «ступень: угол, высота низа»: ${tbl}${nt>5?'…':''} Разметьте углы и высоты на стойке заранее.`:`${nt} одинаковых консолей на стапеле: консоль 60×40×3 длиной ${r1(R-60-rp)} мм + поперечина 40×20 + подкос 20×20. Привариваются к стойке по таблице «ступень: угол, высота»: ${tbl}${nt>5?'…':''} Шаг по углу ${(th/DEG).toFixed(1)}°, по высоте ${r1(h)} мм.`);
+  if(land) c.step('landing','Площадка выхода',`Площадка 90° на уровне второго этажа: две балки 60×40×3 от стойки и дуга 40×40${ts?', сверху лист 4 мм':''}. Крепится к стойке сваркой и к перекрытию — 4 анкера или глухаря. Верх настила вровень с полом второго этажа.`);
+  if(rail) c.step('rail','Ограждение',`${balN} ${v.bal==='tw'?'кованых витых балясин 12×12':v.bal==='q12'?'балясин из квадрата 12':'балясин 20×20'} — по ${bn} на ступень, на торце ступени. Поручень ${v.hr==='wood'?'гнутый клееный (заказ у столяра)':SEC[v.hr].n} по винтовой линии: радиус ${R-40} мм, подъём ${r1(turn)} мм на виток, длина ~${r1(hrLen*1000)} мм. Гнуть по месту, прихватывая к балясинам.${topM?` Наверху — ограждение проёма ${v.topr} мм.`:''}`);
+  c.step('treads','Ступени',wood?`${nt} клиновидных ступеней${land?' и настил площадки':''} — ${WOOD[v.tread].n.toLowerCase()} 40 мм: внутренний радиус ${r0} мм, наружный ${R} мм, угол ${(th/DEG+6).toFixed(1)}° (с нахлёстом). Кроить из щита «валетом» — два клина на прямоугольник ${r1(R-r0+20)}×${r1(2*(R+r0)*Math.sin((th+6*DEG)/2)+40)} мм. Масло до монтажа, крепление болтами М8 снизу${plate?' через лоток':' к консоли'}, между металлом и деревом — резиновая прокладка.`:'Клиновидные ступени из рифлёного листа 4 мм — по шаблону, проварка к ребру и борту.');
   return c;
 }
 
@@ -1388,10 +1431,15 @@ const TPL={
     S('kos','Косоуры',[['two','Два косоура'],['mono','Центральный']],'two'),S('ks','Сечение косоура',KS_OPTS,'100x50x3'),
     S('tread','Ступени',TREAD_OPTS,'oak'),S('riser','Подступенки',YN,'no',{show:v=>!!WOOD[v.tread]}),
     S('rail','Ограждение',[['yes','Да'],['none','Нет']],'yes'),S('rtype','Заполнение ограждения',RAIL_INF.slice(0,2),'bars',{show:v=>v.rail!=='none'}),S('hr','Поручень',HR_OPTS,'wood',{show:v=>v.rail!=='none'})]},
-  spiral:{name:'Винтовая лестница',cat:'Лестницы',desc:'Центральная стойка, консоли, клиновые ступени',build:bSpiral,params:[
-    N('H','Высота до чистого пола',2200,4500,2800),N('D','Диаметр',1200,2400,1600),S('pole','Стойка',secOpts(['d108x4','d133x4','d159x4.5']),'d133x4'),
+  spiral:{name:'Винтовая лестница',cat:'Лестницы',desc:'Центральная стойка, лотки или консоли, клиновые ступени, площадка выхода',build:bSpiral,params:[
+    N('H','Высота: чистый пол — чистый пол',2200,4500,2800),N('D','Диаметр',1200,2400,1600),S('pole','Стойка',secOpts(['d108x4','d133x4','d159x4.5']),'d133x4'),
     S('dir','Направление подъёма',[['ccw','Против часовой'],['cw','По часовой']],'ccw'),N('ang','Угол ступени (0 — авто)',0,40,0,'°'),
-    S('tread','Ступени',TREAD_OPTS,'oak'),S('rail','Ограждение',YN,'yes'),S('hr','Поручень',HR_OPTS.filter(o=>o[0]!=='40x40x2'),'d42x3',{show:v=>v.rail==='yes'})]},
+    S('kons','Каркас ступени',[['plate','Стальной лоток + ребро (как на фото)'],['tube','Консоль из трубы 60×40']],'plate'),
+    S('tread','Ступени',TREAD_OPTS,'oak'),S('land','Площадка выхода наверху',YN,'yes'),
+    S('base','Основание стойки',[['footing','Своя бетонная опора'],['slab','Анкеры в бетонный пол']],'footing'),
+    S('rail','Ограждение',YN,'yes'),S('bal','Балясины',[['tw','Кованые витые 12×12'],['q12','Квадрат 12 гладкий'],['t20','Труба 20×20']],'tw',{show:v=>v.rail==='yes'}),
+    S('bn','Балясин на ступень',[[2,'2'],[3,'3 — безопасно для детей'],[1,'1']],2,{show:v=>v.rail==='yes'}),
+    S('hr','Поручень',HR_OPTS.filter(o=>o[0]!=='40x40x2'),'d42x3',{show:v=>v.rail==='yes'}),N('topr','Ограждение проёма наверху (0 — нет)',0,8000,0)]},
   porch:{name:'Крыльцо с площадкой',cat:'Лестницы',desc:'Уличные ступени к двери, площадка перед входом',build:v=>bStair(v,'porch'),params:[
     N('H','Высота до порога',300,1800,800),N('W','Ширина',800,3000,1500),N('go','Глубина ступени (0 — авто)',0,400,0),N('land','Площадка (глубина, 0 — нет)',0,2000,1200),
     S('ks','Косоуры',KS_OPTS,'100x50x3'),S('tread','Ступени',TREAD_OPTS,'rif4'),S('riser','Подступенки',YN,'no',{show:v=>!!WOOD[v.tread]}),
@@ -1593,7 +1641,7 @@ function renderWarns(){
   w.innerHTML=M.warns.length?`<h2 class="lbl">Проверка конструкции</h2>${M.warns.map(x=>`<p class="wline">${esc(x)}</p>`).join('')}`:'';
 }
 function renderSum(){
-  const bars=M.metal.reduce((s,m)=>s+m.bars.length,0);
+  const bars=M.metal.reduce((s,m)=>s+(m.byM?0:m.bars.length),0);
   $('#sum').innerHTML=`<div class="sumrow"><div><h2 class="lbl">Цена для клиента</h2><div class="big">${money(M.total)}</div><div class="cap">Материалы ${money(M.matSum+M.markup)} · работа ${money(M.labSum)}</div></div>
     <button class="ib" type="button" data-act="copy" aria-label="Копировать смету" title="Копировать смету">${IC.copy}</button></div>
   <dl class="stats"><div><dt>Металл</dt><dd>${Math.round(M.kg)}<small>кг</small></dd></div><div><dt>Хлыстов</dt><dd>${bars}</dd></div><div><dt>Швов</dt><dd>${M.welds}</dd></div></dl>`;
@@ -1863,10 +1911,10 @@ function panelMat(P){
   P.innerHTML=`<h3>Что купить</h3>
   <div class="tw"><table><thead><tr><th>Наименование</th><th class="n">Кол-во</th></tr></thead><tbody>${rows}</tbody></table></div>
   <h3>Металл по сечениям</h3>
-  <div class="tw"><table><thead><tr><th>Сечение</th><th class="n">Метров</th><th class="n">Хлыстов</th><th class="n">Вес, кг</th></tr></thead><tbody>${M.metal.map(m=>`<tr><td>${m.S.n}</td><td class="n">${fmt(m.tot)}</td><td class="n">${m.bars.length}</td><td class="n">${fmt(m.kgBuy)}</td></tr>`).join('')}
+  <div class="tw"><table><thead><tr><th>Сечение</th><th class="n">Метров</th><th class="n">Хлыстов</th><th class="n">Вес, кг</th></tr></thead><tbody>${M.metal.map(m=>`<tr><td>${m.S.n}</td><td class="n">${fmt(m.tot)}</td><td class="n">${m.byM?'в размер '+fmt(m.buyLen)+' м':m.bars.length}</td><td class="n">${fmt(m.kgBuy)}</td></tr>`).join('')}
     ${M.sheets.map(s=>`<tr><td>${s.SS.n}, лист 1250×2500</td><td class="n">—</td><td class="n">${s.sh.length} л.</td><td class="n">${fmt(s.sh.length*3.125*(s.SS.kgm2||s.SS.t*7.85))}</td></tr>`).join('')}</tbody></table></div>
-  <p class="note">Вес — с учётом целых хлыстов по 6 м (так продают на металлобазе). Чистый вес изделия ~${fmt(M.kg)} кг, площадь покраски ${fmt(M.paintA)} м².</p>
-  ${wp.length?`<h3>Деревянные заготовки</h3><div class="tw"><table><thead><tr><th>Деталь</th><th>Порода</th><th class="n">Размер, мм</th><th class="n">Шт</th></tr></thead><tbody>${wp.map(w=>`<tr><td>${w.name}${w.wedge?' (заготовка под клин)':''}</td><td>${WOOD[w.mat].n}</td><td class="n">${w.d.join('×')}</td><td class="n">${w.q}</td></tr>`).join('')}</tbody></table></div>`:''}
+  <p class="note">Лёгкий профиль — целыми хлыстами по 6 м, тяжёлый (от ${prices.bym} кг/м) — в размер с порезкой на базе. Чистый вес изделия ~${fmt(M.kg)} кг, площадь покраски ${fmt(M.paintA)} м².</p>
+  ${wp.length?`<h3>Деревянные заготовки</h3><div class="tw"><table><thead><tr><th>Деталь</th><th>Порода</th><th class="n">Размер, мм</th><th class="n">Шт</th></tr></thead><tbody>${wp.map(w=>`<tr><td>${w.name}${w.wedge?' (клин, кроить «валетом»)':''}</td><td>${WOOD[w.mat].n}</td><td class="n">${w.d.join('×')}</td><td class="n">${w.q}</td></tr>`).join('')}</tbody></table></div>`:''}
   ${notesHTML()}`;
 }
 
@@ -1894,7 +1942,7 @@ function sheetSVG(sh){
 }
 function cutText(){
   const L=[`Нарезка — ${M.T.name}`,''];
-  M.metal.forEach(m=>{L.push(`${m.S.n}: ${m.bars.length} ${plural(m.bars.length,'хлыст','хлыста','хлыстов')} по 6 м`); m.list.forEach(c=>L.push(`  • ${c.name} — ${c.L} мм × ${c.q}${c.cut?` (рез ${c.cut})`:''}${c.sp?' — сращивать':''}`)); L.push('');});
+  M.metal.forEach(m=>{L.push(m.byM?`${m.S.n}: в размер ${fmt(m.buyLen)} м`:`${m.S.n}: ${m.bars.length} ${plural(m.bars.length,'хлыст','хлыста','хлыстов')} по 6 м`); m.list.forEach(c=>L.push(`  • ${c.name} — ${c.L} мм × ${c.q}${c.cut?` (рез ${c.cut})`:''}${c.sp?' — сращивать':''}`)); L.push('');});
   M.sheets.forEach(s=>{L.push(`${s.SS.n}: ${s.sh.length} ${plural(s.sh.length,'лист','листа','листов')} 1250×2500`); const g={}; s.pcs.forEach(p=>{const k=p.n+' '+p.a+'×'+p.b; g[k]=(g[k]||0)+1;}); Object.entries(g).forEach(([k,q])=>L.push(`  • ${k} мм × ${q}`)); L.push('');});
   return L.join('\n');
 }
@@ -1904,8 +1952,10 @@ function panelCut(P){
   let h=`<div class="row"><button class="btn" type="button" data-act="copyCut">${IC.copy} Копировать нарезку</button></div>
   <p class="note">Хлысты по 6 м, пропил 3 мм. Сначала режьте длинные детали, из остатков — короткие. Угол реза указан от перпендикуляра.</p>`;
   M.metal.forEach(m=>{
-    h+=`<h3>${m.S.n} — ${m.bars.length} ${plural(m.bars.length,'хлыст','хлыста','хлыстов')}</h3><p class="note" style="margin-top:-8px">${fmt(m.tot)} м в деталях · ${fmt(m.kg)} кг · отход ${Math.round((1-m.tot/(m.bars.length*6))*100)}%</p>
-    <div class="sheet">${barsSVG(m)}</div>
+    h+=m.byM?`<h3>${m.S.n} — в размер ${fmt(m.buyLen)} м</h3><p class="note" style="margin-top:-8px">${fmt(m.tot)} м в деталях · ${fmt(m.kg)} кг. Тяжёлый профиль выгоднее брать с порезкой на базе, чем целым хлыстом.</p>`
+    :`<h3>${m.S.n} — ${m.bars.length} ${plural(m.bars.length,'хлыст','хлыста','хлыстов')}</h3><p class="note" style="margin-top:-8px">${fmt(m.tot)} м в деталях · ${fmt(m.kg)} кг · отход ${Math.round((1-m.tot/(m.bars.length*6))*100)}%</p>
+    <div class="sheet">${barsSVG(m)}</div>`;
+    h+=`
     <div class="tw"><table><thead><tr><th>Деталь</th><th class="n">Длина, мм</th><th class="n">Рез</th><th class="n">Шт</th></tr></thead><tbody>${m.list.map(c=>`<tr><td>${esc(c.name)}${c.sp?' <b class="warnc">сращивать</b>':''}</td><td class="n">${c.L}</td><td class="n">${c.cut||'90°'}</td><td class="n">${c.q}</td></tr>`).join('')}</tbody></table></div>`;
   });
   M.sheets.forEach(s=>{h+=`<h3>${s.SS.n} — ${s.sh.length} ${plural(s.sh.length,'лист','листа','листов')}</h3><p class="note" style="margin-top:-8px">Формат 1250×2500 мм. Можно заказать порезку в размер или лазер.</p><div class="sheets">${s.sh.map((sh,i)=>`<div class="sheet">${sheetSVG(sh)}<div class="cap"><span>Лист ${i+1}</span><span>${sh.rects.length} дет.</span></div></div>`).join('')}</div>`;});
