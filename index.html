@@ -9,8 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Корпусник">
 <meta name="application-name" content="Корпусник">
-<meta name="theme-color" content="#F3F2EE" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#131313" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#111111">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -18,6 +17,7 @@
 <style>
 html{color-scheme:light;padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
 body{margin:0}
+body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top,0px);background:#111;z-index:60;pointer-events:none}
 img{max-width:100%}
 [hidden]{display:none!important}
 button,a,label{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
@@ -62,7 +62,9 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 .pip{position:absolute;top:-5px;right:-5px;width:12px;height:12px;border-radius:50%;background:var(--org);border:2px solid var(--bg)}
 .drawer{display:flex;flex-direction:column;border:var(--bw) solid var(--ink);background:var(--surface);box-shadow:var(--sh)}
 .drawer button{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border:0;border-bottom:var(--bw) solid var(--ink);background:none;font-family:var(--f-d);font-weight:600;font-size:18px;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;text-align:left}
-.drawer button:last-child{border-bottom:0}
+.drawer button:last-child,.drawer a:last-child{border-bottom:0}
+.drawer a{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:var(--bw) solid var(--ink);font-family:var(--f-d);font-weight:600;font-size:18px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-decoration:none}
+.drawer a:hover{background:var(--yel-soft);color:var(--ink)}
 .drawer button:hover,.drawer button[aria-current="page"]{background:var(--yel);color:var(--on-yel)}
 
 /* заголовок экрана */
@@ -331,6 +333,7 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
     <button type="button" data-nav="photo">Мебель по фото<span>→</span></button>
     <button type="button" data-nav="mine">Мои шаблоны<span>→</span></button>
     <button type="button" data-nav="prices">Мои цены<span>→</span></button>
+    <a href="svarka/" data-ext>Сварщик — металл<span>↗</span></a>
   </nav>
 
   <div class="screen" id="scrEditor">
