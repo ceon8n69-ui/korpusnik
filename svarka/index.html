@@ -1709,7 +1709,7 @@ function ctaHTML(){
     return `<button class="cta" type="button" data-act="saveItem"><span>${o?'Добавить в заказ':'Сохранить в заказ'}</span><i>${IC.plus}</i></button>`;
   }
   if(state.screen==='orders') return `<button class="cta" type="button" data-act="newOrder"><span>Новый заказ</span><i>${IC.plus}</i></button>`;
-  if(state.screen==='order') return `<button class="cta o" type="button" data-act="copyKP"><span>Копировать КП клиенту</span><i>${IC.share}</i></button>`;
+  if(state.screen==='order') return `<button class="cta o" type="button" data-act="pdfOrder"><span>PDF клиенту</span><i>${IC.share}</i></button>`;
   return '';
 }
 function renderCTA(){const h=ctaHTML(); $('#ctaBar').innerHTML=h; $('#ctaDesk').innerHTML=state.screen==='editor'?h:'';}
@@ -1908,6 +1908,151 @@ function showAIRes(c){
   };
 }
 
+/* ---------- PDF клиенту: КП с 3D, чертежом и ценами ---------- */
+const PDF_JS='https://cdn.jsdelivr.net/npm/pdfmake@0.2.20/build/pdfmake.min.js', PDF_FONTS='https://cdn.jsdelivr.net/npm/pdfmake@0.2.20/build/vfs_fonts.js';
+const IC_PDF='<svg class="i" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>';
+let pdfLib=null, pdfOut=null;
+function loadPdfLib(){
+  if(window.pdfMake&&pdfMake.vfs&&pdfMake.vfs['Roboto-Regular.ttf']) return Promise.resolve();
+  if(pdfLib) return pdfLib;
+  const load=src=>new Promise((ok,no)=>{const s=document.createElement('script'); s.src=src; s.onload=ok; s.onerror=()=>no(new Error('load')); document.head.appendChild(s);});
+  pdfLib=load(PDF_JS).then(()=>load(PDF_FONTS)).catch(e=>{pdfLib=null; throw e;});
+  return pdfLib;
+}
+const nb=s=>String(s).replace(/[  ]/g,' ');
+const pm=n=>nb(Math.round(n).toLocaleString('uk-UA'))+' грн';
+const PDF_CSS='text{font-family:Arial,Helvetica,sans-serif;fill:#111}.ttl{font-weight:700}.c{fill:#fff;stroke:#111;stroke-width:2px;vector-effect:non-scaling-stroke;stroke-linejoin:round}.sf{fill:#FFD9BD;fill-opacity:.45;stroke:#888;stroke-width:1.2px;vector-effect:non-scaling-stroke}.fs{fill:#E3C49A;stroke:#111;stroke-width:1.6px;vector-effect:non-scaling-stroke}.h{fill:#EEE;fill-opacity:.6;stroke:#888;stroke-width:1.4px;stroke-dasharray:8 6;vector-effect:non-scaling-stroke}.gl{stroke:#111;stroke-width:3px;vector-effect:non-scaling-stroke}.brk{fill:none;stroke:#C62A1E;stroke-width:2.4px;vector-effect:non-scaling-stroke}.dim line{stroke:#111;stroke-width:1.6px;vector-effect:non-scaling-stroke}.ext{stroke:#888;stroke-width:1.2px;vector-effect:non-scaling-stroke}.mut{fill:#888}';
+async function svgToImg(svg,W=1800){
+  const vb=svg.match(/viewBox="0 0 (\d+) (\d+)"/), H=Math.round(W*(+vb[2])/(+vb[1]));
+  const s=svg.replace(/<svg([^>]*)>/,`<svg$1 width="${W}" height="${H}"><style>${PDF_CSS}</style><rect width="100%" height="100%" fill="#fff"/>`);
+  const img=new Image(); await new Promise((ok,no)=>{img.onload=ok; img.onerror=no; img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);});
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,W,H); g.drawImage(img,0,0,W,H);
+  return cv.toDataURL('image/jpeg',.9);
+}
+function renderSnap(W=1600,H=1100){
+  const r=R.renderer, cv=r.domElement, sz=new THREE.Vector2(); r.getSize(sz); const pr=r.getPixelRatio(), asp=R.cam.aspect;
+  const tab=state.tab, nc=noClad; state.tab='3d'; noClad=false; applyVis(); state.tab=tab; noClad=nc;
+  R.marks.forEach(m=>m.g.visible=false);
+  r.setPixelRatio(1); r.setSize(W,H,false); R.cam.aspect=W/H; R.cam.updateProjectionMatrix(); r.setClearColor(0xffffff,1);
+  // вписать изделие в кадр, сохранив направление взгляда
+  const cp=R.cam.position.clone(), tp=R.ctr.target.clone(), {mn,mx}=M.bb, g=R.group.position, y0=Math.max(mn[1],-300);
+  const c=new THREE.Vector3((mn[0]+mx[0])/2+g.x,(y0+mx[1])/2,(mn[2]+mx[2])/2+g.z), rad=.5*Math.hypot(mx[0]-mn[0],mx[1]-y0,mx[2]-mn[2]);
+  const vf=R.cam.fov*DEG/2, hf=Math.atan(Math.tan(vf)*W/H), dist=rad/Math.sin(Math.min(vf,hf))*1.0, d=cp.clone().sub(tp).normalize();
+  R.cam.position.copy(c).add(d.multiplyScalar(dist)); R.cam.lookAt(c);
+  r.render(R.scene,R.cam); const url=cv.toDataURL('image/jpeg',.9);
+  R.cam.position.copy(cp); R.cam.lookAt(tp);
+  r.setClearColor(0x000000,0); r.setPixelRatio(pr); r.setSize(Math.max(1,sz.x),Math.max(1,sz.y),false); R.cam.aspect=asp; R.cam.updateProjectionMatrix(); applyVis();
+  return url;
+}
+// снимки одного изделия: 3D + три вида
+async function captureItem(m,o,fresh){
+  const keep=M, out={}; M=m;
+  try{
+    if(o.img3d){init3D(); if(R&&!R.fail){if(fresh){resetCam=true; R.cam.aspect=1600/1100; build3D();} else if(dirty3D){build3D(); dirty3D=false;} out.img3d=renderSnap();}}
+    if(o.draw){out.draws=[]; for(const v of ['front','side','top']) out.draws.push(await svgToImg(viewSVG(v)));}
+  }finally{M=keep;}
+  if(fresh&&R&&!R.fail){resetCam=true; build3D(); applyVis();}
+  return out;
+}
+function clientRows(m,o){
+  const k=1+prices.markup/100, rows=[];
+  ['metal','wood','conc','clad','hw','svc'].forEach(s=>{const ls=m.lines.filter(l=>l.sec===s); if(!ls.length) return; rows.push({sec:SECN[s]}); ls.forEach(l=>rows.push({n:l.name,q:`${fmt(l.qty)} ${l.unit}`,p:l.price*k,s:l.sum*k}));});
+  const cons=m.lines.filter(l=>l.sec==='cons'); if(cons.length){rows.push({sec:'Расходники и краска'}); rows.push({n:'Электроды, круги, грунт, краска, растворитель',q:'',p:null,s:cons.reduce((a,l)=>a+l.sum,0)*k});}
+  const lab=m.lines.filter(l=>l.sec==='labor');
+  if(lab.length){rows.push({sec:'Работа'}); if(o.labDetail) lab.forEach(l=>rows.push({n:l.name,q:`${fmt(l.qty)} ${l.unit}`,p:l.price,s:l.sum})); else rows.push({n:'Изготовление, покраска и монтаж',q:'',p:null,s:m.labSum});}
+  return rows;
+}
+function pdfDoc(items,meta,o){
+  const ac='#FF7A1A', today=new Date().toLocaleDateString('uk-UA'), content=[];
+  content.push({columns:[{stack:[{text:meta.firm||'Сварочные работы',style:'firm'},meta.phone?{text:meta.phone,style:'muted'}:''],width:'*'},{stack:[{text:'КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ',style:'kp'},{text:`от ${today}`,style:'muted',alignment:'right'}],width:'auto'}]});
+  content.push({canvas:[{type:'rect',x:0,y:0,w:515,h:4,color:ac}],margin:[0,8,0,10]});
+  if(meta.client) content.push({text:[{text:'Клиент: ',color:'#666'},{text:meta.client,bold:true},meta.address?{text:' · '+meta.address,color:'#666'}:'']},{text:' ',fontSize:4});
+  items.forEach((it,i)=>{
+    const m=it.m, sumBox={table:{widths:['*','auto'],body:[[{text:items.length>1?'Стоимость изделия':'Стоимость под ключ',bold:true,fontSize:13,color:'#fff',fillColor:'#111111',margin:[6,5,0,5]},{text:pm(m.total),bold:true,fontSize:15,color:'#fff',fillColor:ac,alignment:'right',noWrap:true,margin:[10,4,6,4]}],
+      [{text:'в том числе материалы',color:'#666',margin:[6,3,0,0]},{text:pm(m.matSum+m.markup),alignment:'right',margin:[0,3,6,0]}],[{text:'изготовление, покраска и монтаж',color:'#666',margin:[6,0,0,3]},{text:pm(m.labSum),alignment:'right',margin:[0,0,6,3]}]]},layout:'noBorders',unbreakable:true,margin:[0,6,0,0]};
+    content.push({text:(items.length>1?`${i+1}. `:'')+it.name,style:'h1',pageBreak:i?'before':undefined});
+    content.push({text:nb(`${sizeTxt(m)} · ${descr(m)} · металл ~${fmt(m.kg)} кг`),style:'muted',margin:[0,2,0,10]});
+    if(it.img3d) content.push({image:it.img3d,fit:[515,410],alignment:'center',margin:[0,0,0,10]});
+    content.push(sumBox);
+    if(it.draws){
+      content.push({stack:[{text:'Чертёж',style:'h1'},{text:it.name,style:'muted',margin:[0,0,0,8]},{image:it.draws[0],fit:[515,330],alignment:'center',margin:[0,0,0,10]}],pageBreak:'before',unbreakable:true});
+      content.push({columns:[{image:it.draws[1],fit:[250,300]},{image:it.draws[2],fit:[250,300]}],columnGap:15,unbreakable:true});
+      content.push({text:'Размеры в миллиметрах. Чертёж ориентировочный — точные размеры уточняются на замере.',style:'small',margin:[0,6,0,0]});
+    }
+    if(o.mat){
+      const body=[[{text:'Наименование',style:'th'},{text:'Кол-во',style:'th',alignment:'right'},{text:'Цена',style:'th',alignment:'right'},{text:'Сумма',style:'th',alignment:'right'}]];
+      clientRows(m,o).forEach(r=>{if(r.sec) body.push([{text:r.sec,colSpan:4,style:'sec'},'','','']); else body.push([nb(r.n),{text:nb(r.q),alignment:'right',noWrap:true},{text:r.p==null?'':pm(r.p),alignment:'right',noWrap:true},{text:pm(r.s),alignment:'right',noWrap:true}]);});
+      body.push([{text:'Материалы',colSpan:3,alignment:'right',color:'#666',margin:[0,6,0,0]},'','',{text:pm(m.matSum+m.markup),alignment:'right',noWrap:true,margin:[0,6,0,0]}]);
+      body.push([{text:'Работа',colSpan:3,alignment:'right',color:'#666'},'','',{text:pm(m.labSum),alignment:'right',noWrap:true}]);
+      body.push([{text:items.length>1?'Стоимость изделия':'ИТОГО',colSpan:3,alignment:'right',bold:true,fontSize:13},'','',{text:pm(m.total),bold:true,fontSize:13,alignment:'right',noWrap:true}]);
+      const nb2=body.length;
+      content.push({text:'Материалы и работа',style:'h1',pageBreak:'before',margin:[0,0,0,8]});
+      content.push({table:{headerRows:1,dontBreakRows:true,widths:['*','auto','auto','auto'],body},layout:{hLineWidth:(i)=>i===0||i>=nb2-3?0:.5,vLineWidth:()=>0,hLineColor:'#DDD',paddingTop:()=>4,paddingBottom:()=>4,fillColor:(r)=>r===0?'#111111':r===nb2-1?'#FFE6D2':null}});
+    }
+  });
+  if(items.length>1){
+    const tot=items.reduce((s,it)=>s+it.m.total,0);
+    content.push({text:'Итого по заказу',style:'h1',pageBreak:'before'});
+    content.push({table:{headerRows:1,widths:['*','auto'],body:[[{text:'Изделие',style:'th'},{text:'Стоимость',style:'th',alignment:'right'}],...items.map((it,i)=>[nb(`${i+1}. ${it.name} — ${sizeTxt(it.m)}`),{text:pm(it.m.total),alignment:'right',noWrap:true}]),[{text:'ИТОГО',bold:true,fontSize:14},{text:pm(tot),bold:true,fontSize:14,alignment:'right',noWrap:true}]]},layout:{hLineWidth:()=>.5,vLineWidth:()=>0,hLineColor:'#DDD',paddingTop:()=>6,paddingBottom:()=>6,fillColor:(r,n)=>r===0?'#111111':r===n.table.body.length-1?ac:null}});
+  }
+  content.push({text:meta.note||'',style:'note',margin:[0,16,0,0]});
+  return {pageSize:'A4',pageMargins:[40,36,40,44],info:{title:meta.title},content,
+    footer:(p,n)=>({columns:[{text:nb([meta.firm,meta.phone].filter(Boolean).join(' · ')),style:'small'},{text:`стр. ${p} из ${n}`,style:'small',alignment:'right'}],margin:[40,12,40,0]}),
+    defaultStyle:{font:'Roboto',fontSize:9.5,color:'#111'},
+    styles:{firm:{fontSize:15,bold:true},kp:{fontSize:12,bold:true,color:ac,alignment:'right'},h1:{fontSize:17,bold:true},h2:{fontSize:12.5,bold:true,margin:[0,4,0,2]},muted:{color:'#666'},small:{fontSize:8,color:'#777'},th:{bold:true,color:'#fff',fontSize:9},sec:{bold:true,fillColor:'#EFEDE8',fontSize:9},note:{fontSize:9,color:'#444'}}};
+}
+function openPdf(kind){
+  const o=kind==='order'?Store.order(state.openOrder):null;
+  if(kind==='order'&&(!o||!o.items.some(it=>TPL[it.tpl]))){toast('В заказе нет изделий'); return;}
+  const cur=state.orderId&&Store.order(state.orderId), F=LS.get('svar1.firm',{}), O=LS.get('svar1.pdfopt',{img3d:true,draw:true,mat:true,labDetail:false});
+  const client=o?o.client:cur?cur.client:'';
+  pdfOut=null;
+  sheet(`<h2>PDF клиенту</h2>
+    <p class="note" style="margin:0">Коммерческое предложение${o?` по заказу «${esc(o.client)}» — ${o.items.length} ${plural(o.items.length,'изделие','изделия','изделий')}`:` на «${esc(M.title||M.T.name)}»`}: 3D, чертёж, материалы с ценами и итог. Ваша наценка уже внутри цен материалов.</p>
+    <div class="params">
+      <div class="f"><label for="pfF">Ваше имя или фирма</label><div class="in"><input id="pfF" value="${esc(F.firm||'')}" placeholder="Сварочные работы"></div></div>
+      <div class="f"><label for="pfP">Телефон</label><div class="in"><input id="pfP" type="tel" value="${esc(F.phone||'')}" placeholder="+380"></div></div>
+      ${o?'':`<div class="f wide"><label for="pfC">Клиент (необязательно)</label><div class="in"><input id="pfC" value="${esc(client)}" placeholder="Имя клиента"></div></div>`}
+      <div class="f wide"><label for="pfN">Примечание внизу</label><div class="in"><textarea id="pfN" rows="2">${esc(F.note||'Цены действительны 14 дней. В стоимость входят материалы, изготовление, покраска и монтаж. Срок изготовления — по согласованию.')}</textarea></div></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="po3"${O.img3d?' checked':''}> 3D-вид (как сейчас повёрнут на экране)</label>
+    <label class="chk"><input type="checkbox" id="poD"${O.draw?' checked':''}> Чертёж в трёх видах</label>
+    <label class="chk"><input type="checkbox" id="poM"${O.mat?' checked':''}> Материалы с ценами</label>
+    <label class="chk"><input type="checkbox" id="poL"${O.labDetail?' checked':''}> Работа построчно (иначе одной суммой)</label>
+    <p class="note" id="pfStat" aria-live="polite"></p>
+    <div class="row" id="pfDone" hidden><button class="cta" type="button" id="pfShare" style="flex:1"><span>Отправить</span><i>${IC.share}</i></button><a class="btn" id="pfDl" download>Скачать</a></div>
+    <button class="cta w" type="button" id="pfGo"><span>Сделать PDF</span><i>${IC_PDF}</i></button>`,
+  c=>{
+    const st=c.querySelector('#pfStat'), go=c.querySelector('#pfGo');
+    go.onclick=async()=>{
+      const meta={firm:c.querySelector('#pfF').value.trim(),phone:c.querySelector('#pfP').value.trim(),note:c.querySelector('#pfN').value.trim()};
+      LS.set('svar1.firm',meta);
+      const opt={img3d:c.querySelector('#po3').checked,draw:c.querySelector('#poD').checked,mat:c.querySelector('#poM').checked,labDetail:c.querySelector('#poL').checked}; LS.set('svar1.pdfopt',opt);
+      meta.client=o?o.client:(c.querySelector('#pfC').value.trim()); meta.address=o?o.address:(cur&&cur.client===meta.client?cur.address:'');
+      go.disabled=true; c.querySelector('#pfDone').hidden=true;
+      try{
+        st.textContent='Загружаю модуль PDF… (первый раз ~2 МБ)'; await loadPdfLib();
+        const items=[];
+        if(o){const its=o.items.filter(it=>TPL[it.tpl]); for(let i=0;i<its.length;i++){st.textContent=`Готовлю изделие ${i+1} из ${its.length}…`; const m=itemCalc(its[i]); items.push(Object.assign({m,name:its[i].name||m.title||m.T.name},await captureItem(m,opt,true)));}}
+        else{st.textContent='Снимаю 3D и чертёж…'; items.push(Object.assign({m:M,name:M.title||M.T.name},await captureItem(M,opt,false)));}
+        st.textContent='Собираю PDF…';
+        meta.title=`КП — ${meta.client||items[0].name}`;
+        const blob=await new Promise((ok,no)=>{try{pdfMake.createPdf(pdfDoc(items,meta,opt)).getBlob(ok);}catch(e){no(e);}});
+        const fname=(`КП ${meta.client||items[0].name} ${new Date().toISOString().slice(0,10)}`).replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.pdf';
+        pdfOut={blob,fname,url:URL.createObjectURL(blob)};
+        const dl=c.querySelector('#pfDl'); dl.href=pdfOut.url; dl.download=fname;
+        st.textContent=`Готово: ${fname} · ${Math.max(1,Math.round(blob.size/1024))} КБ`; c.querySelector('#pfDone').hidden=false; go.querySelector('span').textContent='Сделать заново';
+      }catch(e){st.textContent=e&&e.message==='load'?'Не загрузился модуль PDF — нужен интернет при первом создании.':'Не получилось сделать PDF. Попробуйте ещё раз.'; console.error(e);}
+      finally{go.disabled=false;}
+    };
+    c.querySelector('#pfShare').onclick=async()=>{
+      if(!pdfOut) return; const file=new File([pdfOut.blob],pdfOut.fname,{type:'application/pdf'});
+      try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:pdfOut.fname}); return;}}catch(e){if(e&&e.name==='AbortError') return;}
+      window.open(pdfOut.url,'_blank')||c.querySelector('#pfDl').click();
+    };
+  });
+}
+
 /* ---------- Пересчёт ---------- */
 function descr(m){
   const v=m.v, a=[];
@@ -1934,7 +2079,8 @@ function renderSum(){
   const bars=M.metal.reduce((s,m)=>s+(m.byM?0:m.bars.length),0);
   $('#sum').innerHTML=`<div class="sumrow"><div><h2 class="lbl">Цена для клиента</h2><div class="big">${money(M.total)}</div><div class="cap">Материалы ${money(M.matSum+M.markup)} · работа ${money(M.labSum)}</div></div>
     <button class="ib" type="button" data-act="copy" aria-label="Копировать смету" title="Копировать смету">${IC.copy}</button></div>
-  <dl class="stats"><div><dt>Металл</dt><dd>${Math.round(M.kg)}<small>кг</small></dd></div><div><dt>Хлыстов</dt><dd>${bars}</dd></div><div><dt>Швов</dt><dd>${M.welds}</dd></div></dl>`;
+  <dl class="stats"><div><dt>Металл</dt><dd>${Math.round(M.kg)}<small>кг</small></dd></div><div><dt>Хлыстов</dt><dd>${bars}</dd></div><div><dt>Швов</dt><dd>${M.welds}</dd></div></dl>
+  <button class="btn y" type="button" data-act="pdf" style="width:100%;margin-top:12px;min-height:44px">${IC_PDF}PDF клиенту: 3D, чертёж, цены</button>`;
 }
 
 /* ---------- Вкладки ---------- */
@@ -2344,6 +2490,7 @@ function renderOrder(){
       <div class="acts"><button class="ib" type="button" data-openit="${it.id}" aria-label="Открыть ${esc(it.name)}">${IC.edit}</button><button class="ib" type="button" data-delit="${it.id}" aria-label="Удалить ${esc(it.name)}">${IC.trash}</button></div></div>`).join('')
       :'<div class="empty"><b>Пока пусто</b><p class="note">Откройте конструктор, настройте изделие и нажмите «Добавить в заказ».</p></div>'}</div>
     <button class="cta w" type="button" data-act="addItem"><span>Добавить изделие</span><i>${IC.plus}</i></button>
+    <button class="btn" type="button" data-act="copyKP" style="align-self:flex-start">${IC.copy}Скопировать КП текстом</button>
     <button class="linkdel" type="button" data-act="delOrder">Удалить заказ</button>
   </div>`;
 }
@@ -2408,6 +2555,8 @@ document.addEventListener('click',e=>{
   else if(act==='copyCut') copyText(cutText(),'Нарезка скопирована');
   else if(act==='export') exportData();
   else if(act==='ai') openAI();
+  else if(act==='pdf') openPdf('item');
+  else if(act==='pdfOrder'&&o) openPdf('order');
   else if(act==='resetVals'){const nm=M.title||M.T.name, cust=state.tpl==='custom';
     confirmSheet(cust?`Убрать конструкцию «${esc(nm)}», собранную ИИ, и вернуть пример?`:`Вернуть «${esc(nm)}» к стандартным размерам и настройкам?`,'Сбросить',()=>{
       state.vals[state.tpl]={}; state.aiLast=false; step=1; resetCam=true; renderParams(); update(); toast('Параметры сброшены по умолчанию');});}
