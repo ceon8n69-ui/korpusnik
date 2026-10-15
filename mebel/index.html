@@ -2,7 +2,8 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<script>['gesturestart','gesturechange'].forEach(function(n){document.addEventListener(n,function(e){e.preventDefault()},{passive:false})})</script>
 <title>Корпусник</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -317,6 +318,12 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
 .refthumb img{display:block;width:100%;height:auto}
 .refthumb .x{position:absolute;top:-10px;right:-10px;width:24px;height:24px;border:var(--bw) solid var(--ink);background:var(--surface);font-weight:700;cursor:pointer;color:var(--ink)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* экран не ездит вбок: без автозума полей, без горизонтального сдвига */
+html,body{overflow-x:hidden;overscroll-behavior-x:none;max-width:100%}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+body{position:relative}
+.in select,.zone .in input,.zone .in select,.fxrow .in select,.fxrow .in input,textarea.copy{font-size:16px}
 </style>
 
 </head>
@@ -334,7 +341,7 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
     <button type="button" data-nav="mine">Мои шаблоны<span>→</span></button>
     <button type="button" data-nav="prices">Мои цены<span>→</span></button>
     <a href="../svarka/" data-ext="svarka">Сварщик — металл<span>↗</span></a>
-    <a href="../plitka/" data-ext="plitka">Плитка — укладка<span>↗</span></a>
+    <a href="../plitka/" data-ext="plitka">Пол и плитка — укладка<span>↗</span></a>
   </nav>
 
   <div class="screen" id="scrEditor">

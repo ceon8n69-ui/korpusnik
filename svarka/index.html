@@ -2,7 +2,8 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<script>['gesturestart','gesturechange'].forEach(function(n){document.addEventListener(n,function(e){e.preventDefault()},{passive:false})})</script>
 <title>Сварщик</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -337,6 +338,12 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
 .pkc svg{width:56px;height:56px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
 .f .pkc:has(input:checked){background:var(--yel);color:var(--on-yel);border-color:var(--on-yel);box-shadow:3px 3px 0 var(--fg)}
 .pkc:has(input:focus-visible){outline:3px solid var(--yel);outline-offset:2px}
+
+/* экран не ездит вбок: без автозума полей, без горизонтального сдвига */
+html,body{overflow-x:hidden;overscroll-behavior-x:none;max-width:100%}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+body{position:relative}
+.in select,.zone .in input,.zone .in select,.fxrow .in select,.fxrow .in input,textarea.copy{font-size:16px}
 </style>
 
 </head>
@@ -353,7 +360,7 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
     <button type="button" data-nav="ai">ИИ по словам и фото<span>→</span></button>
     <button type="button" data-nav="prices">Мои цены<span>→</span></button>
     <a href="../mebel/" data-ext="mebel">Корпусник — мебель<span>↗</span></a>
-    <a href="../plitka/" data-ext="plitka">Плитка — укладка<span>↗</span></a>
+    <a href="../plitka/" data-ext="plitka">Пол и плитка — укладка<span>↗</span></a>
   </nav>
 
   <div class="screen" id="scrEditor">
