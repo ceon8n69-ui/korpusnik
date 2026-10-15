@@ -330,6 +330,13 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
 .refthumb img{display:block;width:100%;height:auto}
 .refthumb .x{position:absolute;top:-10px;right:-10px;width:24px;height:24px;border:var(--bw) solid var(--ink);background:var(--surface);font-weight:700;cursor:pointer;color:var(--ink)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.params .f.pick{grid-column:1/-1}.f.pick .lb{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.pk{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.f .pkc{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;margin:0;padding:10px 8px;border:2px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;text-align:center;font-size:13px;font-weight:600;line-height:1.25}
+.pkc input{position:absolute;opacity:0;pointer-events:none}
+.pkc svg{width:56px;height:56px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.f .pkc:has(input:checked){background:var(--yel);color:var(--on-yel);border-color:var(--on-yel);box-shadow:3px 3px 0 var(--fg)}
+.pkc:has(input:focus-visible){outline:3px solid var(--yel);outline-offset:2px}
 </style>
 
 </head>
@@ -1224,8 +1231,9 @@ function bRailing(v){
 
 /* ===== Компактная лестница на опорной стойке: ступени-доски вокруг стойки, тяги к перекрытию ===== */
 function bPostStair(v){
-  const c=ctx(v), H=v.H, n=Math.max(8,Math.round(H/200)), h=H/n, nt=n-1, around=v.layout==='around', slab=v.slab;
-  const wood=!!WOOD[v.tread], tt=wood?40:4, W=v.W, KS=SEC[v.kons], fan=v.tsh==='fan';
+  const form=v.form||(v.layout==='around'?(v.tsh==='fan'?'wedge':'rect'):(v.tsh==='fan'?'wallfan':'wall'));
+  const c=ctx(v), H=v.H, n=Math.max(8,Math.round(H/200)), h=H/n, nt=n-1, around=form==='rect'||form==='wedge', slab=v.slab;
+  const wood=!!WOOD[v.tread], tt=wood?40:4, W=v.W, KS=SEC[v.kons], fan=form==='wedge'||form==='wallfan';
   const POSTS={d108:'d108x4',d133:'d133x4',d159:'d159x4.5',sq100:'100x100x4',sq80:'80x80x3'}, postSec=POSTS[v.post]||'d133x4', woodPost=v.post==='wood', PS=woodPost?null:SEC[postSec], pwx=woodPost?100:PS.w, pwz=woodPost?160:PS.h, ph=Math.max(pwx,pwz)/2;
   const sx=!around&&v.dir==='cw'?-1:1, M_=p=>[p[0]*sx,p[1],p[2]]; // поворот «по часовой» у стены — зеркально
   const dirA=v.dir==='ccw'?-1:1;
@@ -1789,13 +1797,17 @@ const TPL={
     N('topr','Ограждение проёма наверху (0 — нет)',0,8000,0)]},
   poststair:{name:'Лестница вокруг трубы с тягами',cat:'Лестницы',desc:'Деревянные ступени на сварных консолях вокруг центральной металлической трубы, наружные концы висят на вертикальных тягах к перекрытию или в пол, без перил. Схемы: «поворот вокруг трубы + прямой участок вдоль стены» или «вся вокруг трубы» в проём заданного диаметра; ступени прямоугольные или клином. Если на фото ступени вокруг одной стойки и тонкие тяги к потолку — это она',build:bPostStair,params:[
     N('H','Высота: чистый пол — чистый пол',2200,4500,2800),
-    S('layout','Схема',[['turn','Поворот вокруг стойки + прямой участок вдоль стены'],['around','Вся вокруг стойки — компактно, в проём']],'turn'),
-    N('D','Диаметр в плане',1200,2400,1600,'мм',{show:v=>v.layout==='around'}),N('L','Длина ступени (ширина марша)',550,1000,750,'мм',{show:v=>v.layout!=='around'}),
-    N('kw','Забежных ступеней в повороте',3,9,6,'шт',{show:v=>v.layout!=='around'}),
+    S('form','Форма лестницы',[['wall','Как на фото: поворот у трубы + вдоль стены'],['wallfan','Поворот клином + вдоль стены'],['rect','Вся вокруг трубы, прямые ступени'],['wedge','Вся вокруг трубы, клинья (как винтовая)']],'wall',{pics:{
+      wall:'<rect x="6" y="4" width="4" height="56"/><path d="M14 10h40v8H14zM14 22h40v8H14zM14 34h40v6H14z"/><circle cx="18" cy="48" r="4"/><path d="M22 48h32M21 51l28 9M20 53l14 9M18 52v10"/>',
+      wallfan:'<rect x="6" y="4" width="4" height="56"/><path d="M14 10h40v8H14zM14 22h40v8H14zM14 34h40v6H14z"/><circle cx="18" cy="48" r="4"/><path d="M22 46l32-2v8zM21 50l30 6-4 7zM20 52l12 11-7 1z"/>',
+      rect:'<circle cx="32" cy="32" r="5"/><path d="M37 30h22v6H37zM34 36l14 17-5 4-12-17zM28 37l-6 21-6-2 6-20zM27 30l-20-5 1-6 20 5zM32 27l3-21 6 1-3 21z"/>',
+      wedge:'<circle cx="32" cy="32" r="27"/><circle cx="32" cy="32" r="5"/><path d="M37 32h22M35 36l15 18M29 37l-9 20M27 31l-21-6M31 27l4-21M36 29l18-14"/>'}}),
+    N('D','Диаметр в плане',1200,2400,1600,'мм',{show:v=>v.form==='rect'||v.form==='wedge'}),N('L','Длина ступени (ширина марша)',550,1000,750,'мм',{show:v=>v.form==='wall'||v.form==='wallfan'}),
+    N('kw','Забежных ступеней в повороте',3,9,6,'шт',{show:v=>v.form==='wall'||v.form==='wallfan'}),
     S('dir','Подъём, вид сверху',[['cw','По часовой'],['ccw','Против часовой']],'cw'),
-    N('a0','Старт первой ступени: угол',0,345,0,'°',{step:15,show:v=>v.layout==='around'}),N('ang','Угол ступени (0 — авто)',0,40,0,'°',{show:v=>v.layout==='around'}),
-    N('W','Ширина ступени (проступь)',200,320,260),S('tsh','Форма ступеней у трубы',[['rect','Прямоугольная (как на фото)'],['fan','Клин — шире к краю, как у винтовой']],'rect'),
-    S('tread','Ступени',TREAD_OPTS.filter(o=>o[0]!=='wpc'),'beech'),
+    N('a0','Старт первой ступени: угол',0,345,0,'°',{step:15,show:v=>v.form==='rect'||v.form==='wedge'}),N('ang','Угол ступени (0 — авто)',0,40,0,'°',{show:v=>v.form==='rect'||v.form==='wedge'}),
+    N('W','Ширина ступени (проступь)',200,320,260,'мм',{show:v=>v.form!=='wedge'}),
+    S('tread','Ступени (дерево)',TREAD_OPTS.filter(o=>o[0]!=='wpc'),'pine'),
     S('post','Центральная труба',[['d133','Круглая Ø133×4'],['d159','Круглая Ø159×4,5'],['d108','Круглая Ø108×4'],['sq100','Профильная 100×100×4'],['sq80','Профильная 80×80×3']],'d133'),
     S('kons','Консоль под ступенью',secOpts(['60x40x3','60x40x2','40x40x2']),'60x40x3'),
     S('rods','Тяги у края ступеней',[['inox','Нержавейка Ø12 (покупные)'],['steel','Пруток Ø16 под покраску'],['none','Без тяг — только консоли']],'inox'),
@@ -1963,6 +1975,7 @@ function renderParams(){
     const id='p_'+state.tpl+'_'+p.k;
     if(p.type==='sel'){
       const o=(typeof p.opts==='function'?p.opts(vals):p.opts)||[], val=vals[p.k];
+      if(p.pics) return `<div class="f pick" data-k="${p.k}"><span class="lb">${p.l}</span><div class="pk" role="radiogroup">${o.map(([ov,ol])=>`<label class="pkc"><input type="radio" name="${id}" value="${ov}" data-k="${p.k}"${String(ov)===String(val)?' checked':''}><svg viewBox="0 0 64 64" aria-hidden="true">${p.pics[ov]||''}</svg><span>${ol}</span></label>`).join('')}</div></div>`;
       return `<div class="f" data-k="${p.k}"><label for="${id}">${p.l}</label><div class="in"><select id="${id}" data-k="${p.k}">${o.map(([ov,ol])=>`<option value="${ov}"${String(ov)===String(val)?' selected':''}>${ol}</option>`).join('')}</select></div></div>`;
     }
     const raw=tv()[p.k], val=raw!==undefined&&raw!==''?raw:vals[p.k];
