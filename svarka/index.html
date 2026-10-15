@@ -352,7 +352,8 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
     <button type="button" data-nav="orders">Заказы<span>→</span></button>
     <button type="button" data-nav="ai">ИИ по словам и фото<span>→</span></button>
     <button type="button" data-nav="prices">Мои цены<span>→</span></button>
-    <a href="../" data-ext>Корпусник — мебель<span>↗</span></a>
+    <a href="../mebel/" data-ext="mebel">Корпусник — мебель<span>↗</span></a>
+    <a href="../plitka/" data-ext="plitka">Плитка — укладка<span>↗</span></a>
   </nav>
 
   <div class="screen" id="scrEditor">
@@ -2965,6 +2966,7 @@ if(state.screen==='order'&&!Store.order(state.openOrder)) state.screen='orders';
 renderCats(); renderTpls(); renderParams(); update(); go(state.screen);
 Store.connect();
 if('serviceWorker' in navigator&&window.self===window.top&&location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+document.addEventListener('click',e=>{const a=e.target.closest('a[data-ext]'); if(a&&window.self!==window.top&&a.dataset.ext){e.preventDefault(); parent.postMessage({tab:a.dataset.ext},'*');}});
 
 </script>
 </body>

@@ -1,14 +1,14 @@
 {
- "name": "Корпусник — мебель на заказ",
- "short_name": "Корпусник",
+ "name": "Мастерская — мебель, сварка, плитка",
+ "short_name": "Мастерская",
  "lang": "ru",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
  "orientation": "any",
- "background_color": "#F3F2EE",
- "theme_color": "#F3F2EE",
- "description": "Шаблоны мебели: 3D, чертёж, раскрой, крепёж по шагам, смета и заказы клиентов",
+ "background_color": "#111111",
+ "theme_color": "#111111",
+ "description": "Корпусник, Сварщик и Плитка в одном приложении: 3D, чертежи, раскрой, сметы",
  "icons": [
   {
    "src": "icon-192.png",

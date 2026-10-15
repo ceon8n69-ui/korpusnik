@@ -1,0 +1,1255 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Плитка</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Мастерская">
+<meta name="theme-color" content="#111111">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<style>
+html{padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{margin:0}
+body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top,0px);background:#111;z-index:60;pointer-events:none}
+img{max-width:100%}
+[hidden]{display:none!important}
+button,a,label{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+html,body{overscroll-behavior-y:none}
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Плитка: тот же стиль мастерской, акцент — бирюза */
+:root{
+  --bg:#F3F2EE; --surface:#FFFFFF; --soft:#ECEAE4; --ink:#111111; --muted:#5C5C5C; --hair:#D8D5CC;
+  --yel:#2DB8C9; --yel-soft:#D5F1F4; --org:#F5B400; --wood:#E3C49A; --on-yel:#111111; --ok:#1F7A45; --danger:#C62A1E; --mark:#111111;
+  --fg:var(--ink); --line:var(--hair); --accent:var(--yel); --accent-soft:var(--yel-soft); --sunk:var(--soft);
+  --f-d:'Oswald','Arial Narrow',Impact,sans-serif; --f-b:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif; --f-mono:'Oswald','Arial Narrow',sans-serif;
+  --bw:2px; --sh:4px 4px 0 var(--ink); --sh-s:3px 3px 0 var(--ink);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#131313; --surface:#1C1C1C; --soft:#262626; --ink:#F2F1ED; --muted:#A8A8A4; --hair:#363636;
+  --yel:#3CC7D7; --yel-soft:#10343A; --org:#F7BE16; --on-yel:#111111; --ok:#5BD08B; --danger:#FF7A6E; --mark:#3CC7D7; --wood:#6B5233; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#131313; --surface:#1C1C1C; --soft:#262626; --ink:#F2F1ED; --muted:#A8A8A4; --hair:#363636;
+  --yel:#3CC7D7; --yel-soft:#10343A; --org:#F7BE16; --on-yel:#111111; --ok:#5BD08B; --danger:#FF7A6E; --mark:#3CC7D7; --wood:#6B5233; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-b);font-size:15px;line-height:1.45;padding-inline:16px;padding-block:10px 110px;-webkit-font-smoothing:antialiased}
+@media (min-width:980px){body{padding-block:16px 48px}}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--yel);outline-offset:2px}
+.app{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:square;stroke-linejoin:miter;flex:none}
+
+/* верхняя панель */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:4px}
+.brand{font-family:var(--f-d);font-weight:700;font-size:15px;letter-spacing:.14em;display:flex;align-items:center;gap:8px}
+.ib{position:relative;width:44px;height:44px;display:grid;place-items:center;background:var(--surface);border:var(--bw) solid var(--ink);cursor:pointer;flex:none}
+.ib:hover{background:var(--yel-soft)}
+.ib[aria-pressed="true"]{background:var(--yel);color:var(--on-yel)}
+.ib.plain{border-color:transparent;background:none}
+.pip{position:absolute;top:-5px;right:-5px;width:12px;height:12px;border-radius:50%;background:var(--org);border:2px solid var(--bg)}
+.drawer{display:flex;flex-direction:column;border:var(--bw) solid var(--ink);background:var(--surface);box-shadow:var(--sh)}
+.drawer button{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border:0;border-bottom:var(--bw) solid var(--ink);background:none;font-family:var(--f-d);font-weight:600;font-size:18px;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;text-align:left}
+.drawer button:last-child,.drawer a:last-child{border-bottom:0}
+.drawer a{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:var(--bw) solid var(--ink);font-family:var(--f-d);font-weight:600;font-size:18px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-decoration:none}
+.drawer a:hover{background:var(--yel-soft);color:var(--ink)}
+.drawer button:hover,.drawer button[aria-current="page"]{background:var(--yel);color:var(--on-yel)}
+
+/* заголовок экрана */
+.hero{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.hero h1{font-family:var(--f-d);font-weight:700;text-transform:uppercase;font-size:clamp(34px,9vw,52px);line-height:.98;letter-spacing:.005em;margin:0;text-wrap:balance}
+.hero p{margin:10px 0 0;color:var(--ink);opacity:.8;font-size:14px;max-width:60ch}
+.sq{position:relative;width:38px;height:38px;flex:none;margin-top:30px}
+.sq i{position:absolute;width:19px;height:19px}
+.sq i:first-child{left:0;top:0;background:var(--yel)} .sq i:last-child{right:0;bottom:0;background:var(--ink)}
+.hero .back{display:flex;gap:12px;align-items:flex-start}
+
+/* раскладка */
+.layout{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:980px){.layout{grid-template-columns:380px minmax(0,1fr);align-items:start}.side{position:sticky;top:12px}}
+.side,.work{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--surface);border:var(--bw) solid var(--ink);padding:14px}
+.card.raise{box-shadow:var(--sh)}
+.lbl{font-family:var(--f-d);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 10px}
+
+/* карточка заказа (как маршрут) */
+.route{display:grid;grid-template-columns:14px 1fr auto;gap:0 12px;align-items:start}
+.route .pt{width:12px;height:12px;margin-top:4px} .route .pt.a{background:var(--org)} .route .pt.b{background:var(--ink)}
+.route .ln{width:2px;margin-left:5px;border-left:2px dashed var(--ink);height:20px}
+.route small{display:block;font-size:12px;color:var(--muted)}
+.route b{font-weight:600;font-size:15px}
+.route .btn{grid-row:1/4;grid-column:3;align-self:center}
+
+/* кнопки */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 12px;border:var(--bw) solid var(--ink);background:var(--surface);font-size:13px;font-weight:700;cursor:pointer;min-height:38px}
+.btn:hover{background:var(--yel-soft)}
+.btn.y{background:var(--yel);color:var(--on-yel)}
+.btn:disabled{opacity:.4;cursor:default}
+.cta{display:flex;align-items:stretch;width:100%;border:var(--bw) solid var(--ink);box-shadow:var(--sh);background:var(--yel);color:var(--on-yel);cursor:pointer;min-height:58px;padding:0;text-align:left}
+.cta.o{background:var(--org)}
+.cta.w{background:var(--surface);color:var(--ink)}
+.cta span{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 14px;font-family:var(--f-d);font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.03em;line-height:1.1;text-align:center}
+.cta i{width:58px;display:grid;place-items:center;background:#111;color:#fff;border-left:var(--bw) solid var(--ink);flex:none}
+.cta:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
+.ctabar{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--bg) 70%,transparent);z-index:5}
+.ctabar .cta{max-width:640px;margin:0 auto}
+.cta-desk{display:none}
+@media (min-width:980px){.ctabar{display:none}.cta-desk{display:block}}
+
+/* выбор изделия */
+.cats{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 12px;padding:2px 2px 4px}
+.cats::-webkit-scrollbar{display:none}
+.cat{flex:none;padding:6px 12px;border:var(--bw) solid var(--ink);background:var(--surface);font-size:13px;font-weight:700;cursor:pointer}
+.cat[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.tpls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:560px) and (max-width:979px){.tpls{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tpl{position:relative;display:flex;gap:9px;align-items:center;padding:9px 10px;border:var(--bw) solid var(--ink);background:var(--surface);font-size:13px;font-weight:600;line-height:1.2;text-align:left;cursor:pointer;min-width:0}
+.tpl svg{width:28px;height:28px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6}
+.tpl[aria-pressed="true"]{background:var(--yel);color:var(--on-yel);box-shadow:var(--sh-s)}
+.x{position:absolute;top:-9px;right:-9px;width:22px;height:22px;display:grid;place-items:center;background:var(--surface);border:var(--bw) solid var(--ink);font-size:13px;line-height:1;cursor:pointer;color:var(--ink)}
+
+/* поля */
+.params{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 10px}
+.f label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px}
+.in{display:flex;align-items:center;border:var(--bw) solid var(--ink);background:var(--surface)}
+.in:focus-within{box-shadow:var(--sh-s)}
+.in input,.in select,.in textarea{width:100%;min-width:0;border:0;background:transparent;color:var(--ink);font:600 16px var(--f-b);padding:9px 10px;outline:none;font-variant-numeric:tabular-nums}
+.in select{font-size:14px;padding-right:4px}
+.in .u{padding-right:10px;color:var(--muted);font-size:12px;font-weight:600}
+.f.wide{grid-column:1/-1}
+.err{margin:10px 0 0;color:var(--danger);font-size:13px;font-weight:600}
+
+/* секции своего корпуса */
+.secs{display:flex;flex-direction:column;gap:12px}
+.col{border:var(--bw) solid var(--ink)}
+.colh{display:flex;justify-content:space-between;align-items:center;padding:6px 6px 6px 10px;background:var(--ink);color:var(--bg);font-family:var(--f-d);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:13px}
+.colh button{background:none;border:0;color:var(--bg);cursor:pointer;font-size:12px;font-family:var(--f-b);font-weight:700;padding:4px 6px}
+.zone{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,1fr) 30px;gap:6px;align-items:end;padding:8px;border-bottom:1px solid var(--hair)}
+.zone:last-of-type{border-bottom:0}
+.zone .in input,.zone .in select{font-size:14px;padding:7px 7px}
+.zone label{font-size:11px;margin-bottom:2px}
+.zone .del{height:36px;border:var(--bw) solid var(--ink);background:var(--surface);cursor:pointer;font-weight:700}
+.zadd{display:block;width:100%;padding:8px;border:0;border-top:var(--bw) solid var(--ink);background:var(--soft);font-weight:700;font-size:13px;cursor:pointer}
+.ztag{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:6px 8px 0}
+
+/* итог и полоса показателей */
+.sum .big{font-family:var(--f-d);font-weight:700;font-size:42px;line-height:1;letter-spacing:-.005em;font-variant-numeric:tabular-nums}
+.sum .cap{color:var(--muted);font-size:13px;margin-top:4px}
+.sumrow{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:var(--bw) solid var(--ink);background:var(--surface);margin-top:14px}
+.stats>div{padding:10px 12px;min-width:0}
+.stats>div+div{border-left:1px solid var(--hair)}
+.stats dt{font-family:var(--f-d);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.stats dd{margin:2px 0 0;font-family:var(--f-d);font-weight:600;font-size:22px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stats dd small{font-size:13px;font-weight:500;margin-left:2px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;margin-top:12px;font-size:13px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* вкладки */
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 6px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;padding:8px 13px;border:var(--bw) solid var(--ink);background:var(--surface);font-family:var(--f-d);font-weight:600;font-size:15px;text-transform:uppercase;letter-spacing:.04em;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);box-shadow:var(--sh-s)}
+
+/* 3D */
+.viewer{position:relative;background:var(--soft);border:var(--bw) solid var(--ink);overflow:hidden;background-image:linear-gradient(var(--hair) 1px,transparent 1px),linear-gradient(90deg,var(--hair) 1px,transparent 1px);background-size:32px 32px}
+.three{height:min(58vh,500px);min-height:320px;touch-action:pan-y}
+.three canvas{display:block}
+.ovl{position:absolute;left:12px;top:12px;min-width:66px;padding:6px 10px;background:var(--surface);border:var(--bw) solid var(--ink);text-align:center;pointer-events:none}
+.ovl b{display:block;font-family:var(--f-d);font-weight:700;font-size:34px;line-height:1}
+.ovl span{display:block;font-size:12px;font-weight:600;line-height:1.15}
+.vtools{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:8px}
+.note{color:var(--muted);font-size:13px;margin:0}
+
+/* панели */
+.panel{display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel h3{font-family:var(--f-d);font-weight:700;font-size:22px;text-transform:uppercase;margin:6px 0 0;letter-spacing:.01em;text-wrap:balance}
+.tw{overflow-x:auto;border:var(--bw) solid var(--ink);background:var(--surface);box-shadow:var(--sh)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--hair);vertical-align:top}
+th{font-family:var(--f-d);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--bg);background:var(--ink);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.n{font-weight:600}
+td.id{font-family:var(--f-d);font-weight:700;white-space:nowrap}
+tr.sec td{background:var(--soft);font-family:var(--f-d);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.05em}
+tr.tot td{font-family:var(--f-d);font-weight:700;font-size:17px;background:var(--yel);color:var(--on-yel)}
+.sw{display:inline-block;width:12px;height:12px;border:1.5px solid var(--ink);vertical-align:-1px;margin-right:7px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;font-weight:600;color:var(--muted)}
+.legend i{display:inline-block;width:22px;height:0;border-top:2px solid var(--ink);vertical-align:middle;margin-right:6px}
+.legend i.f{border-top:2px dashed var(--mark)} .legend i.h{border-top:1px dashed var(--muted)}
+
+/* материал как карточка водителя */
+.mats{display:flex;flex-direction:column;gap:10px}
+.mcard{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface);border:var(--bw) solid var(--ink);box-shadow:var(--sh)}
+.ava{width:52px;height:52px;border-radius:50%;flex:none;border:3px solid var(--yel);box-shadow:inset 0 0 0 3px var(--surface)}
+.mcard .who{flex:1;min-width:0}
+.mcard b{display:block;font-weight:800;font-size:15px}
+.mcard small{display:block;color:var(--muted);font-size:13px}
+.plate{display:inline-block;margin-top:4px;padding:1px 7px;border:1.5px solid var(--ink);font-size:12px;font-weight:700;letter-spacing:.04em}
+
+/* чертёж и раскрой */
+.draw{overflow-x:auto;background:var(--surface);border:var(--bw) solid var(--ink);padding:8px}
+.draw svg{display:block;width:100%;height:auto}
+.draw{padding:4px}
+.dw text{font-family:var(--f-d);font-weight:500;fill:var(--ink)}
+.dw .ttl{font-weight:700;fill:var(--ink)}
+.dw .c{fill:var(--surface);stroke:var(--ink);stroke-width:1.1;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.dw .sf{fill:var(--yel-soft);fill-opacity:.45;stroke:var(--muted);stroke-width:.8;vector-effect:non-scaling-stroke}
+.dw .fs{fill:var(--wood);stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke}
+.dw .gl{stroke:var(--ink);stroke-width:2.2;vector-effect:non-scaling-stroke}
+.dw .brk{fill:none;stroke:var(--danger);stroke-width:1.6;vector-effect:non-scaling-stroke}
+.dw .mut,.sv .mut{fill:var(--muted)}
+.draw+.draw{margin-top:0}
+.wline{margin:0;padding:8px 10px;border:var(--bw) solid var(--ink);border-left:8px solid var(--yel);background:var(--yel-soft);font-size:13px;font-weight:600}
+.wline+.wline{margin-top:8px}
+.warnc{color:var(--danger);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.desc{margin:10px 0 0;font-size:13px;color:var(--muted)}
+.dw .hw{fill:var(--hair);stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke}
+.dw .f{fill:none;stroke:var(--org);stroke-width:1.8;stroke-dasharray:7 4;vector-effect:non-scaling-stroke}
+.dw .fs{fill:var(--yel-soft);stroke:var(--ink);stroke-width:1.3;vector-effect:non-scaling-stroke}
+.dw .mt{fill:var(--ink);stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke}
+.dw .h{fill:var(--soft);fill-opacity:.5;stroke:var(--muted);stroke-width:1;stroke-dasharray:5 4;vector-effect:non-scaling-stroke}
+.dw .dim line{stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke}
+.dw .ext{stroke:var(--muted);stroke-width:.8;vector-effect:non-scaling-stroke;opacity:.7}
+.legend i.f{border-top-color:var(--org)}
+.sheets{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:12px}
+.sheet{background:var(--surface);border:var(--bw) solid var(--ink);padding:10px;min-width:0}
+.sheet svg{display:block;width:100%;height:auto}
+.sheet .cap{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.05em}
+.sv .sh{fill:var(--soft);stroke:var(--ink);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.sv .pc{fill:var(--yel-soft);stroke:var(--ink);stroke-width:1.2;vector-effect:non-scaling-stroke}
+.sv .dv{fill:var(--surface)}
+.sv text{font-family:var(--f-d);fill:var(--ink)}
+.sv .hatch line{stroke:var(--hair);stroke-width:1;vector-effect:non-scaling-stroke}
+.chk{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;cursor:pointer}
+.chk input{width:20px;height:20px;accent-color:var(--ink)}
+.warn{color:var(--org);font-size:13px;font-weight:700;margin:0}
+
+/* сборка */
+.prog{border:var(--bw) solid var(--ink);background:var(--surface);padding:10px 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:center}
+.prog small{grid-column:1/-1;font-family:var(--f-d);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.prog b{font-family:var(--f-d);font-weight:700;font-size:34px;line-height:1;font-variant-numeric:tabular-nums}
+.track{position:relative;height:2px;background:var(--ink)}
+.track i{position:absolute;left:0;top:-2px;height:6px;background:var(--yel);border:1.5px solid var(--ink)}
+.track u{position:absolute;right:-5px;top:-5px;width:12px;height:12px;border-radius:50%;background:var(--ink)}
+.stepnav{display:flex;gap:10px}
+.stepnav .btn{flex:1;min-height:46px;font-family:var(--f-d);font-size:16px;text-transform:uppercase;letter-spacing:.04em}
+.stepcard{background:var(--surface);border:var(--bw) solid var(--ink);box-shadow:var(--sh);padding:14px;display:flex;flex-direction:column;gap:10px}
+.stepcard h3{margin:0}
+.stepcard p{margin:0;max-width:65ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;font-weight:700;padding:3px 8px;border:1.5px solid var(--ink);background:var(--yel-soft);color:var(--ink)}
+.chip.ex{cursor:pointer;font:600 12.5px var(--f-b);text-align:left;padding:6px 9px;background:var(--surface)}
+.chip.ex:hover{background:var(--yel-soft)}
+.btn[aria-pressed="true"]{background:var(--yel);color:var(--on-yel)}
+.sub{font-family:var(--f-d);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:2px 0 0}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:var(--bw) solid var(--ink);background:var(--surface)}
+.steps li+li{border-top:1px solid var(--hair)}
+.steps button{width:100%;display:flex;gap:12px;align-items:baseline;text-align:left;padding:10px 12px;border:0;background:none;cursor:pointer;font-size:14px;font-weight:600}
+.steps button span{font-family:var(--f-d);font-weight:700;min-width:24px;color:var(--muted)}
+.steps button[aria-current="step"]{background:var(--yel);color:var(--on-yel)}
+.steps button[aria-current="step"] span{color:var(--on-yel)}
+.fxl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.fxl li{display:grid;grid-template-columns:14px 1fr auto;gap:2px 10px;align-items:baseline;font-size:14px}
+.fxl .dot{width:12px;height:12px;border-radius:50%;align-self:center;border:1.5px solid var(--ink)}
+.fxl b{font-weight:700} .fxl .q{font-family:var(--f-d);font-weight:700;font-size:16px}
+.fxl small{grid-column:2/4;color:var(--muted);font-size:12.5px;line-height:1.4}
+
+/* цены, подсказки */
+details.prices{background:var(--surface);border:var(--bw) solid var(--ink);padding:12px 14px}
+details.prices summary{cursor:pointer;font-family:var(--f-d);font-weight:700;font-size:18px;text-transform:uppercase}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:10px;margin-top:12px}
+.pgrid h4{grid-column:1/-1;margin:10px 0 0;font-family:var(--f-d);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.callout{border:var(--bw) solid var(--ink);border-left-width:8px;border-left-color:var(--yel);padding:9px 12px;background:var(--surface);font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+
+/* заказы */
+.filters{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px}
+.olist{display:flex;flex-direction:column;gap:14px}
+.ocard{display:flex;gap:12px;align-items:center;padding:12px;background:var(--surface);border:var(--bw) solid var(--ink);box-shadow:var(--sh);cursor:pointer;text-align:left;width:100%}
+.ocard:hover{background:var(--yel-soft)}
+.init{width:52px;height:52px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--yel);color:var(--on-yel);font-family:var(--f-d);font-weight:700;font-size:19px;border:var(--bw) solid var(--ink)}
+.ocard .who{flex:1;min-width:0}
+.ocard b{display:block;font-weight:800;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ocard small{display:block;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ocard .sum2{font-family:var(--f-d);font-weight:700;font-size:20px;white-space:nowrap;text-align:right}
+.st{display:inline-block;margin-top:5px;padding:1px 7px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;border:1.5px solid var(--ink)}
+.st.measure{background:var(--org);color:#111}.st.calc{background:var(--surface)}.st.work{background:var(--yel);color:#111}.st.done{background:var(--ink);color:var(--bg)}
+.seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:var(--bw) solid var(--ink)}
+.seg button{padding:10px 4px;border:0;background:var(--surface);font-size:13px;font-weight:700;cursor:pointer}
+.seg button+button{border-left:var(--bw) solid var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.items{display:flex;flex-direction:column;gap:12px}
+.item{display:flex;gap:12px;align-items:center;padding:10px 12px;background:var(--surface);border:var(--bw) solid var(--ink)}
+.item .ic{width:46px;height:46px;flex:none;display:grid;place-items:center;border:var(--bw) solid var(--ink);background:var(--yel-soft)}
+.item .ic svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.6}
+.item .who{flex:1;min-width:0}
+.item .p{display:block;margin-top:2px}
+.item b{display:block;font-weight:800}
+.item small{display:block;color:var(--muted);font-size:12.5px}
+.item .p{font-family:var(--f-d);font-weight:700;font-size:18px;white-space:nowrap}
+.item .acts{display:flex;gap:6px}
+.item .acts .ib{width:38px;height:38px}
+.empty{border:var(--bw) dashed var(--ink);padding:22px 16px;text-align:center;background:var(--surface)}
+.empty b{display:block;font-family:var(--f-d);font-size:20px;text-transform:uppercase;margin-bottom:4px}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;border:var(--bw) solid var(--danger);background:var(--surface);font-size:13px;font-weight:700}
+.btn.dng{border-color:var(--danger);color:var(--danger)}
+.linkdel{align-self:flex-start;background:none;border:0;color:var(--danger);font-weight:700;font-size:13px;cursor:pointer;padding:6px 0;text-decoration:underline}
+
+/* нижний лист */
+.sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheetc{width:100%;max-width:560px;max-height:88vh;overflow:auto;background:var(--bg);border:var(--bw) solid var(--ink);border-bottom:0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+@media (min-width:600px){.sheetbg{align-items:center}.sheetc{border-bottom:var(--bw) solid var(--ink);box-shadow:6px 6px 0 var(--ink)}}
+.sheetc h2{font-family:var(--f-d);font-weight:700;font-size:28px;text-transform:uppercase;margin:0;line-height:1}
+.sheetc .f{display:block}
+.pick{display:flex;flex-direction:column;gap:8px}
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 14px;font-size:13px;font-weight:700;z-index:30;border:var(--bw) solid var(--ink)}
+textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--surface);color:var(--ink);border:var(--bw) solid var(--ink);padding:8px}
+.sync{font-size:12px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--muted)} .sync.on i{background:var(--ok)}
+.cardh{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+.cardh .btn{min-height:34px;padding:6px 10px;white-space:nowrap}
+.sheetc{position:relative}
+.sheetx{position:absolute;top:12px;right:12px;width:40px;height:40px;font-size:18px;font-weight:700}
+.sheetc h2{padding-right:48px}
+.refthumb{position:absolute;right:12px;top:12px;width:92px}
+.refthumb button:first-child{display:block;padding:0;border:var(--bw) solid var(--ink);background:var(--surface);box-shadow:var(--sh-s);cursor:pointer;width:100%}
+.refthumb img{display:block;width:100%;height:auto}
+.refthumb .x{position:absolute;top:-10px;right:-10px;width:24px;height:24px;border:var(--bw) solid var(--ink);background:var(--surface);font-weight:700;cursor:pointer;color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.params .f.pick{grid-column:1/-1}.f.pick .lb{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.pk{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.f .pkc{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;margin:0;padding:10px 8px;border:2px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;text-align:center;font-size:13px;font-weight:600;line-height:1.25}
+.pkc input{position:absolute;opacity:0;pointer-events:none}
+.pkc svg{width:56px;height:56px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.f .pkc:has(input:checked){background:var(--yel);color:var(--on-yel);border-color:var(--on-yel);box-shadow:3px 3px 0 var(--fg)}
+.pkc:has(input:focus-visible){outline:3px solid var(--yel);outline-offset:2px}
+
+.dw .t{fill:var(--surface);stroke:var(--muted);stroke-width:.7;vector-effect:non-scaling-stroke}
+.dw .tc{fill:#FFB27A;fill-opacity:.55;stroke:var(--ink);stroke-width:.9;vector-effect:non-scaling-stroke}
+.dw .tb{fill:var(--yel);stroke:var(--ink);stroke-width:1.6;vector-effect:non-scaling-stroke}
+.dw .wl{fill:var(--ink)}
+.dw .op{fill:var(--bg);stroke:var(--ink);stroke-width:1.2;vector-effect:non-scaling-stroke}
+.dw .fx{fill:var(--surface);fill-opacity:.88;stroke:var(--ink);stroke-width:1.6;vector-effect:non-scaling-stroke}
+.dw .fxl{fill:none;stroke:var(--ink);stroke-width:1.1;vector-effect:non-scaling-stroke}
+.dw .ln{stroke:var(--danger);stroke-width:2;stroke-dasharray:10 6;vector-effect:non-scaling-stroke;fill:none}
+.dw .dr{fill:var(--surface);stroke:var(--danger);stroke-width:1.4;vector-effect:non-scaling-stroke}
+.dw .lt{fill:var(--danger);font-weight:700}
+.dw .bt{font-weight:700;fill:#111}
+.dw .ct{fill:var(--ink);font-weight:600}
+.dw .no{fill:var(--soft);stroke:var(--muted);stroke-width:.8;stroke-dasharray:4 3;vector-effect:non-scaling-stroke}
+.fxrow{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.9fr) 34px;gap:6px;align-items:end;padding:8px 0;border-bottom:1px solid var(--hair)}
+.fxrow .in select,.fxrow .in input{font-size:14px;padding:7px 7px}
+.fxrow label{font-size:11px;margin-bottom:2px}
+.fxrow .del{height:38px;border:var(--bw) solid var(--ink);background:var(--surface);cursor:pointer;font-weight:700;color:var(--ink)}
+.fxadd{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.piece{width:44px;height:44px;flex:none}
+.piece rect.o{fill:var(--soft);stroke:var(--muted);stroke-width:1;stroke-dasharray:3 2}
+.piece .p{fill:#FFB27A;stroke:var(--ink);stroke-width:1.2}
+.cl td{vertical-align:middle}
+.sum .row2{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.lg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;font-weight:600;color:var(--muted)}
+.lg span{display:inline-flex;align-items:center;gap:6px}
+.lg b{display:inline-block;width:14px;height:14px;border:1.5px solid var(--ink)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <button class="ib" type="button" id="bMenu" aria-label="Меню" aria-expanded="false"><svg class="i" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+    <span class="brand"><span class="sq" style="width:16px;height:16px;margin:0" aria-hidden="true"><i style="width:8px;height:8px"></i><i style="width:8px;height:8px"></i></span>ПЛИТКА</span>
+    <button class="ib" type="button" id="bPdfTop" aria-label="PDF" data-act="pdfWork"><svg class="i" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></button>
+  </header>
+  <nav class="drawer" id="drawer" hidden>
+    <button type="button" data-nav="editor">Комната<span>→</span></button>
+    <button type="button" data-nav="prices">Мои цены<span>→</span></button>
+    <button type="button" data-nav="reset">Новая комната<span>→</span></button>
+    <a href="../mebel/" data-ext="mebel">Корпусник — мебель<span>↗</span></a>
+    <a href="../svarka/" data-ext="svarka">Сварщик — металл<span>↗</span></a>
+  </nav>
+  <div class="screen" id="scrEditor">
+    <div class="hero"><div><h1 id="hTitle">Ванная</h1><p id="hSub"></p></div><span class="sq" aria-hidden="true"><i></i><i></i></span></div>
+    <div class="layout" style="margin-top:16px">
+      <aside class="side" id="side"></aside>
+      <div class="work">
+        <nav class="tabs" id="tabs" role="tablist"></nav>
+        <section class="viewer" id="viewer">
+          <div class="three" id="three"></div>
+          <div class="ovl" id="ovl"></div>
+          <div class="vtools">
+            <button class="ib" type="button" id="bCuts" aria-pressed="false" aria-label="Показать резаные плитки" title="Резы"><svg class="i" viewBox="0 0 24 24"><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8 16L19 3M16 16L5 3"/></svg></button>
+            <button class="ib" type="button" id="bMarks" aria-pressed="false" aria-label="Маяки и линии разметки" title="Маяки и разметка"><svg class="i" viewBox="0 0 24 24"><path d="M3 12h18M12 3v18" stroke-dasharray="3 2"/><rect x="13" y="13" width="7" height="7"/></svg></button>
+            <button class="ib" type="button" id="bLock" aria-pressed="false" aria-label="Вращать одним пальцем" title="Вращать одним пальцем"><svg class="i" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-3-6.2"/><path d="M20 4v4h-4"/><path d="M12 8v4l3 2"/></svg></button>
+            <button class="ib" type="button" id="bReset" aria-label="Сбросить вид" title="Сбросить вид"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg></button>
+          </div>
+        </section>
+        <section class="panel" id="panel"></section>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="ctabar" id="ctaBar"></div>
+<div class="sheetbg" id="sheet" hidden><div class="sheetc" id="sheetC" role="dialog" aria-modal="true"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+/* ===== Плитка: раскладка, резы, маяки, расходники и работа ===== */
+const r1=Math.round, clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const r5=x=>Math.round(x/5)*5;
+const WALLN=['Задняя','Правая','Передняя','Левая'];
+const PAT={straight:'Прямая',brick:'Вразбежку 1/2',third:'Вразбежку 1/3',diag:'Диагональ 45°'};
+const LOOKS={plain:'Однотонная',marble:'Под мрамор',concrete:'Под бетон',wood:'Под дерево',terrazzo:'Терраццо'};
+const TCOL={white:{n:'Белая',c:'#F2F1ED'},cream:{n:'Слоновая кость',c:'#ECE3D0'},beige:{n:'Бежевая',c:'#D9C7A8'},grey:{n:'Светло-серая',c:'#C4C5C3'},concrete:{n:'Бетон',c:'#A3A4A1'},graph:{n:'Графит',c:'#4B4E52'},black:{n:'Чёрная',c:'#232427'},oak:{n:'Дуб',c:'#B98D5E'},walnut:{n:'Орех',c:'#7A5537'},sage:{n:'Шалфей',c:'#9AA892'},blue:{n:'Синяя',c:'#3F5D7C'},terra:{n:'Терракота',c:'#B4643F'}};
+const GCOL={white:{n:'Белая',c:'#F6F6F3'},grey:{n:'Серая',c:'#9D9E9C'},anth:{n:'Антрацит',c:'#3C3E41'},beige:{n:'Бежевая',c:'#CDBB9C'},black:{n:'Чёрная',c:'#1F2022'}};
+const SIZES=[[600,600],[300,600],[600,1200],[300,300],[400,400],[200,200],[150,150],[100,100],[250,400],[250,500],[200,600],[300,900],[200,1200],[150,900],[800,800],[75,300]];
+// сантехника: размеры по умолчанию, что закрывает, отверстия в плитке (du от центра, v — высота, d — диаметр)
+const FX_T={
+  bath:{n:'Ванна',w:1700,d:700,h:560,block:'bath',sil:true,holes:[{du:-75,v:820,d:20},{du:75,v:820,d:20}]},
+  shower:{n:'Душевой поддон',w:900,d:900,h:120,block:'tray',sil:true,holes:[{du:-75,v:1100,d:20},{du:75,v:1100,d:20}]},
+  toilet:{n:'Унитаз',w:380,d:650,h:780,holes:[{du:150,v:180,d:20},{du:0,v:200,d:110}]},
+  wc:{n:'Унитаз подвесной + инсталляция',w:600,d:220,h:1200,block:'box',holes:[{du:-90,v:230,d:20},{du:90,v:230,d:20},{du:0,v:230,d:110}],plate:true},
+  sink:{n:'Раковина',w:550,d:450,h:850,holes:[{du:-75,v:550,d:20},{du:75,v:550,d:20},{du:0,v:450,d:50}]},
+  vanity:{n:'Тумба с раковиной',w:600,d:460,h:850,holes:[{du:-75,v:550,d:20},{du:75,v:550,d:20},{du:0,v:450,d:50}]},
+  wm:{n:'Стиральная машина',w:600,d:600,h:850,holes:[{du:200,v:750,d:20},{du:-150,v:500,d:50}]},
+  boiler:{n:'Бойлер',w:450,d:450,h:800,y:1250,holes:[{du:-50,v:1150,d:20},{du:50,v:1150,d:20}]},
+  rail:{n:'Полотенцесушитель',w:500,d:120,h:800,y:900,holes:[{du:-250,v:1100,d:25},{du:250,v:1100,d:25}]},
+  trap:{n:'Трап в полу',w:150,d:150,h:0,floor:true,holes:[]}
+};
+const PRICE_DEF={tileF:550,tileW:450,glue:370,grout:420,primer:650,wp:1550,tape:600,cuff:60,svpc:180,svpw:160,cross:45,sil:180,lev:360,frame:1100,prof:180,disc:280,crown20:250,crown50:400,crown110:900,trapkit:950,
+  L_dem:150,L_lev:150,L_prime:30,L_wp:120,L_floor:650,L_wall:700,L_grout:100,L_hole:180,L_zapil:300,L_profile:80,L_sil:60,L_box:1800,L_screen:1500,L_trap:800,markup:10,delivery:0};
+const PRICE_META=[
+  ['Плитка',[['tileF','Плитка на пол','грн/м²'],['tileW','Плитка на стены','грн/м²']]],
+  ['Смеси и расходники',[['glue','Клей для плитки, мешок 25 кг','грн'],['grout','Затирка, 2 кг','грн'],['primer','Грунтовка глубокого проникновения, 10 л','грн'],['wp','Гидроизоляция обмазочная, 7 кг','грн'],['tape','Лента гидроизоляционная, 10 м','грн'],['cuff','Манжета на трубу','грн/шт'],['svpc','СВП: зажимы, 100 шт','грн'],['svpw','СВП: клинья, 100 шт','грн'],['cross','Крестики, 200 шт','грн'],['sil','Силикон санитарный, 280 мл','грн'],['lev','Наливной пол, 25 кг','грн'],['frame','Каркас короба / экрана: профиль + ГКЛВ','грн'],['prof','Уголок / профиль для плитки, 2,5 м','грн'],['disc','Диск алмазный по керамограниту 125','грн'],['crown20','Коронка Ø20–25','грн'],['crown50','Коронка Ø50','грн'],['crown110','Коронка Ø110','грн'],['trapkit','Трап с решёткой','грн']]],
+  ['Работа',[['L_floor','Укладка на пол (30–60 см)','грн/м²'],['L_wall','Укладка на стены (30–60 см)','грн/м²'],['L_grout','Затирка швов','грн/м²'],['L_prime','Грунтовка','грн/м²'],['L_wp','Гидроизоляция','грн/м²'],['L_lev','Наливной пол','грн/м²'],['L_dem','Демонтаж старой плитки','грн/м²'],['L_hole','Отверстие в плитке','грн/шт'],['L_zapil','Запил под 45°','грн/м'],['L_profile','Установка уголка','грн/м'],['L_sil','Силикон','грн/м'],['L_box','Короб инсталляции (каркас)','грн/шт'],['L_screen','Экран ванны (каркас)','грн/шт'],['L_trap','Монтаж трапа','грн/шт'],['delivery','Доставка / выезд','грн']]],
+  ['Наценка',[['markup','Наценка на материалы','%']]]];
+
+function defaults(){return {
+  L:2200,W:1700,H:2500,floor:'yes',wh:2500,ft:15,
+  door:{wall:2,off:200,w:700,h:2000},win:{on:'no',wall:0,off:700,w:600,h:600,sill:1400},
+  F:{a:600,b:600,j:2,pat:'straight',start:'auto',look:'concrete',col:'grey',grout:'grey',pbox:0,th:9},
+  T:{a:300,b:600,j:2,pat:'straight',vstart:'auto',hstart:'auto',look:'marble',col:'white',grout:'grey',pbox:0,th:8},
+  fx:[{t:'bath',wall:0,off:0},{t:'toilet',wall:1,off:820},{t:'sink',wall:2,off:1450}],
+  opt:{under:'skip',behind:'skip',screen:'tile',wp:'yes',dem:'no',lev:0,corner:'zapil'}};}
+
+/* ---- геометрия комнаты ---- */
+const WO=(v,i)=>[[0,0,0],[v.L,0,0],[v.L,0,v.W],[0,0,v.W]][i];
+const WU=[[1,0,0],[0,0,1],[-1,0,0],[0,0,-1]], WNRM=[[0,0,1],[-1,0,0],[0,0,-1],[1,0,0]];
+const wlen=(v,i)=>i%2?v.W:v.L;
+const add3=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]], mul3=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
+// смещение «по плану» (от левой стены для задней/передней, от задней для боковых) → u на стене (как видно из комнаты)
+const toU=(v,wall,off,w)=>wall<2?[off,off+w]:[wlen(v,wall)-off-w,wlen(v,wall)-off];
+function fxDims(f){const T=FX_T[f.t]||FX_T.sink; return {w:+f.w>0?+f.w:T.w,d:+f.d>0?+f.d:T.d,h:+f.h>0?+f.h:T.h,gap:+f.gap>0?+f.gap:(f.t==='trap'?300:0)};}
+function fxPlan(v,f){const D=fxDims(f), [u0,u1]=toU(v,f.wall,f.off,D.w), O=WO(v,f.wall), U=WU[f.wall], N=WNRM[f.wall];
+  const pts=[[u0,D.gap],[u1,D.gap],[u1,D.gap+D.d],[u0,D.gap+D.d]].map(([u,n])=>add3(add3(O,mul3(U,u)),mul3(N,n)));
+  const xs=pts.map(p=>p[0]), zs=pts.map(p=>p[2]); return {x0:Math.min(...xs),x1:Math.max(...xs),z0:Math.min(...zs),z1:Math.max(...zs),u0,u1,...D};}
+// контакт прямоугольника в плане со стеной → диапазон u
+function contactU(v,i,r){const e=6;
+  if(i===0&&r.z0<=e) return [r.x0,r.x1]; if(i===1&&r.x1>=v.L-e) return [r.z0,r.z1];
+  if(i===2&&r.z1>=v.W-e) return [v.L-r.x1,v.L-r.x0]; if(i===3&&r.x0<=e) return [v.W-r.z1,v.W-r.z0]; return null;}
+
+/* ---- многоугольники ---- */
+const parea=P=>{let s=0; for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length]; s+=a[0]*b[1]-b[0]*a[1];} return Math.abs(s)/2;};
+function clipRect(P,x0,y0,x1,y1){
+  const E=[[p=>p[0]>=x0,(a,b)=>[x0,a[1]+(x0-a[0])*(b[1]-a[1])/(b[0]-a[0])]],[p=>p[0]<=x1,(a,b)=>[x1,a[1]+(x1-a[0])*(b[1]-a[1])/(b[0]-a[0])]],
+    [p=>p[1]>=y0,(a,b)=>[a[0]+(y0-a[1])*(b[0]-a[0])/(b[1]-a[1]),y0]],[p=>p[1]<=y1,(a,b)=>[a[0]+(y1-a[1])*(b[0]-a[0])/(b[1]-a[1]),y1]]];
+  let out=P;
+  for(const [ins,cut] of E){const inp=out; out=[]; if(!inp.length) break;
+    for(let i=0;i<inp.length;i++){const a=inp[i], b=inp[(i+1)%inp.length], ia=ins(a), ib=ins(b); if(ia){out.push(a); if(!ib) out.push(cut(a,b));} else if(ib) out.push(cut(a,b));}}
+  return out;}
+
+/* ---- поверхности: пол, стены, короб инсталляции, экран ванны ---- */
+function surfaces(v){
+  const S=[], fl=v.floor==='yes', wh=Math.min(+v.wh||0,v.H), ft=fl?v.ft:0, fxs=v.fx.map(f=>Object.assign({f},fxPlan(v,f)));
+  if(fl){const holes=[];
+    fxs.forEach(x=>{const t=x.f.t; if((t==='bath'&&v.opt.under==='skip')||t==='shower'||t==='wc') holes.push({u0:x.x0,u1:x.x1,v0:x.z0,v1:x.z1,name:FX_T[t].n});});
+    S.push({id:'floor',kind:'floor',name:'Пол',O:[0,0,0],U:[1,0,0],V:[0,0,1],N:[0,1,0],W:v.L,H:v.W,v0:0,holes,drills:[],tile:'F'});}
+  if(wh>0) for(let i=0;i<4;i++){
+    const holes=[], drills=[];
+    if(v.door.wall===i){const [a,b]=toU(v,i,v.door.off,v.door.w); holes.push({u0:a,u1:b,v0:0,v1:v.door.h,name:'Дверь',door:true});}
+    if(v.win.on==='yes'&&v.win.wall===i){const [a,b]=toU(v,i,v.win.off,v.win.w); holes.push({u0:a,u1:b,v0:v.win.sill,v1:v.win.sill+v.win.h,name:'Окно'});}
+    fxs.forEach(x=>{const t=x.f.t, c=contactU(v,i,x); if(!c) return;
+      if(t==='bath'&&v.opt.behind==='skip') holes.push({u0:c[0],u1:c[1],v0:0,v1:x.h-30,name:'Ванна'});
+      if(t==='shower') holes.push({u0:c[0],u1:c[1],v0:0,v1:x.h-10,name:'Поддон'});
+      if(t==='wc'&&x.f.wall===i) holes.push({u0:c[0],u1:c[1],v0:0,v1:x.h,name:'Короб инсталляции'});
+      if(x.f.wall===i&&t!=='wc'&&t!=='trap'){const uc=(x.u0+x.u1)/2; (FX_T[t].holes||[]).forEach(hh=>drills.push({u:uc+hh.du*(i<2?1:1),v:hh.v,d:hh.d,name:FX_T[t].n}));}
+    });
+    S.push({id:'w'+i,kind:'wall',wall:i,name:'Стена '+WALLN[i].toLowerCase(),O:WO(v,i),U:WU[i],V:[0,1,0],N:WNRM[i],W:wlen(v,i),H:wh,v0:ft,holes:holes.filter(h=>h.u1>h.u0&&h.v1>h.v0),drills,tile:'T'});
+  }
+  // короб инсталляции и экран ванны — тоже под плитку
+  fxs.forEach(x=>{const t=x.f.t, i=x.f.wall, O=WO(v,i), U=WU[i], N=WNRM[i], Y=[0,1,0], neg=a=>mul3(a,-1);
+    const free0=x.u0>6, free1=x.u1<wlen(v,i)-6, base=(u,n)=>add3(add3(O,mul3(U,u)),mul3(N,n));
+    if(t==='wc'){const bh=x.h, d=x.gap+x.d, uc=(x.u1-x.u0)/2;
+      const front={id:'box',kind:'box',name:'Короб инсталляции',O:base(x.u0,d),U,V:Y,N,W:x.u1-x.u0,H:bh,v0:ft,holes:[{u0:uc-125,u1:uc+125,v0:950,v1:1110,name:'Кнопка смыва'}],drills:FX_T.wc.holes.map(h=>({u:uc+h.du,v:h.v,d:h.d,name:'Подвесной унитаз'})),tile:'T',flat:true};
+      S.push(front, {id:'boxtop',kind:'box',name:'Короб: полка сверху',O:add3(base(x.u0,d),[0,bh,0]),U,V:neg(N),N:Y,W:x.u1-x.u0,H:d,v0:0,holes:[],drills:[],tile:'T',flat:true});
+      if(free0) S.push({id:'boxl',kind:'box',name:'Короб: бок',O:base(x.u0,0),U:N,V:Y,N:neg(U),W:d,H:bh,v0:ft,holes:[],drills:[],tile:'T',flat:true});
+      if(free1) S.push({id:'boxr',kind:'box',name:'Короб: бок',O:base(x.u1,d),U:neg(N),V:Y,N:U,W:d,H:bh,v0:ft,holes:[],drills:[],tile:'T',flat:true});
+      x.edges=(x.u1-x.u0)+(free0?d+bh:0)+(free1?d+bh:0);}
+    if(t==='bath'&&v.opt.screen==='tile'){const d=x.gap+x.d, sh=x.h-30;
+      S.push({id:'scr',kind:'screen',name:'Экран ванны',O:base(x.u0,d),U,V:Y,N,W:x.u1-x.u0,H:sh,v0:ft,holes:[],drills:[],tile:'T',flat:true});
+      if(free0) S.push({id:'scrl',kind:'screen',name:'Экран ванны: торец',O:base(x.u0,0),U:N,V:Y,N:neg(U),W:d,H:sh,v0:ft,holes:[],drills:[],tile:'T',flat:true});
+      if(free1) S.push({id:'scrr',kind:'screen',name:'Экран ванны: торец',O:base(x.u1,d),U:neg(N),V:Y,N:U,W:d,H:sh,v0:ft,holes:[],drills:[],tile:'T',flat:true});
+      x.edges=(free0?sh:0)+(free1?sh:0);}
+  });
+  return {S,fxs};
+}
+
+/* ---- подбор старта: без узких подрезок ---- */
+function edgePieces(len,a,j,ou){const p=a+j, r=((ou%p)+p)%p, left=r>j?r-j:0, last=Math.floor((len-ou)/p), wr=len-(ou+last*p); return [left>0&&left<a-0.5?left:a, wr>0.5&&wr<a-0.5?wr:a];}
+function fit(len,a,j,mode){
+  const p=a+j, m=x=>((x%p)+p)%p, C={left:0,right:m(len-a),cj:m(len/2+j/2),ct:m(len/2-a/2)};
+  const score=k=>Math.min(...edgePieces(len,a,j,C[k]));
+  const pick=ks=>ks.reduce((b,k)=>score(k)>score(b)+5?k:b,ks[0]);
+  const k=mode==='corner'?'left':mode==='center'?pick(['cj','ct']):pick(['cj','ct','left','right']);
+  return {ou:C[k],how:k,min:score(k)};
+}
+
+/* ---- раскладка одной поверхности ---- */
+function layout(Sf,t,o){
+  const a=t.a, b=t.b, j=t.j, pu=a+j, pv=b+j, out=[];
+  const trim=c=>{let notch=null; for(const h of Sf.holes){
+      const ix=Math.min(c[2],h.u1)-Math.max(c[0],h.u0), iy=Math.min(c[3],h.v1)-Math.max(c[1],h.v0); if(ix<=0||iy<=0) continue;
+      if(h.u0<=c[0]+.5&&h.u1>=c[2]-.5){ if(h.v0<=c[1]+.5) c[1]=Math.max(c[1],h.v1); else if(h.v1>=c[3]-.5) c[3]=Math.min(c[3],h.v0); else notch=h;}
+      else if(h.v0<=c[1]+.5&&h.v1>=c[3]-.5){ if(h.u0<=c[0]+.5) c[0]=Math.max(c[0],h.u1); else if(h.u1>=c[2]-.5) c[2]=Math.min(c[2],h.u0); else notch=h;}
+      else notch=h;
+      if(c[2]-c[0]<1||c[3]-c[1]<1) return null;}
+    return {c,notch};};
+  if(t.pat==='diag'&&!Sf.flat&&Sf.kind==='floor'){
+    const s=Math.SQRT1_2, toUV=(r,q)=>[(r-q)*s,(r+q)*s], uc=Sf.W/2, vc=Sf.H/2, rc=(uc+vc)*s, qc=(vc-uc)*s;
+    const ou=rc-a/2, ov=qc-a/2, R=Math.hypot(Sf.W,Sf.H)/pu+2;
+    for(let i=-Math.ceil(R);i<=Math.ceil(R);i++) for(let k=-Math.ceil(R);k<=Math.ceil(R);k++){
+      const r0=ou+i*pu, q0=ov+k*pu, P=[toUV(r0,q0),toUV(r0+a,q0),toUV(r0+a,q0+a),toUV(r0,q0+a)];
+      const C=clipRect(P,0,Sf.v0,Sf.W,Sf.H); if(C.length<3) continue; let area=parea(C), notch=null;
+      for(const h of Sf.holes){const hc=clipRect(C,h.u0,h.v0,h.u1,h.v1); if(hc.length>=3){const ha=parea(hc); if(ha>1){area-=ha; notch=h;}}}
+      if(area<a*a*.015) continue;
+      const full=!notch&&area>=a*a*.995, rq=C.map(([u,w])=>[(u+w)*s,(w-u)*s]), cw=Math.max(...rq.map(p=>p[0]))-Math.min(...rq.map(p=>p[0])), ch=Math.max(...rq.map(p=>p[1]))-Math.min(...rq.map(p=>p[1]));
+      out.push({p:C,full,area,cw,ch,hole:notch?notch.name:null,type:full?'full':notch?'notch':'diag',i,k});
+    }
+    return {tiles:out,ou,ov,diag:true};
+  }
+  const ou=o.ou, ov=o.ov, kmin=Math.floor((Sf.v0-ov)/pv)-1, kmax=Math.ceil((Sf.H-ov)/pv)+1;
+  for(let k=kmin;k<=kmax;k++){
+    const sh=t.pat==='brick'?((k%2+2)%2)*pu/2:t.pat==='third'?((k%3+3)%3)*pu/3:0, y0=ov+k*pv, y1=y0+b;
+    if(y1<=Sf.v0+.5||y0>=Sf.H-.5) continue;
+    const imin=Math.floor((-ou-sh)/pu)-1, imax=Math.ceil((Sf.W-ou-sh)/pu)+1;
+    for(let i=imin;i<=imax;i++){
+      const x0=ou+sh+i*pu, x1=x0+a; if(x1<=.5||x0>=Sf.W-.5) continue;
+      const tr=trim([Math.max(0,x0),Math.max(Sf.v0,y0),Math.min(Sf.W,x1),Math.min(Sf.H,y1)]); if(!tr) continue;
+      const c=tr.c; let area=(c[2]-c[0])*(c[3]-c[1]);
+      if(tr.notch){const h=tr.notch; area-=Math.max(0,Math.min(c[2],h.u1)-Math.max(c[0],h.u0))*Math.max(0,Math.min(c[3],h.v1)-Math.max(c[1],h.v0));}
+      if(area<a*b*.015) continue;
+      const cw=c[2]-c[0], ch=c[3]-c[1], full=!tr.notch&&cw>=a-.5&&ch>=b-.5;
+      out.push({p:[[c[0],c[1]],[c[2],c[1]],[c[2],c[3]],[c[0],c[3]]],r:c,full,area,cw,ch,hole:tr.notch?tr.notch.name:null,notchR:tr.notch?[tr.notch.u0,tr.notch.v0,tr.notch.u1,tr.notch.v1]:null,
+        type:full?'full':tr.notch?'notch':(cw<a-.5&&ch<b-.5?'corner':'strip'),i,k});
+    }
+  }
+  return {tiles:out,ou,ov};
+}
+
+/* ---- сколько плиток купить: целые + резаные с переиспользованием обрезков ---- */
+function packCount(pieces,A,B,rot,kerf=3){
+  const items=pieces.map(p=>({w:Math.min(A,p.cw+(p.cw<A-1?kerf:0)),h:Math.min(B,p.ch+(p.ch<B-1?kerf:0))})).sort((x,y)=>y.w*y.h-x.w*x.h);
+  const bins=[];
+  for(const it of items){let done=false;
+    for(const fr of bins.flatMap(b=>b.free.map(f=>({b,f})))){
+      for(const [w,h] of rot&&it.w!==it.h?[[it.w,it.h],[it.h,it.w]]:[[it.w,it.h]]){
+        if(w<=fr.f.w+.5&&h<=fr.f.h+.5){const b=fr.b, f=fr.f; b.free.splice(b.free.indexOf(f),1);
+          const rw=f.w-w, rh=f.h-h; if(rw*f.h>=rh*f.w){if(rw>20) b.free.push({w:rw,h:f.h}); if(rh>20) b.free.push({w,h:rh});} else {if(rh>20) b.free.push({w:f.w,h:rh}); if(rw>20) b.free.push({w:rw,h});}
+          done=true; break;}}
+      if(done) break;}
+    if(!done){const b={free:[]}; bins.push(b); const rw=A-it.w, rh=B-it.h; if(rw>20) b.free.push({w:rw,h:B}); if(rh>20) b.free.push({w:it.w,h:rh});}
+  }
+  return bins.length;
+}
+const autoBox=(a,b)=>{const A=a*b/1e6; return Math.max(1,Math.round((A>=.5?1.44:A>=.15?1.44:A>=.05?1.2:1)/A));};
+const glueKg=t=>{const m=Math.max(t.a,t.b); return m<=100?2.5:m<=200?3:m<=300?3.5:m<=400?4.5:m<=600?5.5:7;};
+const groutKg=t=>(t.a+t.b)/(t.a*t.b)*t.th*t.j*1.6;
+const svp=t=>Math.max(t.a,t.b)>=400;
+function laborK(t){const m=Math.max(t.a,t.b), mn=Math.min(t.a,t.b); return (m>=1000?1.4:mn<=150?1.35:1)*(t.pat==='diag'?1.25:t.pat==='straight'?1:1.1);}
+
+/* ---- расчёт ---- */
+function compute(v,P){
+  const {S,fxs}=surfaces(v), M={v,S,fxs,warns:[],notes:[]};
+  const wallT=v.T, flT=v.F, fl=v.floor==='yes', wh=Math.min(+v.wh||0,v.H), bath=fxs.find(x=>x.f.t==='bath');
+  // общая сетка рядов на стенах (швы идут кругом по комнате)
+  const pvT=wallT.b+wallT.j, v0=fl?v.ft:0;
+  let vmode=wallT.vstart; if(vmode==='auto') vmode=bath?'bath':(wh<v.H-50?'top':'floor');
+  let y0=vmode==='bath'&&bath?bath.h-30:vmode==='top'?wh-wallT.b:v0;
+  const rowCut=y=>{const p=pvT, k0=Math.floor((v0-y)/p), lowTop=y+k0*p+wallT.b, low=lowTop-v0, kt=Math.floor((wh-y)/p), hiCut=wh-(y+kt*p); return {low:low>0&&low<wallT.b-.5?low:wallT.b, top:hiCut>0&&hiCut<wallT.b-.5?hiCut:wallT.b};};
+  if(wallT.vstart==='auto'&&!bath&&wh>=v.H-50){const a=rowCut(v0), b=rowCut(wh-wallT.b); if(Math.min(b.low,b.top)>Math.min(a.low,a.top)+30){y0=wh-wallT.b; vmode='top';}}
+  M.rows={y0,mode:vmode,pv:pvT};
+  const pieces={F:[],T:[]}; let areaF=0, areaT=0;
+  S.forEach(sf=>{
+    const t=sf.tile==='F'?flT:wallT;
+    let o;
+    if(sf.kind==='floor'){
+      // подбор старта по видимой части пола: ванна/поддон во всю стену не в счёт
+      let u0=0,u1=sf.W,w0=0,w1=sf.H;
+      sf.holes.forEach(h=>{const fw=(h.u1-h.u0)/sf.W, fh=(h.v1-h.v0)/sf.H;
+        if(fw>=.6&&h.v0<=6) w0=Math.max(w0,h.v1); if(fw>=.6&&h.v1>=sf.H-6) w1=Math.min(w1,h.v0);
+        if(fh>=.6&&h.u0<=6) u0=Math.max(u0,h.u1); if(fh>=.6&&h.u1>=sf.W-6) u1=Math.min(u1,h.u0);});
+      const fu=fit(u1-u0,t.a,t.j,t.start), fv=fit(w1-w0,t.b,t.j,t.start); o={ou:fu.ou+u0,ov:fv.ou+w0}; sf.fit=[fu,fv]; sf.vis=[u0,w0,u1,w1];}
+    else if(sf.flat&&sf.id==='boxtop'){o={ou:fit(sf.W,t.a,t.j,'center').ou,ov:0};}
+    else{const fu=fit(sf.W,t.a,t.j,sf.kind==='wall'?t.hstart:'center'); o={ou:fu.ou,ov:y0}; sf.fit=[fu];}
+    const L=layout(sf,sf.kind==='floor'?t:Object.assign({},t,{pat:t.pat==='diag'?'straight':t.pat}),o); sf.tiles=L.tiles; sf.ou=L.ou; sf.ov=L.ov; sf.diag=!!L.diag; sf.t=t;
+    sf.area=sf.tiles.reduce((s,x)=>s+x.area,0); sf.full=sf.tiles.filter(x=>x.full).length; sf.cut=sf.tiles.length-sf.full;
+    sf.tiles.filter(x=>!x.full).forEach(x=>pieces[sf.tile].push(Object.assign({sf:sf.id},x)));
+    if(sf.tile==='F') areaF+=sf.area; else areaT+=sf.area;
+    // подрезки по краям (для чертежа и предупреждений)
+    if(!sf.diag){const pu=t.a+t.j;
+      const left=sf.tiles.filter(x=>x.r[0]<=.5&&!x.hole).map(x=>x.cw), right=sf.tiles.filter(x=>x.r[2]>=sf.W-.5&&!x.hole).map(x=>x.cw);
+      const bot=sf.tiles.filter(x=>x.r[1]<=sf.v0+.5&&!x.hole).map(x=>x.ch), top=sf.tiles.filter(x=>x.r[3]>=sf.H-.5&&!x.hole).map(x=>x.ch);
+      const mn=a=>a.length?Math.min(...a):0; sf.edges={left:mn(left),right:mn(right),bot:mn(bot),top:mn(top)};
+      const thin=Object.entries(sf.edges).filter(([k,w])=>w>0&&w<Math.min(50,(k==='left'||k==='right'?t.a:t.b)/4)&&t.pat==='straight');
+      if(thin.length&&sf.kind!=='box'&&sf.kind!=='screen') M.warns.push(`${sf.name}: узкая подрезка ${thin.map(([k,w])=>({left:'слева',right:'справа',bot:'снизу',top:'сверху'})[k]+' '+r1(w)+' мм').join(', ')} — сдвиньте раскладку (старт «${sf.kind==='floor'?'по центру':'авто'}») или поменяйте размер плитки.`);
+    }
+  });
+  // маяки и линии разметки
+  const floor=S.find(s=>s.id==='floor');
+  if(floor&&!floor.diag){const t=flT, pu=t.a+t.j, pv=t.b+t.j, near=(o,p,c)=>{const k=Math.round((c-o+t.j/2)/p); return o+k*p-t.j/2;};
+    const vis=floor.vis||[0,0,floor.W,floor.H], lu=near(floor.ou,pu,(vis[0]+vis[2])/2), lv=near(floor.ov,pv,(vis[1]+vis[3])/2); floor.lines=[{k:'u',at:lu},{k:'v',at:lv}];
+    const fulls=floor.tiles.filter(x=>x.full).length?floor.tiles.filter(x=>x.full):floor.tiles.filter(x=>!x.hole&&x.area>t.a*t.b*.6), ctr=x=>[(x.r[0]+x.r[2])/2,(x.r[1]+x.r[3])/2];
+    const pickNear=(px,py)=>fulls.reduce((b,x)=>{const c=ctr(x), d=Math.hypot(c[0]-px,c[1]-py); return !b||d<b.d?{x,d}:b;},null);
+    const b1=pickNear(lu+t.a/2,lv-t.b/2); const seen=new Set(); let n=1;
+    [b1,pickNear(vis[0],vis[1]),pickNear(vis[2],vis[1]),pickNear(vis[2],vis[3]),pickNear(vis[0],vis[3])].forEach(o=>{if(o&&!seen.has(o.x)){seen.add(o.x); o.x.beacon=n++;}});
+  }else if(floor&&floor.diag){floor.lines=[{k:'d',at:0}]; const f=floor.tiles.filter(x=>x.full); if(f.length){const c=f.reduce((b,x)=>{const m=x.p.reduce((s,p)=>[s[0]+p[0]/x.p.length,s[1]+p[1]/x.p.length],[0,0]), d=Math.hypot(m[0]-floor.W/2,m[1]-floor.H/2); return !b||d<b.d?{x,d}:b;},null); c.x.beacon=1;}}
+  S.filter(s=>s.kind==='wall').forEach(sf=>{const t=wallT, pu=t.a+t.j, k=Math.ceil((sf.v0+20-y0)/pvT), lv=y0+k*pvT; const lu=sf.ou+Math.round((sf.W/2-sf.ou)/pu)*pu-t.j/2;
+    sf.lines=[{k:'level',at:lv},{k:'plumb',at:lu}];});
+  M.levelV=y0+Math.ceil((v0+20-y0)/pvT)*pvT;
+  // покупка плитки
+  const buy=(tt,key,pcs,area)=>{
+    const full=S.filter(s=>s.tile===key).reduce((s,x)=>s+x.full,0), diag=S.some(s=>s.tile===key&&s.diag);
+    const cutTiles=diag?Math.ceil(pcs.reduce((s,x)=>s+x.area,0)/(tt.a*tt.b)/.85):packCount(pcs,tt.a,tt.b,tt.a===tt.b);
+    const res=tt.pat==='diag'?.1:tt.pat==='straight'?.05:.08, need=full+cutTiles, withRes=Math.ceil(need*(1+res));
+    const pbox=+tt.pbox>0?+tt.pbox:autoBox(tt.a,tt.b), boxes=Math.ceil(withRes/pbox), m2=boxes*pbox*tt.a*tt.b/1e6;
+    return {full,cutTiles,need,withRes,res,pbox,boxes,m2,area:area/1e6};};
+  M.buyF=fl&&floor?buy(flT,'F',pieces.F,areaF):null;
+  M.buyT=areaT>0?buy(wallT,'T',pieces.T,areaT):null;
+  M.areaF=areaF/1e6; M.areaT=areaT/1e6;
+  // список резов
+  const groups={};
+  S.forEach(sf=>sf.tiles.filter(x=>!x.full).forEach(x=>{const key=[sf.tile,x.type,r5(x.cw),r5(x.ch),x.hole||''].join('|'); (groups[key]=groups[key]||{tile:sf.tile,type:x.type,cw:r5(x.cw),ch:r5(x.ch),hole:x.hole,q:0,where:new Set()}).q++; groups[key].where.add(sf.name);}));
+  M.cuts=Object.values(groups).map(g=>Object.assign(g,{where:[...g.where]})).sort((a,b)=>a.tile.localeCompare(b.tile)||b.q-a.q);
+  // отверстия
+  const drills={}; S.forEach(sf=>(sf.drills||[]).forEach(d=>{if(d.v>=sf.v0&&d.v<=sf.H&&!sf.holes.some(h=>d.u>h.u0&&d.u<h.u1&&d.v>h.v0&&d.v<h.v1)) drills[d.d]=(drills[d.d]||0)+1;}));
+  if(fxs.some(x=>x.f.t==='trap')&&fl) drills[110]=(drills[110]||0)+fxs.filter(x=>x.f.t==='trap').length;
+  M.drills=drills; const nDr=Object.values(drills).reduce((s,x)=>s+x,0);
+  // площади
+  const per=2*(v.L+v.W), contact=(x,i)=>{const c=contactU(v,i,x); return c?c[1]-c[0]:0;}, cont=x=>[0,1,2,3].reduce((s,i)=>s+contact(x,i),0);
+  const allA=(areaF+areaT)/1e6, wetLen=fxs.filter(x=>x.f.t==='bath'||x.f.t==='shower').reduce((s,x)=>s+cont(x),0);
+  const wpA=v.opt.wp==='yes'?(fl?v.L*v.W/1e6:0)+(per-v.door.w)*200/1e6+fxs.reduce((s,x)=>s+(x.f.t==='bath'?cont(x)*(x.h+300-200):x.f.t==='shower'?cont(x)*(1800-200):0),0)/1e6:0;
+  const sil=fxs.filter(x=>x.f.t==='bath'||x.f.t==='shower').reduce((s,x)=>s+cont(x)+(x.f.t==='shower'?2*1800:0),0)/1000;
+  const extEdges=fxs.reduce((s,x)=>s+(x.edges||0),0)/1000+(v.win.on==='yes'&&wh>v.win.sill?2*(v.win.w+v.win.h)/1000:0);
+  M.wpA=wpA; M.sil=sil; M.ext=extEdges; M.allA=allA;
+  // смета
+  const lines=[]; const add=(sec,name,qty,unit,price)=>{if(qty>0&&isFinite(qty)) lines.push({sec,name,qty,unit,price,sum:qty*price});};
+  const tName=t=>`${t.a}×${t.b}, ${(TCOL[t.col]||TCOL.white).n.toLowerCase()} ${LOOKS[t.look]?'('+LOOKS[t.look].toLowerCase()+')':''}`;
+  if(M.buyF) add('tile',`Плитка на пол ${tName(flT)} — ${M.buyF.boxes} уп. по ${M.buyF.pbox} шт`,Math.round(M.buyF.m2*100)/100,'м²',+flT.price>0?+flT.price:P.tileF);
+  if(M.buyT) add('tile',`Плитка на стены ${tName(wallT)} — ${M.buyT.boxes} уп. по ${M.buyT.pbox} шт`,Math.round(M.buyT.m2*100)/100,'м²',+wallT.price>0?+wallT.price:P.tileW);
+  const glue=(areaF/1e6)*glueKg(flT)+(areaT/1e6)*glueKg(wallT);
+  add('mix','Клей для плитки, мешок 25 кг',Math.ceil(glue*1.1/25),'меш',P.glue);
+  const gr=(areaF/1e6)*groutKg(flT)+(areaT/1e6)*groutKg(wallT);
+  const grSame=!fl||flT.grout===wallT.grout;
+  if(grSame) add('mix',`Затирка ${(GCOL[wallT.grout]||GCOL.white).n.toLowerCase()}, 2 кг`,Math.max(1,Math.ceil(gr*1.1/2)),'уп',P.grout);
+  else{add('mix',`Затирка для пола ${(GCOL[flT.grout]||GCOL.grey).n.toLowerCase()}, 2 кг`,Math.max(1,Math.ceil((areaF/1e6)*groutKg(flT)*1.1/2)),'уп',P.grout); if(areaT) add('mix',`Затирка для стен ${(GCOL[wallT.grout]||GCOL.white).n.toLowerCase()}, 2 кг`,Math.max(1,Math.ceil((areaT/1e6)*groutKg(wallT)*1.1/2)),'уп',P.grout);}
+  add('mix','Грунтовка глубокого проникновения, 10 л',Math.max(1,Math.ceil((allA+wpA)*.2/10)),'кан',P.primer);
+  if(wpA){add('mix','Гидроизоляция обмазочная, 7 кг (2 слоя)',Math.ceil(wpA*1.5/7),'ведро',P.wp); add('mix','Лента гидроизоляционная в углы, 10 м',Math.ceil((per+8*wetLen/1000*0+(wetLen?3600:0))/10000),'рул',P.tape); add('mix','Манжеты на трубы',nDr,'шт',P.cuff);}
+  if(+v.opt.lev>0&&fl) add('mix',`Наливной пол ${v.opt.lev} мм, 25 кг`,Math.ceil(v.L*v.W/1e6*1.6*v.opt.lev/25),'меш',P.lev);
+  const nTiles=(M.buyF?M.buyF.need:0)+(M.buyT?M.buyT.need:0), svpT=[fl&&svp(flT)?M.buyF.need:0,M.buyT&&svp(wallT)?M.buyT.need:0], small=nTiles-svpT[0]-svpT[1];
+  if(svpT[0]+svpT[1]){add('hw','СВП: зажимы, 100 шт',Math.ceil((svpT[0]+svpT[1])*3/100),'уп',P.svpc); add('hw','СВП: клинья, 100 шт (многоразовые)',Math.max(1,Math.ceil(allA/15)),'уп',P.svpw);}
+  if(small>0) add('hw','Крестики для швов, 200 шт',Math.ceil(small*3/200),'уп',P.cross);
+  if(sil) add('hw','Силикон санитарный, 280 мл',Math.ceil(sil/6),'шт',P.sil);
+  if(extEdges&&v.opt.corner==='profile') add('hw','Уголок для плитки, 2,5 м',Math.ceil(extEdges*1.1/2.5),'шт',P.prof);
+  if(fxs.some(x=>x.f.t==='wc')) add('hw','Каркас короба инсталляции: профиль + ГКЛВ',1,'компл',P.frame);
+  if(bath&&v.opt.screen==='tile') add('hw','Каркас экрана ванны: профиль + ГКЛВ + люк',1,'компл',P.frame);
+  const traps=fxs.filter(x=>x.f.t==='trap').length; if(traps) add('hw','Трап с решёткой',traps,'шт',P.trapkit);
+  add('tool','Диск алмазный по керамограниту 125',Math.max(1,Math.ceil(allA/20)),'шт',P.disc);
+  Object.keys(drills).forEach(d=>add('tool',`Коронка алмазная Ø${d}`,1,'шт',+d>=100?P.crown110:+d>=40?P.crown50:P.crown20));
+  // работа
+  const Afl=areaF/1e6, Aw=S.filter(s=>s.kind==='wall').reduce((s,x)=>s+x.area,0)/1e6, Ab=S.filter(s=>s.kind==='box'||s.kind==='screen').reduce((s,x)=>s+x.area,0)/1e6;
+  if(v.opt.dem==='yes') add('labor','Демонтаж старой плитки',Math.ceil(allA*10)/10,'м²',P.L_dem);
+  if(+v.opt.lev>0&&fl) add('labor','Наливной пол',Math.ceil(v.L*v.W/1e5)/10,'м²',P.L_lev);
+  add('labor','Грунтовка',Math.ceil((allA+wpA)*10)/10,'м²',P.L_prime);
+  if(wpA) add('labor','Гидроизоляция с лентой',Math.ceil(wpA*10)/10,'м²',P.L_wp);
+  if(Afl) add('labor',`Укладка плитки на пол ${flT.a}×${flT.b}, ${PAT[flT.pat].toLowerCase()}`,Math.ceil(Afl*10)/10,'м²',Math.round(P.L_floor*laborK(flT)));
+  if(Aw+Ab) add('labor',`Укладка плитки на стены ${wallT.a}×${wallT.b}${wallT.pat!=='straight'?', '+PAT[wallT.pat].toLowerCase():''}`,Math.ceil((Aw+Ab)*10)/10,'м²',Math.round(P.L_wall*laborK(Object.assign({},wallT,{pat:wallT.pat==='diag'?'straight':wallT.pat}))));
+  add('labor','Затирка швов',Math.ceil(allA*10)/10,'м²',P.L_grout);
+  if(nDr) add('labor','Отверстия в плитке под трубы',nDr,'шт',P.L_hole);
+  if(extEdges) add('labor',v.opt.corner==='profile'?'Установка уголка на внешние углы':'Запил под 45° на внешних углах',Math.ceil(extEdges*10)/10,'м',v.opt.corner==='profile'?P.L_profile:P.L_zapil);
+  if(sil) add('labor','Силикон по ванне / поддону и углам',Math.ceil(sil*10)/10,'м',P.L_sil);
+  if(fxs.some(x=>x.f.t==='wc')) add('labor','Короб инсталляции: каркас и ГКЛВ',1,'шт',P.L_box);
+  if(bath&&v.opt.screen==='tile') add('labor','Экран ванны: каркас и люк',1,'шт',P.L_screen);
+  if(traps) add('labor','Монтаж трапа с уклоном',traps,'шт',P.L_trap);
+  if(P.delivery>0) add('labor','Доставка / выезд',1,'',P.delivery);
+  M.lines=lines;
+  const sum=f=>lines.filter(f).reduce((s,l)=>s+l.sum,0);
+  M.matSum=sum(l=>l.sec!=='labor'); M.markup=M.matSum*P.markup/100; M.labSum=sum(l=>l.sec==='labor'); M.total=M.matSum+M.markup+M.labSum;
+  M.glue=glue; M.grout=gr;
+  // проверки
+  fxs.forEach(x=>{const len=wlen(v,x.f.wall); if(x.u1>len+1||x.u0<-1) M.warns.push(`${FX_T[x.f.t].n} не помещается на стене «${WALLN[x.f.wall].toLowerCase()}» (${len} мм) — уменьшите отступ.`);});
+  for(let i=0;i<fxs.length;i++) for(let k=i+1;k<fxs.length;k++){const a=fxs[i], b=fxs[k]; if(a.f.t==='trap'||b.f.t==='trap') continue; if(Math.min(a.x1,b.x1)-Math.max(a.x0,b.x0)>20&&Math.min(a.z1,b.z1)-Math.max(a.z0,b.z0)>20) M.warns.push(`${FX_T[a.f.t].n} и ${FX_T[b.f.t].n.toLowerCase()} пересекаются на плане — поправьте отступы.`);}
+  const dU=toU(v,v.door.wall,v.door.off,v.door.w); if(dU[1]>wlen(v,v.door.wall)+1) M.warns.push('Дверь не помещается на стене — уменьшите отступ двери.');
+  if(wallT.b>0&&M.buyT){const rc=rowCut(y0); if(rc.top<50&&wh>0) M.warns.push(`Верхний ряд на стенах — полоса ${r1(rc.top)} мм. Поменяйте «Старт рядов на стенах» или высоту облицовки.`); if(rc.low<40) M.warns.push(`Нижний ряд у пола — полоса ${r1(rc.low)} мм, резать неудобно. Поменяйте «Старт рядов на стенах».`); M.rowCut=rc;}
+  M.steps=steps(M);
+  return M;
+}
+
+
+/* ---- порядок работ под эту комнату ---- */
+function steps(M){
+  const v=M.v, S=M.S, fl=S.find(s=>s.id==='floor'), walls=S.filter(s=>s.kind==='wall'), T=v.T, F=v.F, out=[];
+  const fxN=t=>M.fxs.filter(x=>x.f.t===t).length, bath=M.fxs.find(x=>x.f.t==='bath');
+  const dr=Object.entries(M.drills).map(([d,q])=>`Ø${d} — ${q} шт`).join(', ');
+  out.push({t:'Подготовка',d:`${v.opt.dem==='yes'?'Снимите старую плитку и клей до основания. ':''}Проверьте стены правилом 2 м: перепад больше 3 мм — штукатурка до плитки. ${+v.opt.lev>0&&fl?`Пол — наливной слой ${v.opt.lev} мм, ходить через 6 часов, плитку — через 3–7 суток по инструкции смеси. `:''}Всё основание — грунтовка глубокого проникновения в 2 слоя.`,s:'all'});
+  if(v.opt.wp==='yes') out.push({t:'Гидроизоляция',d:`Пол целиком и стены на 200 мм вверх — обмазочная гидроизоляция в 2 слоя крест-накрест. Ленту — во все углы пол-стена и в углы ${bath?`у ванны на высоту ${bath.h+300} мм`:''}${fxN('shower')?' душевой зоны на 1800 мм':''}. На трубы — манжеты. Площадь ~${(Math.round(M.wpA*10)/10)} м².`,s:'all'});
+  if(fxN('wc')||(bath&&v.opt.screen==='tile')) out.push({t:'Короб и экран',d:`${fxN('wc')?'Инсталляцию выставить и закрепить, короб — профиль + влагостойкий ГКЛ в 2 слоя (под плитку жёстко). ':''}${bath&&v.opt.screen==='tile'?'Ванну установить и выставить по уровню до плитки на стенах; экран — каркас из профиля + ГКЛВ, сразу заложите люк-невидимку под сифон.':''}`,s:'box'});
+  if(walls.length){const lv=M.levelV, w0=walls[0];
+    out.push({t:'Разметка стен',d:`Лазерным уровнем отбейте линию по всем стенам на высоте ${lv} мм от чернового пола — по ней крепится опорный профиль (рейка) под первый целый ряд. ${M.rows.mode==='bath'?'Линия идёт по борту ванны: целый ряд встаёт на ванну.':M.rows.mode==='top'?'Ряды считаются от верха облицовки: сверху целая плитка.':'Ряды идут от пола.'} Вертикали (отвес) — по стыку плиток: ${walls.map(w=>`${w.name.replace('Стена ','')} — ${r1(w.lines[1].at)} мм от левого угла`).join('; ')}.`,s:'walls'});
+    out.push({t:'Стены: целые ряды',d:`Плитка ${T.a}×${T.b} от профиля вверх, шов ${T.j} мм${svp(T)?', система выравнивания (СВП) на каждом стыке':', крестики'}. Клей — гребёнка ${Math.max(T.a,T.b)>=600?'10–12 мм + клей на тыльную сторону плитки':Math.max(T.a,T.b)>=300?'8 мм':'6 мм'}. Верхний ряд — подрезка ${M.rowCut?r1(M.rowCut.top):'—'} мм.${dr?` Отверстия под трубы коронкой: ${dr}.`:''}`,s:'walls'});
+  }
+  if(fl){const L=fl.lines||[];
+    out.push({t:'Пол: маяки',d:fl.diag?`Диагональ 45°: от центра комнаты отбейте две оси под 45° к стенам. Первую целую плитку (М1) положите в центре по лазеру на уровень чистого пола (+${v.ft} мм).`:`Отбейте шнурами стартовые линии по швам: ${L[0]?r1(L[0].at):''} мм от левой стены и ${L[1]?r1(L[1].at):''} мм от задней. Плитки-маяки М1–М${fl.tiles.filter(x=>x.beacon).length} положите первыми на уровень чистого пола (+${v.ft} мм по лазеру): М1 — у пересечения линий, остальные — у углов. Между маяками натяните шнур — по нему весь пол.`,s:'floor'});
+    out.push({t:'Пол: укладка',d:`От дальнего угла к двери, ряд за рядом по шнуру. Плитка ${F.a}×${F.b}, ${PAT[F.pat].toLowerCase()}, шов ${F.j} мм. Подрезки у стен: ${fl.edges?`слева ${r1(fl.edges.left)}, справа ${r1(fl.edges.right)}, у задней ${r1(fl.edges.bot)}, у двери ${r1(fl.edges.top)} мм`:'по месту'} — резать по месту каждую, стены редко ровные. Сутки не ходить.`,s:'floor'});
+  }
+  if(walls.length) out.push({t:'Нижний ряд стен',d:`Когда пол схватился — снимите опорный профиль и уложите нижний ряд: подрезка ${M.rowCut?r1(M.rowCut.low):'—'} мм от плитки пола (зазор 2–3 мм под затирку или силикон).`,s:'walls'});
+  out.push({t:'Затирка и силикон',d:`Через 24 часа уберите СВП и крестики, затирка ${fl?((GCOL[F.grout]||GCOL.grey).n.toLowerCase()+' на полу, '):''}${(GCOL[T.grout]||GCOL.white).n.toLowerCase()} на стенах. ${M.sil?`Силикон санитарный — по ванне/поддону и углам мокрой зоны, ${(Math.round(M.sil*10)/10)} м.`:''}${M.ext?` Внешние углы (${(Math.round(M.ext*10)/10)} м) — ${v.opt.corner==='profile'?'уголок':'запил под 45°'}.`:''}`,s:'all'});
+  return out;
+}
+
+</script>
+<script>
+/* ===== Плитка: интерфейс, 3D, чертежи, PDF ===== */
+const $=s=>document.querySelector(s);
+const LS={get(k,d){try{const x=localStorage.getItem(k);return x?JSON.parse(x):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const fmt=n=>(Math.round(n*10)/10).toLocaleString('uk-UA');
+const money=n=>Math.round(n).toLocaleString('uk-UA')+' грн';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clone=o=>JSON.parse(JSON.stringify(o));
+const EMB=window.self!==window.top;
+const IC_PDF='<svg class="i" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>';
+const IC_COPY='<svg class="i" viewBox="0 0 24 24"><path d="M8 8h12v12H8z"/><path d="M4 16V4h12"/></svg>';
+const merge=(d,s)=>{Object.keys(s||{}).forEach(k=>{if(s[k]&&typeof s[k]==='object'&&!Array.isArray(s[k])&&d[k]&&typeof d[k]==='object') merge(d[k],s[k]); else d[k]=s[k];}); return d;};
+const st=Object.assign({tab:'3d',rot3d:false,cuts:false,marks:false},LS.get('plit1.state',{}));
+st.v=merge(defaults(),st.v||{});
+let prices=Object.assign({},PRICE_DEF,LS.get('plit1.prices',{}));
+const save=()=>LS.set('plit1.state',{v:st.v,tab:st.tab,rot3d:st.rot3d,cuts:st.cuts,marks:st.marks});
+let M=null, dirty3D=true, resetCam=true, tt=null;
+const getP=(o,p)=>p.split('.').reduce((a,k)=>a==null?a:a[k],o);
+const setP=(o,p,x)=>{const ks=p.split('.'), last=ks.pop(); ks.reduce((a,k)=>a[k]=a[k]||{},o)[last]=x;};
+
+/* ---------- поля ---------- */
+const N=(k,l,u='мм',x={})=>Object.assign({k,l,u,type:'num'},x);
+const S=(k,l,opts,x={})=>Object.assign({k,l,opts,type:'sel'},x);
+const WALL_OPTS=WALLN.map((n,i)=>[i,n]);
+const YN=[['yes','Да'],['no','Нет']];
+const sizeOpts=SIZES.map(([a,b])=>[a+'x'+b,a+'×'+b]).concat([['custom','Свой размер']]);
+const PAT_PICS={
+  straight:'<path d="M6 6h52v52H6zM6 23h52M6 40h52M23 6v52M40 6v52"/>',
+  brick:'<path d="M6 6h52v52H6zM6 23h52M6 40h52M32 6v17M19 23v17M45 23v17M32 40v18"/>',
+  third:'<path d="M6 6h52v52H6zM6 23h52M6 40h52M24 6v17M42 6v17M15 23v17M33 23v17M51 23v17M6 40h0M24 40v18M42 40v18"/>',
+  diag:'<path d="M6 6h52v52H6zM6 24L24 6M6 42L42 6M6 58L58 6M24 58L58 24M42 58L58 42M24 6l34 34M6 6l52 52M6 24l34 34M6 42l16 16M42 6l16 16"/>'};
+const tileFields=(p,floor)=>[
+  {k:p+'.pat',l:'Раскладка',type:'pick',opts:Object.entries(PAT).filter(([k])=>floor||k!=='diag'),pics:PAT_PICS},
+  S(p+'.size','Размер плитки',sizeOpts),
+  N(p+'.a',floor?'Плитка вдоль комнаты':'Ширина плитки','мм',{show:()=>getP(st.v,p+'.size')==='custom'}),N(p+'.b',floor?'Плитка поперёк':'Высота плитки','мм',{show:()=>getP(st.v,p+'.size')==='custom'}),
+  ...(floor?[S('F.rot','Длинная сторона',[['L','Вдоль длины комнаты'],['W','Поперёк']],{show:()=>getP(st.v,'F.a')!==getP(st.v,'F.b')})]:[S('T.or','Положение плитки',[['v','Вертикально'],['h','Горизонтально']],{show:()=>st.v.T.a!==st.v.T.b})]),
+  S(p+(floor?'.start':'.hstart'),floor?'Старт раскладки':'Старт по горизонтали',[['auto','Авто — без узких подрезок'],['center','Симметрично от центра'],['corner','От угла целой плиткой']]),
+  ...(floor?[]:[S('T.vstart','Старт рядов',[['auto','Авто'],['bath','От борта ванны'],['floor','Целая плитка от пола'],['top','Целая плитка сверху']])]),
+  S(p+'.col','Цвет',Object.entries(TCOL).map(([k,x])=>[k,x.n])),S(p+'.look','Рисунок',Object.entries(LOOKS)),
+  S(p+'.grout','Затирка',Object.entries(GCOL).map(([k,x])=>[k,x.n])),N(p+'.j','Шов','мм'),
+  N(p+'.price','Цена плитки','грн/м²'),N(p+'.pbox','Штук в упаковке (0 — авто)','шт'),
+];
+const ROOM=[N('L','Длина (слева направо)'),N('W','Ширина (от задней стены)'),N('H','Высота потолка'),N('wh','Плитка на стенах до высоты (0 — нет)'),
+  S('floor','Плитка на полу',YN),N('ft','Пол: плитка + клей','мм',{show:()=>st.v.floor==='yes'}),
+  S('door.wall','Дверь в стене',WALL_OPTS),N('door.off','Дверь: отступ'),N('door.w','Ширина двери'),N('door.h','Высота двери'),
+  S('win.on','Окно',YN),S('win.wall','Окно в стене',WALL_OPTS,{show:()=>st.v.win.on==='yes'}),N('win.off','Окно: отступ','мм',{show:()=>st.v.win.on==='yes'}),N('win.w','Ширина окна','мм',{show:()=>st.v.win.on==='yes'}),N('win.h','Высота окна','мм',{show:()=>st.v.win.on==='yes'}),N('win.sill','Подоконник от пола','мм',{show:()=>st.v.win.on==='yes'})];
+const WORKS=[S('opt.wp','Гидроизоляция',YN),S('opt.dem','Демонтаж старой плитки',YN),N('opt.lev','Наливной пол (0 — нет)'),S('opt.corner','Внешние углы',[['zapil','Запил под 45°'],['profile','Уголок']]),
+  S('opt.under','Пол под ванной',[['skip','Не класть'],['tile','Класть']],{show:()=>st.v.fx.some(f=>f.t==='bath')}),S('opt.behind','Стены за ванной ниже борта',[['skip','Не класть'],['tile','Класть до пола']],{show:()=>st.v.fx.some(f=>f.t==='bath')}),
+  S('opt.screen','Экран ванны',[['tile','Плиткой'],['none','Без экрана / готовый']],{show:()=>st.v.fx.some(f=>f.t==='bath')})];
+const sizeOf=t=>{const a=Math.min(t.a,t.b), b=Math.max(t.a,t.b), k=a+'x'+b; return SIZES.some(s=>s[0]+'x'+s[1]===k)?k:'custom';};
+function syncSizes(){const v=st.v; if(!v.F.size) v.F.size=sizeOf(v.F); if(!v.T.size) v.T.size=sizeOf(v.T); if(!v.F.rot) v.F.rot=v.F.a>=v.F.b?'L':'W'; if(!v.T.or) v.T.or=v.T.b>=v.T.a?'v':'h';}
+function applySize(p){const t=st.v[p]; if(t.size&&t.size!=='custom'){const [a,b]=t.size.split('x').map(Number); if(p==='F'){t.a=t.rot==='W'?a:b; t.b=t.rot==='W'?b:a;} else {t.a=t.or==='h'?b:a; t.b=t.or==='h'?a:b;}}}
+function fieldHTML(f){
+  const id='f_'+f.k.replace(/\./g,'_'), val=getP(st.v,f.k);
+  if(f.type==='pick') return `<div class="f pick wide" data-k="${f.k}"><span class="lb">${f.l}</span><div class="pk" role="radiogroup">${f.opts.map(([ov,ol])=>`<label class="pkc"><input type="radio" name="${id}" value="${ov}" data-k="${f.k}"${String(ov)===String(val)?' checked':''}><svg viewBox="0 0 64 64" aria-hidden="true">${f.pics[ov]||''}</svg><span>${ol}</span></label>`).join('')}</div></div>`;
+  if(f.type==='sel') return `<div class="f" data-k="${f.k}"><label for="${id}">${f.l}</label><div class="in"><select id="${id}" data-k="${f.k}">${f.opts.map(([ov,ol])=>`<option value="${ov}"${String(ov)===String(val)?' selected':''}>${ol}</option>`).join('')}</select></div></div>`;
+  const ph=f.k==='F.price'?prices.tileF:f.k==='T.price'?prices.tileW:'';
+  return `<div class="f" data-k="${f.k}"><label for="${id}">${f.l}</label><div class="in"><input id="${id}" data-k="${f.k}" type="number" inputmode="numeric" min="0" step="1" value="${val==null?'':val}"${ph!==''?` placeholder="${ph}"`:''}><span class="u">${f.u}</span></div></div>`;
+}
+const ALLF=()=>[...ROOM,...tileFields('F',true),...tileFields('T',false),...WORKS];
+function applyShow(){ALLF().forEach(f=>{if(f.show){const el=document.querySelector(`#side .f[data-k="${f.k}"]`); if(el) el.hidden=!f.show();}});}
+const FX_ORDER=['bath','shower','toilet','wc','sink','vanity','wm','boiler','rail','trap'];
+const offLabel=w=>w===0||w===2?'от левой стены':'от задней стены';
+function fxHTML(){
+  return st.v.fx.map((f,i)=>`<div class="fxrow" data-i="${i}">
+    <div class="f"><label>Что</label><div class="in"><select data-fx="t">${FX_ORDER.map(k=>`<option value="${k}"${k===f.t?' selected':''}>${FX_T[k].n}</option>`).join('')}</select></div></div>
+    <div class="f"><label>Стена</label><div class="in"><select data-fx="wall">${WALL_OPTS.map(([k,n])=>`<option value="${k}"${+k===+f.wall?' selected':''}>${n}</option>`).join('')}</select></div></div>
+    <div class="f"><label>${offLabel(+f.wall)}</label><div class="in"><input data-fx="off" type="number" inputmode="numeric" value="${f.off}"><span class="u">мм</span></div></div>
+    <button class="del" type="button" data-fxdel="${i}" aria-label="Удалить">✕</button></div>`).join('')+
+  `<div class="fxadd">${FX_ORDER.map(k=>`<button class="chip ex" type="button" data-fxadd="${k}">+ ${FX_T[k].n}</button>`).join('')}</div>`;
+}
+function renderSide(){
+  syncSizes();
+  const card=(t,inner,extra='')=>`<section class="card"${extra}><h2 class="lbl">${t}</h2>${inner}</section>`;
+  $('#side').innerHTML=
+    card('Комната',`<div class="params">${ROOM.map(fieldHTML).join('')}</div><p class="note" style="margin-top:10px">Отступ двери и окна: для задней и передней стены — от левой стены, для боковых — от задней (как на плане).</p>`)+
+    card('Плитка на пол',`<div class="params">${tileFields('F',true).map(fieldHTML).join('')}</div>`,` id="cardF"${st.v.floor==='yes'?'':' hidden'}`)+
+    card('Плитка на стены',`<div class="params">${tileFields('T',false).map(fieldHTML).join('')}</div>`,` id="cardT"${+st.v.wh>0?'':' hidden'}`)+
+    card('Сантехника на плане',`<div id="fxList">${fxHTML()}</div>`)+
+    card('Работы',`<div class="params">${WORKS.map(fieldHTML).join('')}</div>`)+
+    `<section class="card" id="warns" hidden></section><section class="card raise sum" id="sum"></section><div class="cta-desk" id="ctaDesk"></div>`;
+  applyShow();
+}
+let timer=null;
+function onField(e,commit){
+  const k=e.target.dataset.k; if(!k) return;
+  let x=e.target.value; const f=ALLF().find(q=>q.k===k);
+  if(f&&f.type==='num'){if(x==='') return; x=Math.max(0,Math.round(+x)); if(!isFinite(x)) return;}
+  else if(/wall$/.test(k)) x=+x;
+  setP(st.v,k,x);
+  if(/\.(size|rot|or)$/.test(k)) applySize(k[0]);
+  if(k==='F.a'||k==='F.b'||k==='T.a'||k==='T.b'){}
+  save();
+  if(commit){if(f&&f.type!=='num'||/size|rot|or|floor|win\.on/.test(k)){renderSide(); } update();}
+  else{clearTimeout(timer); timer=setTimeout(update,350);}
+}
+document.addEventListener('input',e=>{if(e.target.closest('#side')&&e.target.dataset.k&&e.target.type==='number') onField(e,false);});
+document.addEventListener('change',e=>{
+  if(!e.target.closest('#side')) return;
+  if(e.target.dataset.k) return onField(e,true);
+  const row=e.target.closest('.fxrow'); if(row&&e.target.dataset.fx){const f=st.v.fx[+row.dataset.i], k=e.target.dataset.fx; f[k]=k==='t'?e.target.value:Math.max(0,Math.round(+e.target.value||0)); if(k==='wall'||k==='t'){$('#fxList').innerHTML=fxHTML();} save(); dirty3D=true; update();}
+});
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-fxadd]'); if(a){const t=a.dataset.fxadd, wall=t==='bath'?0:t==='toilet'||t==='wc'?1:t==='trap'?1:3; st.v.fx.push({t,wall,off:t==='bath'?0:300}); $('#fxList').innerHTML=fxHTML(); save(); dirty3D=true; update(); return;}
+  const d=e.target.closest('[data-fxdel]'); if(d){st.v.fx.splice(+d.dataset.fxdel,1); $('#fxList').innerHTML=fxHTML(); save(); dirty3D=true; update(); return;}
+});
+
+/* ---------- расчёт и итог ---------- */
+function update(){
+  M=compute(st.v,prices); dirty3D=true;
+  const v=st.v, hasF=v.floor==='yes', hasW=+v.wh>0;
+  $('#hTitle').textContent=v.fx.some(f=>f.t==='bath'||f.t==='shower'||f.t==='toilet'||f.t==='wc')?'Ванная':'Комната';
+  $('#hSub').textContent=`${v.L}×${v.W}, высота ${v.H} мм · ${hasF?`пол ${v.F.a}×${v.F.b}`:'без пола'}${hasW?` · стены ${v.T.a}×${v.T.b} до ${Math.min(v.wh,v.H)} мм`:''}`;
+  const cF=$('#cardF'), cT=$('#cardT'); if(cF) cF.hidden=!hasF; if(cT) cT.hidden=!hasW;
+  applyShow(); renderSum(); renderWarns(); renderCTA(); renderTab();
+}
+function renderSum(){
+  const el=$('#sum'); if(!el) return;
+  const nb=(M.buyF?M.buyF.withRes:0)+(M.buyT?M.buyT.withRes:0), cuts=M.S.reduce((s,x)=>s+x.cut,0);
+  el.innerHTML=`<div class="sumrow"><div><div class="big">${money(M.total)}</div><div class="cap">под ключ: материалы ${money(M.matSum+M.markup)} + работа ${money(M.labSum)}</div></div></div>
+  <dl class="stats"><div><dt>Плитка</dt><dd>${fmt(M.areaF+M.areaT)}<small>м²</small></dd></div><div><dt>Штук</dt><dd>${nb}</dd></div><div><dt>Резов</dt><dd>${cuts}</dd></div></dl>
+  <dl class="kv">${M.buyF?`<dt>Пол ${st.v.F.a}×${st.v.F.b}</dt><dd>${M.buyF.boxes} уп. · ${fmt(M.buyF.m2)} м²</dd>`:''}${M.buyT?`<dt>Стены ${st.v.T.a}×${st.v.T.b}</dt><dd>${M.buyT.boxes} уп. · ${fmt(M.buyT.m2)} м²</dd>`:''}<dt>Клей</dt><dd>${Math.ceil(M.glue*1.1/25)} меш.</dd><dt>Затирка</dt><dd>${fmt(M.grout*1.1)} кг</dd></dl>
+  <div class="row2"><button class="btn y" type="button" data-act="pdfClient">${IC_PDF}PDF клиенту</button><button class="btn" type="button" data-act="pdfWork">${IC_PDF}PDF плиточнику</button></div>`;
+}
+function renderWarns(){const el=$('#warns'); if(!el) return; el.hidden=!M.warns.length; el.innerHTML=M.warns.length?`<h2 class="lbl">Проверьте</h2>`+M.warns.map(w=>`<p class="wline">${esc(w)}</p>`).join(''):'';}
+function renderCTA(){const h=`<button class="cta" type="button" data-act="pdfWork"><span>PDF: раскладка и резы</span><i>${IC_PDF.replace('class="i"','class="i" style="color:#fff"')}</i></button>`; $('#ctaBar').innerHTML=h; const d=$('#ctaDesk'); if(d) d.innerHTML=h;}
+
+/* ---------- вкладки ---------- */
+const TABS=[['3d','3D'],['plan','План'],['walls','Стены'],['cuts','Резка'],['steps','Порядок'],['est','Смета']];
+$('#tabs').innerHTML=TABS.map(([k,l])=>`<button class="tab" role="tab" type="button" data-t="${k}">${l}</button>`).join('');
+$('#tabs').onclick=e=>{const b=e.target.closest('.tab'); if(!b) return; st.tab=b.dataset.t; save(); renderTab();};
+function renderTab(){
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===st.tab));
+  const show3D=st.tab==='3d'; $('#viewer').hidden=!show3D;
+  $('#ovl').innerHTML=`<b>${fmt(M.areaF+M.areaT)}</b><span>м² плитки</span>`;
+  if(show3D){init3D(); if(dirty3D){build3D(); dirty3D=false;}}
+  ({'3d':panel3D,plan:panelPlan,walls:panelWalls,cuts:panelCuts,steps:panelSteps,est:panelEst})[st.tab]($('#panel'));
+}
+const legend=()=>`<div class="lg"><span><b style="background:var(--surface)"></b>целая</span><span><b style="background:#FFB27A"></b>резаная</span><span><b style="background:var(--yel)"></b>маяк</span><span><b style="border:0;border-top:2px dashed var(--danger);height:0;width:22px"></b>линия разметки</span></div>`;
+function panel3D(P){
+  P.innerHTML=`${legend()}<p class="note">Кнопка с ножницами — подсветить резаные плитки, с перекрестьем — маяки, стартовые линии и уровень. Стены со стороны камеры прячутся, чтобы было видно комнату.</p>`;
+}
+function panelPlan(P){P.innerHTML=st.v.floor==='yes'||true?`<div class="draw">${planSVG()}</div>${legend()}${planNote()}`:'';}
+function planNote(){const f=M.S.find(s=>s.id==='floor'); if(!f) return '<p class="note">Пол без плитки.</p>';
+  return `<div class="callout">${f.diag?'Диагональ: старт от центра комнаты, М1 — первая плитка.':`Стартовые линии по швам: <b>${r1(f.lines[0].at)} мм</b> от левой стены и <b>${r1(f.lines[1].at)} мм</b> от задней. Маяки М1–М${f.tiles.filter(x=>x.beacon).length} — первые плитки на уровень чистого пола.`} Целых плиток — ${f.full}, резаных — ${f.cut}.</div>`;}
+function panelWalls(P){const ws=M.S.filter(s=>s.kind!=='floor');
+  P.innerHTML=ws.length?ws.map(s=>`<div class="draw">${wallSVG(s)}</div>`).join('')+legend()+`<div class="callout">Лазер / опорный профиль — на высоте <b>${M.levelV} мм</b> от чернового пола по всем стенам. Нижний ряд — подрезка ${M.rowCut?r1(M.rowCut.low):'—'} мм, кладётся после пола.</div>`:'<p class="note">Стены без плитки — задайте высоту облицовки.</p>';}
+function pieceSVG(c,t){const A=t.a, B=t.b, k=40/Math.max(A,B), w=A*k, h=B*k, pw=Math.min(c.cw,A)*k, ph=Math.min(c.ch,B)*k;
+  const p=c.type==='diag'?`<path class="p" d="M2 ${2+h}L${2+pw} ${2+h}L2 ${2+h-ph}Z"/>`:`<rect class="p" x="2" y="${2+h-ph}" width="${pw}" height="${ph}"/>${c.type==='notch'?`<rect x="${2+pw*.55}" y="${2+h-ph}" width="${pw*.45}" height="${ph*.4}" fill="var(--surface)" stroke="var(--ink)" stroke-width="1"/>`:''}`;
+  return `<svg class="piece" viewBox="0 0 ${w+4} ${h+4}" aria-hidden="true"><rect class="o" x="2" y="2" width="${w}" height="${h}"/>${p}</svg>`;}
+const whereTxt=a=>{const w=a.filter(x=>/^Стена /.test(x)).map(x=>x.replace('Стена ','')), o=a.filter(x=>!/^Стена /.test(x)); return [w.length===4?'все стены':w.length?'стены: '+w.join(', '):'',...o.map(x=>x.toLowerCase())].filter(Boolean).join('; ');};
+const typeName=c=>c.type==='strip'?'полоса':c.type==='corner'?'угловой кусок':c.type==='notch'?`с вырезом: ${c.hole.toLowerCase()}`:c.type==='diag'?'треугольник / край диагонали':'';
+function panelCuts(P){
+  const v=st.v, row=(nm,b,t)=>b?`<tr><td>${nm} ${t.a}×${t.b}</td><td class="n">${b.full}</td><td class="n">${b.cutTiles}</td><td class="n">${Math.round(b.res*100)}%</td><td class="n">${b.withRes}</td><td class="n">${b.boxes} × ${b.pbox}</td><td class="n">${fmt(b.m2)}</td></tr>`:'';
+  const grp=k=>M.cuts.filter(c=>c.tile===k);
+  const tbl=(k,t,nm)=>grp(k).length?`<h3>${nm}: резаные куски</h3><div class="tw"><table class="cl"><thead><tr><th></th><th>Кусок, мм</th><th>Что это</th><th class="n">Шт</th><th>Где</th></tr></thead><tbody>${grp(k).map(c=>`<tr><td>${pieceSVG(c,t)}</td><td class="id">${c.cw}×${c.ch}</td><td>${typeName(c)}</td><td class="n">${c.q}</td><td>${whereTxt(c.where)}</td></tr>`).join('')}</tbody></table></div>`:'';
+  const dn={}; M.S.forEach(s=>(s.drills||[]).forEach(d=>{(dn[d.d]=dn[d.d]||new Set()).add(d.name);})); if(M.fxs.some(x=>x.f.t==='trap')) (dn[110]=dn[110]||new Set()).add('Трап');
+  P.innerHTML=`<h3>Сколько плитки</h3><div class="tw"><table><thead><tr><th>Плитка</th><th class="n">Целых</th><th class="n">На резку</th><th class="n">Запас</th><th class="n">Итого шт</th><th class="n">Упаковок</th><th class="n">м²</th></tr></thead><tbody>${row('Пол',M.buyF,v.F)}${row('Стены',M.buyT,v.T)}</tbody></table></div>
+  <p class="note">«На резку» — сколько целых плиток уйдёт на все резаные куски: обрезки от одной плитки идут в другие места (рез 3 мм). Запас — на бой и подгонку.</p>
+  ${tbl('F',v.F,'Пол')}${tbl('T',v.T,'Стены, короб, экран')}
+  ${Object.keys(M.drills).length?`<h3>Отверстия коронкой</h3><div class="tw"><table><thead><tr><th>Диаметр</th><th class="n">Шт</th><th>Для чего</th></tr></thead><tbody>${Object.entries(M.drills).map(([d,q])=>`<tr><td class="id">Ø${d}</td><td class="n">${q}</td><td>${[...(dn[d]||[])].join(', ')}</td></tr>`).join('')}</tbody></table></div>`:''}`;
+}
+function panelSteps(P){P.innerHTML=M.steps.map((s,i)=>`<div class="stepcard"><p class="sub">Шаг ${i+1} из ${M.steps.length}</p><h3>${esc(s.t)}</h3><p>${esc(s.d)}</p></div>`).join('');}
+const SECN={tile:'Плитка',mix:'Смеси и гидроизоляция',hw:'Расходники',tool:'Инструмент',labor:'Работа'};
+function panelEst(P){
+  const secs=['tile','mix','hw','tool','labor'];
+  P.innerHTML=`<div class="tw"><table><thead><tr><th>Наименование</th><th class="n">Кол-во</th><th class="n">Цена</th><th class="n">Сумма</th></tr></thead><tbody>
+    ${secs.map(s=>{const ls=M.lines.filter(l=>l.sec===s); return ls.length?`<tr class="sec"><td colspan="4">${SECN[s]}</td></tr>`+ls.map(l=>`<tr><td>${esc(l.name)}</td><td class="n">${fmt(l.qty)} ${l.unit}</td><td class="n">${money(l.price)}</td><td class="n">${money(l.sum)}</td></tr>`).join(''):'';}).join('')}
+    ${M.markup?`<tr><td colspan="3">Наценка на материалы ${prices.markup}%</td><td class="n">${money(M.markup)}</td></tr>`:''}
+    <tr class="tot"><td colspan="3">Итого</td><td class="n">${money(M.total)}</td></tr></tbody></table></div>
+  <div class="row"><button class="btn" type="button" data-act="copy">${IC_COPY}Копировать смету</button><button class="btn y" type="button" data-act="pdfClient">${IC_PDF}PDF клиенту</button><button class="btn" type="button" data-act="pdfWork">${IC_PDF}PDF плиточнику</button></div>
+  <details class="prices"><summary>Мои цены</summary><p class="note" style="margin-top:8px">Цены — Кривой Рог, октябрь 2026: клей Ceresit CM 11 Plus 25 кг ~370 грн, затирка CE 40 2 кг ~420 грн, гидроизоляция CL 51 7 кг ~1550 грн; укладка 550–850 грн/м². Поменяйте под себя — сохранятся на телефоне.</p>
+    <div class="pgrid">${PRICE_META.map(([g,items])=>`<h4>${g}</h4>`+items.map(([k,l,u])=>`<div class="f"><label for="pr_${k}">${l}</label><div class="in"><input id="pr_${k}" data-p="${k}" type="number" inputmode="decimal" min="0" step="any" value="${prices[k]}"><span class="u">${u}</span></div></div>`).join('')).join('')}</div>
+    <div class="row" style="margin-top:12px"><button class="btn" type="button" id="bResetP">Сбросить цены</button></div></details>`;
+  P.querySelectorAll('[data-p]').forEach(i=>i.onchange=()=>{prices[i.dataset.p]=Math.max(0,+i.value||0); const own={}; Object.keys(prices).forEach(k=>{if(prices[k]!==PRICE_DEF[k]) own[k]=prices[k];}); LS.set('plit1.prices',own); M=compute(st.v,prices); renderSum(); const keep=st.tab; panelEst(P); const d=P.querySelector('details.prices'); if(d) d.open=true;});
+  const r=P.querySelector('#bResetP'); if(r) r.onclick=()=>{prices=Object.assign({},PRICE_DEF); LS.set('plit1.prices',{}); update(); toast('Цены сброшены');};
+}
+function estText(){const v=st.v; return [`Плитка: ${$('#hTitle').textContent} ${v.L}×${v.W} мм`,...M.lines.map(l=>`${l.name} — ${fmt(l.qty)} ${l.unit} × ${Math.round(l.price)} = ${money(l.sum)}`),M.markup?`Наценка на материалы ${prices.markup}% — ${money(M.markup)}`:'',`ИТОГО: ${money(M.total)}`].filter(Boolean).join('\n');}
+
+/* ---------- чертёж: план пола ---------- */
+const tileCls=x=>x.beacon?'tb':x.full?'t':'tc';
+const poly=(P,cls,f=p=>p)=>`<polygon class="${cls}" points="${P.map(p=>f(p).map(n=>Math.round(n*10)/10).join(',')).join(' ')}"/>`;
+function fxPlanSVG(x){
+  const v=st.v, i=x.f.wall, U=WU[i], Nn=WNRM[i], O=WO(v,i), o=[O[0]+U[0]*x.u0+Nn[0]*x.gap,O[2]+U[2]*x.u0+Nn[2]*x.gap], w=x.u1-x.u0, d=x.d, t=x.f.t, s=[];
+  const tr=`matrix(${U[0]} ${U[2]} ${Nn[0]} ${Nn[2]} ${o[0]} ${o[1]})`;
+  if(t==='bath') s.push(`<rect class="fx" x="0" y="0" width="${w}" height="${d}" rx="70"/><rect class="fxl" x="70" y="70" width="${w-140}" height="${d-140}" rx="160"/><circle class="fxl" cx="${w-220}" cy="${d/2}" r="28"/>`);
+  else if(t==='shower') s.push(`<rect class="fx" x="0" y="0" width="${w}" height="${d}"/><path class="fxl" d="M0 0L${w} ${d}M${w} 0L0 ${d}"/><circle class="fxl" cx="${w/2}" cy="${d/2}" r="40"/>`);
+  else if(t==='toilet') s.push(`<rect class="fx" x="${w/2-180}" y="0" width="360" height="170" rx="20"/><ellipse class="fx" cx="${w/2}" cy="${d-260}" rx="180" ry="250"/><ellipse class="fxl" cx="${w/2}" cy="${d-250}" rx="120" ry="180"/>`);
+  else if(t==='wc') s.push(`<rect class="fx" x="0" y="0" width="${w}" height="${d}"/><path class="fxl" d="M0 0L${w} ${d}M${w} 0L0 ${d}"/><ellipse class="fx" cx="${w/2}" cy="${d+260}" rx="180" ry="260"/>`);
+  else if(t==='sink'||t==='vanity') s.push(`<rect class="fx" x="0" y="0" width="${w}" height="${d}" rx="${t==='sink'?60:10}"/><ellipse class="fxl" cx="${w/2}" cy="${d*.55}" rx="${w*.32}" ry="${d*.3}"/>`);
+  else if(t==='wm') s.push(`<rect class="fx" x="0" y="0" width="${w}" height="${d}"/><circle class="fxl" cx="${w/2}" cy="${d/2}" r="${w*.33}"/>`);
+  else if(t==='boiler') s.push(`<circle class="fx" cx="${w/2}" cy="${d/2}" r="${w/2}" stroke-dasharray="8 6"/>`);
+  else if(t==='rail') s.push(`<rect class="fx" x="0" y="0" width="${w}" height="${d}" stroke-dasharray="8 6"/>`);
+  else if(t==='trap') s.push(`<rect class="fx" x="0" y="0" width="${w}" height="${d}"/><path class="fxl" d="M${w/3} 0V${d}M${2*w/3} 0V${d}M0 ${d/3}H${w}M0 ${2*d/3}H${w}"/>`);
+  const lab=t==='trap'?'':`<text x="${w/2}" y="${t==='wc'?d+620:d/2}" text-anchor="middle" font-size="${t==='boiler'||t==='rail'?54:70}" class="ct" transform="rotate(${-Math.atan2(U[2],U[0])*180/Math.PI} ${w/2} ${t==='wc'?d+620:d/2})">${FX_T[t].n.split(' ')[0]}</text>`;
+  return `<g transform="${tr}">${s.join('')}${lab}</g>`;
+}
+function planSVG(){
+  const v=st.v, L=v.L, W=v.W, T=120, fs=Math.max(60,Math.max(L,W)*.034), m=fs*4.2, o=[];
+  const VW=L+2*T+2*m, VH=W+2*T+2*m, X=x=>x+m+T, Y=z=>z+m+T;
+  o.push(`<rect class="wl" x="${X(-T)}" y="${Y(-T)}" width="${L+2*T}" height="${W+2*T}"/><rect class="no" x="${X(0)}" y="${Y(0)}" width="${L}" height="${W}"/>`);
+  const f=M.S.find(s=>s.id==='floor');
+  if(f){f.tiles.forEach(x=>o.push(poly(x.p,tileCls(x),p=>[X(p[0]),Y(p[1])])));
+    f.tiles.filter(x=>x.beacon).forEach(x=>{const c=x.p.reduce((s,p)=>[s[0]+p[0]/x.p.length,s[1]+p[1]/x.p.length],[0,0]); o.push(`<text class="bt" x="${X(c[0])}" y="${Y(c[1])+fs*.35}" text-anchor="middle" font-size="${fs*1.05}">М${x.beacon}</text>`);});
+  }
+  // окно и дверь в стене
+  const band=(i,u0,u1)=>i===0?[u0,-T,u1-u0,T]:i===1?[L,u0,T,u1-u0]:i===2?[L-u1,W,u1-u0,T]:[-T,W-u1,T,u1-u0];
+  const cut=(i,u0,u1,cls)=>{const r=band(i,u0,u1); o.push(`<rect class="${cls}" x="${X(r[0])}" y="${Y(r[1])}" width="${r[2]}" height="${r[3]}"/>`); return r;};
+  if(v.win.on==='yes'){const [a,b]=toU(v,v.win.wall,v.win.off,v.win.w), r=cut(v.win.wall,a,b,'op'); o.push(v.win.wall%2?`<path class="fxl" d="M${X(r[0]+T/2)} ${Y(r[1])}V${Y(r[1]+r[3])}"/>`:`<path class="fxl" d="M${X(r[0])} ${Y(r[1]+T/2)}H${X(r[0]+r[2])}"/>`);}
+  {const [a,b]=toU(v,v.door.wall,v.door.off,v.door.w), i=v.door.wall, U=WU[i], Nn=WNRM[i], O=WO(v,i), dw=b-a; cut(i,a,b,'op');
+    const h=[O[0]+U[0]*a,O[2]+U[2]*a], lf=[h[0]+Nn[0]*dw,h[1]+Nn[2]*dw], e=[O[0]+U[0]*b,O[2]+U[2]*b], cr=(lf[0]-h[0])*(e[1]-h[1])-(lf[1]-h[1])*(e[0]-h[0]);
+    o.push(`<path class="fxl" d="M${X(h[0])} ${Y(h[1])}L${X(lf[0])} ${Y(lf[1])}"/><path class="fxl" stroke-dasharray="10 8" d="M${X(lf[0])} ${Y(lf[1])}A${dw} ${dw} 0 0 ${cr>0?1:0} ${X(e[0])} ${Y(e[1])}"/>`);}
+  M.fxs.forEach(x=>o.push(`<g transform="translate(${m+T} ${m+T})">${fxPlanSVG(x)}</g>`));
+  // стартовые линии
+  if(f&&f.lines&&!f.diag){const lu=f.lines[0].at, lv=f.lines[1].at;
+    o.push(`<path class="ln" d="M${X(lu)} ${Y(-T*.5)}V${Y(W+T*.5)}M${X(-T*.5)} ${Y(lv)}H${X(L+T*.5)}"/>`);
+    o.push(`<text class="lt" x="${X(lu)+fs*.3}" y="${Y(W)+T+fs*1.25}" font-size="${fs*.85}">${r1(lu)} от левой</text><text class="lt" x="${X(L)+T+fs*.3}" y="${Y(lv)-fs*.3}" font-size="${fs*.85}" transform="rotate(90 ${X(L)+T+fs*.3} ${Y(lv)-fs*.3})">${r1(lv)} от задней</text>`);}
+  // подрезки у стен
+  if(f&&f.edges){const e=f.edges, t=(x,y,s,rot)=>`<text class="ct" x="${x}" y="${y}" text-anchor="middle" font-size="${fs*.8}"${rot?` transform="rotate(-90 ${x} ${y})"`:''}>${s}</text>`;
+    if(e.left&&e.left<v.F.a-1) o.push(t(X(e.left/2),Y(W*.62),r1(e.left),true)); if(e.right&&e.right<v.F.a-1) o.push(t(X(L-e.right/2),Y(W*.62),r1(e.right),true));
+    if(e.top&&e.top<v.F.b-1) o.push(t(X(L*.3),Y(W-e.top/2)+fs*.3,r1(e.top)));}
+  // габариты и подписи стен
+  const tick=(x,y)=>`<line x1="${x-fs*.3}" y1="${y+fs*.3}" x2="${x+fs*.3}" y2="${y-fs*.3}"/>`;
+  o.push(`<g class="dim"><line x1="${X(0)}" y1="${Y(-T)-fs*1.6}" x2="${X(L)}" y2="${Y(-T)-fs*1.6}"/>${tick(X(0),Y(-T)-fs*1.6)}${tick(X(L),Y(-T)-fs*1.6)}<text x="${X(L/2)}" y="${Y(-T)-fs*2}" text-anchor="middle" font-size="${fs}">${L}</text></g>`);
+  o.push(`<g class="dim"><line x1="${X(-T)-fs*1.6}" y1="${Y(0)}" x2="${X(-T)-fs*1.6}" y2="${Y(W)}"/>${tick(X(-T)-fs*1.6,Y(0))}${tick(X(-T)-fs*1.6,Y(W))}<text x="${X(-T)-fs*2}" y="${Y(W/2)}" text-anchor="middle" font-size="${fs}" transform="rotate(-90 ${X(-T)-fs*2} ${Y(W/2)})">${W}</text></g>`);
+  o.push(`<text class="ttl" x="${X(0)}" y="${fs*1.2}" font-size="${fs}">ПЛАН ПОЛА${f?` · ${v.F.a}×${v.F.b}, ${PAT[v.F.pat].toLowerCase()}`:''}</text>`);
+  [['ЗАДНЯЯ',X(L/2),Y(-T)-fs*.4],['ПЕРЕДНЯЯ',X(L/2),Y(W)+T+fs*2.4]].forEach(([s,x,y])=>o.push(`<text class="mut" x="${x}" y="${y}" text-anchor="middle" font-size="${fs*.7}">${s}</text>`));
+  return `<svg class="dw" viewBox="0 0 ${Math.round(VW)} ${Math.round(VH+fs*1.4)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="План пола с раскладкой">${o.join('')}</svg>`;
+}
+
+/* ---------- чертёж: развёртка стены ---------- */
+function fxFront(x,sf,H){ // контур сантехники на развёртке
+  const v=st.v, i=sf.wall, t=x.f.t, c=contactU(v,i,x), mount=x.f.wall===i, Y=y=>H-y, o=[];
+  if(!c&&!mount) return '';
+  const [u0,u1]=mount?[x.u0,x.u1]:c, w=u1-u0, cx=(u0+u1)/2;
+  if(t==='bath') o.push(`<rect class="fx" x="${u0}" y="${Y(x.h)}" width="${w}" height="${x.h}"/><path class="fxl" d="M${u0} ${Y(x.h-60)}H${u1}"/>`);
+  else if(t==='shower') o.push(`<rect class="fx" x="${u0}" y="${Y(x.h)}" width="${w}" height="${x.h}"/>${mount?`<path class="fxl" stroke-dasharray="10 8" d="M${u1} ${Y(x.h)}V${Y(2000)}"/>`:''}`);
+  else if(!mount) return '';
+  else if(t==='toilet') o.push(`<rect class="fx" x="${cx-180}" y="${Y(780)}" width="360" height="380" rx="20"/><path class="fx" d="M${cx-190} ${Y(400)}H${cx+190}L${cx+120} ${Y(0)}H${cx-120}Z"/>`);
+  else if(t==='sink') o.push(`<path class="fx" d="M${u0} ${Y(850)}H${u1}L${u1-60} ${Y(700)}H${u0+60}Z"/><rect class="fx" x="${cx-90}" y="${Y(700)}" width="180" height="700"/><rect class="fxl" stroke-dasharray="10 8" x="${cx-300}" y="${Y(1900)}" width="600" height="800"/>`);
+  else if(t==='vanity') o.push(`<rect class="fx" x="${u0}" y="${Y(850)}" width="${w}" height="700"/><path class="fxl" d="M${cx} ${Y(820)}V${Y(160)}"/><rect class="fxl" stroke-dasharray="10 8" x="${cx-300}" y="${Y(1900)}" width="600" height="800"/>`);
+  else if(t==='wm') o.push(`<rect class="fx" x="${u0}" y="${Y(850)}" width="${w}" height="850"/><circle class="fxl" cx="${cx}" cy="${Y(450)}" r="${w*.3}"/>`);
+  else if(t==='boiler') o.push(`<rect class="fx" x="${u0}" y="${Y(x.h+(FX_T.boiler.y||1250))}" width="${w}" height="${x.h}" rx="${w/2}"/>`);
+  else if(t==='rail'){const y0=FX_T.rail.y; o.push(`<path class="fxl" d="M${u0} ${Y(y0)}V${Y(y0+800)}M${u1} ${Y(y0)}V${Y(y0+800)}${[0,1,2,3,4,5].map(k=>`M${u0} ${Y(y0+60+k*135)}H${u1}`).join('')}"/>`);}
+  else if(t==='wc') o.push(`<path class="fx" d="M${cx-190} ${Y(420)}H${cx+190}L${cx+140} ${Y(280)}H${cx-140}Z"/>`);
+  return o.join('');
+}
+function wallSVG(sf){
+  const v=st.v, isWall=sf.kind==='wall', W=sf.W, H=isWall?v.H:sf.H, fs=Math.max(42,Math.max(W,H)*.032), mL=fs*4.6, mT=fs*3, mR=fs*5.2, mB=fs*4.2, o=[];
+  const X=u=>u+mL, Y=y=>mT+H-y;
+  o.push(`<rect class="no" x="${X(0)}" y="${Y(H)}" width="${W}" height="${H}"/>`);
+  sf.tiles.forEach(x=>o.push(poly(x.p,x.full?'t':'tc',p=>[X(p[0]),Y(p[1])])));
+  sf.holes.forEach(h=>{if(h.name==='Дверь'||h.name==='Окно'||h.name==='Кнопка смыва') o.push(`<rect class="op" x="${X(h.u0)}" y="${Y(h.v1)}" width="${h.u1-h.u0}" height="${h.v1-h.v0}"/><text class="mut" x="${X((h.u0+h.u1)/2)}" y="${Y((h.v0+h.v1)/2)}" text-anchor="middle" font-size="${fs*.8}">${h.name.toLowerCase()}</text>`);});
+  if(isWall){o.push(`<g transform="translate(${mL} ${mT})">${M.fxs.map(x=>fxFront(x,sf,H)).join('')}</g>`);}
+  (sf.drills||[]).forEach(d=>{if(sf.holes.some(h=>d.u>h.u0&&d.u<h.u1&&d.v>h.v0&&d.v<h.v1)) return; o.push(`<circle class="dr" cx="${X(d.u)}" cy="${Y(d.v)}" r="${Math.max(d.d/2,fs*.28)}"/><text class="lt" x="${X(d.u)}" y="${Y(d.v)-Math.max(d.d/2,fs*.28)-fs*.25}" text-anchor="middle" font-size="${fs*.62}">Ø${d.d}</text>`);});
+  // линии
+  (sf.lines||[]).forEach(l=>{if(l.k==='level'){o.push(`<path class="ln" d="M${X(-fs*.6)} ${Y(l.at)}H${X(W+fs*.6)}"/><text class="lt" x="${X(W)+fs*.8}" y="${Y(l.at)+fs*.3}" font-size="${fs*.75}">лазер ${r1(l.at)}</text>`);}
+    if(l.k==='plumb'){o.push(`<path class="ln" d="M${X(l.at)} ${Y(-fs*.4)}V${Y(sf.H+fs*.4)}"/><text class="lt" x="${X(l.at)+fs*.3}" y="${Y(sf.H)-fs*.5}" font-size="${fs*.75}">отвес ${r1(l.at)}</text>`);}});
+  // размеры: ширина, высота облицовки, подрезки
+  const tick=(x,y)=>`<line x1="${x-fs*.3}" y1="${y+fs*.3}" x2="${x+fs*.3}" y2="${y-fs*.3}"/>`;
+  o.push(`<g class="dim"><line x1="${X(0)}" y1="${Y(0)+fs*2.2}" x2="${X(W)}" y2="${Y(0)+fs*2.2}"/>${tick(X(0),Y(0)+fs*2.2)}${tick(X(W),Y(0)+fs*2.2)}<text x="${X(W/2)}" y="${Y(0)+fs*1.9}" text-anchor="middle" font-size="${fs}">${r1(W)}</text></g>`);
+  o.push(`<g class="dim"><line x1="${X(0)-fs*2.2}" y1="${Y(0)}" x2="${X(0)-fs*2.2}" y2="${Y(sf.H)}"/>${tick(X(0)-fs*2.2,Y(0))}${tick(X(0)-fs*2.2,Y(sf.H))}<text x="${X(0)-fs*2.6}" y="${Y(sf.H/2)}" text-anchor="middle" font-size="${fs}" transform="rotate(-90 ${X(0)-fs*2.6} ${Y(sf.H/2)})">${r1(sf.H)}</text></g>`);
+  if(sf.edges){const e=sf.edges, t=sf.t, lab=(x,y,s)=>`<text class="ct" x="${x}" y="${y}" font-size="${fs*.75}">${s}</text>`;
+    if(e.top&&e.top<t.b-1) o.push(lab(X(W)+fs*.6,Y(sf.H-e.top/2)+fs*.3,`↕ ${r1(e.top)}`));
+    if(e.bot&&e.bot<t.b-1) o.push(lab(X(W)+fs*.6,Y(sf.v0+e.bot/2)+fs*.3,`↕ ${r1(e.bot)}`));
+    if(e.left&&e.left<t.a-1) o.push(`<text class="ct" x="${X(e.left/2)}" y="${Y(sf.H)-fs*.4}" text-anchor="middle" font-size="${fs*.75}">${r1(e.left)}</text>`);
+    if(e.right&&e.right<t.a-1) o.push(`<text class="ct" x="${X(W-e.right/2)}" y="${Y(sf.H)-fs*.4}" text-anchor="middle" font-size="${fs*.75}">${r1(e.right)}</text>`);}
+  o.push(`<text class="ttl" x="${mL}" y="${fs*1.3}" font-size="${fs}">${esc(sf.name.toUpperCase())}${isWall?' — вид из комнаты':''}</text>`);
+  return `<svg class="dw" viewBox="0 0 ${Math.round(W+mL+mR)} ${Math.round(H+mT+mB)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(sf.name)}">${o.join('')}</svg>`;
+}
+
+/* ---------- 3D ---------- */
+let R=null;
+function rng(seed){let a=seed>>>0||1;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const hexMix=(h,k)=>{const n=parseInt(h.slice(1),16), f=x=>Math.max(0,Math.min(255,Math.round(x*(1+k)))); return `rgb(${f(n>>16)},${f(n>>8&255)},${f(n&255)})`;};
+function drawTile(g,P,t,rnd,s){
+  const base=(TCOL[t.col]||TCOL.white).c, look=t.look;
+  g.save(); g.beginPath(); P.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.closePath(); g.clip();
+  const xs=P.map(p=>p[0]), ys=P.map(p=>p[1]), x0=Math.min(...xs), y0=Math.min(...ys), w=Math.max(...xs)-x0, h=Math.max(...ys)-y0;
+  g.fillStyle=hexMix(base,(rnd()-.5)*(look==='plain'?.04:.08)); g.fillRect(x0,y0,w,h);
+  if(look==='marble'){for(let k=0;k<3;k++){g.strokeStyle=`rgba(120,120,128,${.06+rnd()*.12})`; g.lineWidth=.5+rnd()*1.2; g.beginPath(); let px=x0+rnd()*w, py=y0; g.moveTo(px,py); for(let q=0;q<5;q++){px+=(rnd()-.4)*w*.5; py+=h/5; g.quadraticCurveTo(px+(rnd()-.5)*w*.3,py-h/10,px,py);} g.stroke();}}
+  else if(look==='concrete'){for(let k=0;k<w*h/90;k++){g.fillStyle=`rgba(${rnd()<.5?0:255},${rnd()<.5?0:255},${rnd()<.5?0:255},.035)`; g.fillRect(x0+rnd()*w,y0+rnd()*h,1+rnd()*2,1+rnd()*2);} const gr=g.createLinearGradient(x0,y0,x0+w,y0+h); gr.addColorStop(0,'rgba(255,255,255,.06)'); gr.addColorStop(1,'rgba(0,0,0,.06)'); g.fillStyle=gr; g.fillRect(x0,y0,w,h);}
+  else if(look==='wood'){const along=w>=h; for(let k=0;k<(along?h:w)/2.2;k++){g.strokeStyle=`rgba(60,35,15,${.04+rnd()*.09})`; g.lineWidth=.5+rnd(); g.beginPath(); const c=(along?y0:x0)+rnd()*(along?h:w); if(along){g.moveTo(x0,c); g.bezierCurveTo(x0+w*.3,c+(rnd()-.5)*3,x0+w*.7,c+(rnd()-.5)*3,x0+w,c);} else {g.moveTo(c,y0); g.bezierCurveTo(c+(rnd()-.5)*3,y0+h*.3,c+(rnd()-.5)*3,y0+h*.7,c,y0+h);} g.stroke();}}
+  else if(look==='terrazzo'){const cs=['#8a8f94','#c9a77c','#5d6266','#d9d4cc','#a76d4f']; for(let k=0;k<w*h/260;k++){g.fillStyle=cs[(rnd()*cs.length)|0]; g.beginPath(); const cx=x0+rnd()*w, cy=y0+rnd()*h, r=.6+rnd()*2.4; g.ellipse(cx,cy,r,r*(.5+rnd()*.5),rnd()*3,0,7); g.fill();}}
+  g.restore();
+}
+function surfTexture(sf,full){
+  const v=st.v, Hs=full?v.H:sf.H, sc=Math.min(.6,2048/Math.max(sf.W,Hs)), cv=document.createElement('canvas'); cv.width=Math.max(2,Math.round(sf.W*sc)); cv.height=Math.max(2,Math.round(Hs*sc));
+  const g=cv.getContext('2d'), X=u=>u*sc, Y=y=>(Hs-y)*sc, t=sf.t;
+  g.fillStyle='#E7E3DB'; g.fillRect(0,0,cv.width,cv.height); // штукатурка / краска
+  if(sf.tiles.length){const top=Math.max(...sf.tiles.map(x=>Math.max(...x.p.map(p=>p[1])))); g.fillStyle=(GCOL[t.grout]||GCOL.white).c;
+    sf.tiles.forEach(x=>{g.beginPath(); x.p.forEach((p,i)=>i?g.lineTo(X(p[0]),Y(p[1])):g.moveTo(X(p[0]),Y(p[1]))); g.closePath(); g.fill();});
+    // затирка под всей облицовкой: шов между плитками
+    g.fillRect(0,Y(Math.min(top,Hs)),cv.width,Y(sf.v0)-Y(Math.min(top,Hs)));
+    sf.holes.forEach(h=>{g.fillStyle='#E7E3DB'; g.fillRect(X(h.u0),Y(h.v1),X(h.u1)-X(h.u0),Y(h.v0)-Y(h.v1));});}
+  const gw=Math.max(3.2,t.j*sc*1.6), gc=hexMix((GCOL[t.grout]||GCOL.white).c,-.06);
+  sf.tiles.forEach(x=>{const rnd=rng((x.i*73856093)^(x.k*19349663)^(sf.id.length*83492791)), P=x.p.map(p=>[X(p[0]),Y(p[1])]); drawTile(g,P,t,rnd,sc);
+    g.lineJoin='miter'; g.beginPath(); P.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.closePath(); g.save(); g.clip(); g.lineWidth=2.2; g.strokeStyle='rgba(255,255,255,.35)'; g.translate(1,1); g.stroke(); g.translate(-2,-2); g.strokeStyle='rgba(0,0,0,.14)'; g.stroke(); g.restore();
+    g.lineWidth=gw; g.strokeStyle=gc; g.stroke();
+    if(st.cuts&&!x.full){g.fillStyle='rgba(255,122,26,.5)'; g.beginPath(); x.p.forEach((p,i)=>i?g.lineTo(X(p[0]),Y(p[1])):g.moveTo(X(p[0]),Y(p[1]))); g.closePath(); g.fill();}
+    if(st.marks&&x.beacon){g.fillStyle='rgba(45,184,201,.75)'; g.beginPath(); x.p.forEach((p,i)=>i?g.lineTo(X(p[0]),Y(p[1])):g.moveTo(X(p[0]),Y(p[1]))); g.closePath(); g.fill(); const c=x.p.reduce((s,p)=>[s[0]+p[0]/x.p.length,s[1]+p[1]/x.p.length],[0,0]); g.fillStyle='#111'; g.font=`bold ${Math.round(120*sc)}px Arial`; g.textAlign='center'; g.textBaseline='middle'; g.save(); g.translate(X(c[0]),Y(c[1])); if(sf.kind==='floor') g.scale(1,-1); g.fillText('М'+x.beacon,0,0); g.restore();}});
+  if(st.marks&&sf.lines){g.strokeStyle='#E5262B'; g.lineWidth=Math.max(2,5*sc); g.setLineDash([24*sc,14*sc]);
+    sf.lines.forEach(l=>{g.beginPath(); if(l.k==='u'||l.k==='plumb'){g.moveTo(X(l.at),0); g.lineTo(X(l.at),cv.height);} else if(l.k==='v'||l.k==='level'){g.moveTo(0,Y(l.at)); g.lineTo(cv.width,Y(l.at));} g.stroke();}); g.setLineDash([]);}
+  const tx=new THREE.CanvasTexture(cv); tx.anisotropy=R&&R.renderer?R.renderer.capabilities.getMaxAnisotropy():4; if(THREE.sRGBEncoding) tx.encoding=THREE.sRGBEncoding; return tx;
+}
+// плоскость поверхности: (u,v) → O + U·u + V·v, с проёмами
+function surfGeo(sf,Hs,openings){
+  const sh=new THREE.Shape(); sh.moveTo(0,0); sh.lineTo(sf.W,0); sh.lineTo(sf.W,Hs); sh.lineTo(0,Hs); sh.closePath();
+  (openings||[]).forEach(h=>{const p=new THREE.Path(); p.moveTo(h.u0,h.v0); p.lineTo(h.u1,h.v0); p.lineTo(h.u1,h.v1); p.lineTo(h.u0,h.v1); p.closePath(); sh.holes.push(p);});
+  const g=new THREE.ShapeGeometry(sh), pos=g.attributes.position, uv=g.attributes.uv;
+  for(let i=0;i<pos.count;i++){const u=pos.getX(i), w=pos.getY(i); uv.setXY(i,u/sf.W,w/Hs); pos.setXYZ(i,sf.O[0]+sf.U[0]*u+sf.V[0]*w,sf.O[1]+sf.U[1]*u+sf.V[1]*w,sf.O[2]+sf.U[2]*u+sf.V[2]*w);}
+  pos.needsUpdate=true; uv.needsUpdate=true; g.computeVertexNormals(); return g;
+}
+function init3D(){
+  if(R) return; const el=$('#three');
+  if(!window.THREE||!THREE.OrbitControls){el.innerHTML='<p class="note" style="padding:90px 16px 16px">3D-библиотека не загрузилась. Проверьте интернет и обновите страницу.</p>'; R={fail:true}; return;}
+  try{
+    const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1)); if(THREE.sRGBEncoding) renderer.outputEncoding=THREE.sRGBEncoding; 
+    el.appendChild(renderer.domElement);
+    const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(38,1,10,100000), ctr=new THREE.OrbitControls(cam,renderer.domElement);
+    ctr.enableDamping=true; ctr.dampingFactor=.12; ctr.maxPolarAngle=Math.PI*.495; ctr.touches={ONE:THREE.TOUCH.ROTATE,TWO:THREE.TOUCH.DOLLY_ROTATE};
+    const setLock=()=>{const m=st.rot3d?'none':'pan-y'; renderer.domElement.style.touchAction=m; el.style.touchAction=m; $('#bLock').setAttribute('aria-pressed',!!st.rot3d);}; setLock();
+    let t0=null, mode=null;
+    el.addEventListener('touchstart',e=>{if(st.rot3d||e.touches.length!==1){t0=null; return;} e.stopPropagation(); t0={x:e.touches[0].clientX,y:e.touches[0].clientY}; mode=null;},{capture:true,passive:true});
+    el.addEventListener('touchmove',e=>{if(st.rot3d||!t0||e.touches.length!==1) return; e.stopPropagation(); const x=e.touches[0].clientX, y=e.touches[0].clientY, dx=x-t0.x, dy=y-t0.y;
+      if(!mode&&Math.hypot(dx,dy)>8) mode=Math.abs(dx)>Math.abs(dy)?'rot':'scroll';
+      if(mode==='rot'){if(e.cancelable) e.preventDefault(); const off=cam.position.clone().sub(ctr.target); off.applyAxisAngle(new THREE.Vector3(0,1,0),-2*Math.PI*dx/el.clientHeight); cam.position.copy(ctr.target).add(off); cam.lookAt(ctr.target); t0={x,y};}},{capture:true,passive:false});
+    el.addEventListener('touchend',e=>{if(!st.rot3d&&t0&&e.touches.length===0) e.stopPropagation(); if(e.touches.length===0){t0=null; mode=null;}},{capture:true,passive:true});
+    scene.add(new THREE.HemisphereLight(0xffffff,0x9c958a,.62));
+    const dl=new THREE.DirectionalLight(0xfff1e0,.55); dl.position.set(.5,1.3,.8); scene.add(dl); const dl2=new THREE.DirectionalLight(0xdfe9ff,.22); dl2.position.set(-1,.6,-.7); scene.add(dl2);
+    const group=new THREE.Group(); scene.add(group);
+    R={renderer,scene,cam,ctr,group,el,walls:[],setLock};
+    const size=()=>{const w=el.clientWidth,h=el.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); renderer.domElement.style.width=w+'px'; renderer.domElement.style.height=h+'px'; cam.aspect=w/h; cam.updateProjectionMatrix();};
+    if(window.ResizeObserver) new ResizeObserver(size).observe(el); else window.addEventListener('resize',size); size();
+    const v3=new THREE.Vector3();
+    const loop=()=>{requestAnimationFrame(loop); if($('#viewer').hidden) return; ctr.update();
+      // «кукольный домик»: стены между камерой и комнатой прячутся
+      const cp=cam.position.clone().sub(group.position); R.walls.forEach(w=>{const s=w.n[0]*(cp.x-w.p[0])+w.n[2]*(cp.z-w.p[2]); w.objs.forEach(o=>o.visible=s>0);});
+      renderer.render(scene,cam);};
+    loop();
+  }catch(err){el.innerHTML='<p class="note" style="padding:90px 16px 16px">3D не поддерживается на этом устройстве. План, стены и смета работают.</p>'; R={fail:true};}
+}
+const MAT={};
+function mats(){if(MAT.white) return MAT;
+  MAT.white=new THREE.MeshStandardMaterial({color:0xf7f7f4,roughness:.18,metalness:.02});
+  MAT.chrome=new THREE.MeshStandardMaterial({color:0xd8dde2,roughness:.15,metalness:.9});
+  MAT.glass=new THREE.MeshStandardMaterial({color:0xcfe8ef,roughness:.05,metalness:.1,transparent:true,opacity:.28,depthWrite:false,side:THREE.DoubleSide});
+  MAT.dark=new THREE.MeshStandardMaterial({color:0x2b2d30,roughness:.6});
+  MAT.wood=new THREE.MeshStandardMaterial({color:0xb8895a,roughness:.7});
+  MAT.mirror=new THREE.MeshStandardMaterial({color:0xbfcdd4,roughness:.05,metalness:.85});
+  MAT.wall=new THREE.MeshStandardMaterial({color:0xd9d4ca,roughness:.95});
+  MAT.cap=new THREE.MeshStandardMaterial({color:0x6f6b65,roughness:.9});
+  return MAT;}
+function shadowTex(){if(MAT.shTx) return MAT.shTx; const c=document.createElement('canvas'); c.width=c.height=128; const g=c.getContext('2d'), gr=g.createRadialGradient(64,64,10,64,64,64); gr.addColorStop(0,'rgba(0,0,0,.35)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(0,0,128,128); MAT.shTx=new THREE.CanvasTexture(c); return MAT.shTx;}
+const box=(w,h,d,m,x,y,z)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m); o.position.set(x,y,z); return o;};
+function lathe(pts,m,seg=32){return new THREE.Mesh(new THREE.LatheGeometry(pts.map(([r,y])=>new THREE.Vector2(r,y)),seg),m);}
+function roundRect(w,d,r){const s=new THREE.Shape(); s.moveTo(r,0); s.lineTo(w-r,0); s.quadraticCurveTo(w,0,w,r); s.lineTo(w,d-r); s.quadraticCurveTo(w,d,w-r,d); s.lineTo(r,d); s.quadraticCurveTo(0,d,0,d-r); s.lineTo(0,r); s.quadraticCurveTo(0,0,r,0); return s;}
+function fixtureModel(x){
+  const m=mats(), t=x.f.t, w=x.u1-x.u0, d=x.d, h=x.h, g=new THREE.Group(), add=o=>{g.add(o); return o;}, wadd=o=>{o.userData.wall=true; g.add(o); return o;};
+  // локальные оси: x — вдоль стены, y — вверх, z — от стены в комнату
+  if(t==='bath'){const s=roundRect(w,d,70), hole=new THREE.Path(); const ir=roundRect(w-140,d-140,170); ir.getPoints(12).forEach((p,i)=>i?hole.lineTo(p.x+70,p.y+70):hole.moveTo(p.x+70,p.y+70)); s.holes.push(hole);
+    const shell=new THREE.Mesh(new THREE.ExtrudeGeometry(s,{depth:h,bevelEnabled:false,curveSegments:10}),m.white); shell.rotation.x=Math.PI/2; shell.position.set(0,h,0); add(shell);
+    const bot=new THREE.Mesh(new THREE.ExtrudeGeometry(roundRect(w-140,d-140,170),{depth:20,bevelEnabled:false}),m.white); bot.rotation.x=Math.PI/2; bot.position.set(70,h-410,70); add(bot);
+    wadd(box(40,40,60,m.chrome,w/2,h+300,30)); wadd(box(30,30,140,m.chrome,w/2,h+280,90));}
+  else if(t==='shower'){add(box(w,h,d,m.white,w/2,h/2,d/2)); const dr=new THREE.Mesh(new THREE.CylinderGeometry(45,45,4,24),m.chrome); dr.position.set(w/2,h+2,d/2); add(dr);
+    add(box(8,2000-h,d,m.glass,w-4,h+(2000-h)/2,d/2)); add(box(w*.6,2000-h,8,m.glass,w*.3,h+(2000-h)/2,d-4));
+    wadd(box(24,1100,24,m.chrome,w/2,1350,30)); const hd=new THREE.Mesh(new THREE.CylinderGeometry(130,130,12,32),m.chrome); hd.position.set(w/2,1980,170); wadd(hd); wadd(box(24,24,160,m.chrome,w/2,1990,90));}
+  else if(t==='toilet'||t==='wc'){const cx=w/2, by=t==='wc'?220:0, bowl=lathe([[0,0],[120,0],[140,60],[150,200],[185,330],[195,400],[185,410],[0,410]].map(([r,y])=>[r,y]),m.white); bowl.scale.set(1,1,1.35); bowl.position.set(cx,by,t==='wc'?x.d+270:d-260); add(bowl);
+    const seat=new THREE.Mesh(new THREE.CylinderGeometry(195,195,22,40),m.white); seat.scale.set(1,1,1.35); seat.position.set(cx,by+420,t==='wc'?x.d+270:d-260); add(seat);
+    if(t==='toilet'){const tank=new THREE.Mesh(new THREE.ExtrudeGeometry(roundRect(360,170,30),{depth:380,bevelEnabled:false}),m.white); tank.rotation.x=Math.PI/2; tank.position.set(cx-180,780,10); add(tank); add(box(60,10,30,m.chrome,cx,785,90));}
+    else add(box(240,160,8,m.chrome,cx,1030,x.d+4));}
+  else if(t==='sink'){const cx=w/2, bs=lathe([[0,0],[200,10],[260,110],[275,150],[0,150]],m.white); bs.scale.set(w/560,1,d/550*1.05); bs.position.set(cx,700,d*.5); add(bs);
+    const ped=lathe([[0,0],[110,0],[85,120],[75,700],[0,700]],m.white,24); ped.position.set(cx,0,140); add(ped);
+    wadd(box(40,120,40,m.chrome,cx,910,60)); wadd(box(30,24,120,m.chrome,cx,960,110)); wadd(box(600,800,10,m.mirror,cx,1500,5));}
+  else if(t==='vanity'){add(box(w,700,d,m.wood,w/2,500,d/2)); add(box(w+20,40,d+20,m.white,w/2,870,d/2)); const bs=lathe([[0,0],[180,0],[220,100],[0,100]],m.dark,24); bs.scale.set(w/700,.4,d/600); bs.position.set(w/2,850,d*.55); add(bs);
+    add(box(4,600,2,m.dark,w/2,500,d+1)); wadd(box(40,120,40,m.chrome,w/2,950,70)); wadd(box(600,800,10,m.mirror,w/2,1500,5));}
+  else if(t==='wm'){add(box(w,h,d,m.white,w/2,h/2,d/2)); const ring=new THREE.Mesh(new THREE.TorusGeometry(w*.3,22,12,40),m.chrome); ring.position.set(w/2,h*.48,d+8); add(ring); const gl=new THREE.Mesh(new THREE.CircleGeometry(w*.27,40),m.dark); gl.position.set(w/2,h*.48,d+6); add(gl); add(box(w*.9,70,6,m.dark,w/2,h-60,d+3));}
+  else if(t==='boiler'){const y0=FX_T.boiler.y, c=new THREE.Mesh(new THREE.CylinderGeometry(w/2,w/2,h,40),m.white); c.position.set(w/2,y0+h/2,d/2); add(c); add(box(40,120,40,m.chrome,w/2,y0-60,d/2));}
+  else if(t==='rail'){const y0=FX_T.rail.y, tube=(L,ax,px,py,pz)=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(14,14,L,12),m.chrome); if(ax==='x') c.rotation.z=Math.PI/2; c.position.set(px,py,pz); add(c);};
+    tube(800,'y',20,y0+400,70); tube(800,'y',w-20,y0+400,70); for(let k=0;k<6;k++) tube(w-40,'x',w/2,y0+60+k*135,70);}
+  else if(t==='trap'){add(box(w,6,d,m.chrome,w/2,3,d/2));}
+  // мягкая тень под тем, что стоит на полу
+  if(!['boiler','rail','trap'].includes(t)){const sh=new THREE.Mesh(new THREE.PlaneGeometry(w*1.25,(t==='wc'?x.d+560:d)*1.25),new THREE.MeshBasicMaterial({map:shadowTex(),transparent:true,depthWrite:false})); sh.rotation.x=-Math.PI/2; sh.position.set(w/2,2,(t==='wc'?x.d+560:d)/2); add(sh);}
+  // в мировые координаты: базис стены
+  const i=x.f.wall, U=WU[i], Nn=WNRM[i], O=WO(st.v,i), m4=new THREE.Matrix4().makeBasis(new THREE.Vector3(...U),new THREE.Vector3(0,1,0),new THREE.Vector3(...Nn));
+  m4.setPosition(O[0]+U[0]*x.u0+Nn[0]*x.gap,0,O[2]+U[2]*x.u0+Nn[2]*x.gap); g.matrixAutoUpdate=false; g.matrix.copy(m4);
+  return g;
+}
+function build3D(){
+  if(!R||R.fail) return; const v=st.v, m=mats(), G=R.group;
+  G.children.slice().forEach(o=>{G.remove(o); o.traverse&&o.traverse(q=>{q.geometry&&q.geometry.dispose(); if(q.material&&q.material.map&&q.material.map!==MAT.shTx) q.material.map.dispose();});});
+  R.walls=[];
+  const tileMat=tx=>new THREE.MeshStandardMaterial({map:tx,roughness:.62,metalness:0,side:THREE.DoubleSide});
+  // пол
+  const fl=M.S.find(s=>s.id==='floor');
+  const floorSf=fl||{id:'floor0',O:[0,0,0],U:[1,0,0],V:[0,0,1],W:v.L,H:v.W,v0:0,tiles:[],holes:[],t:v.F};
+  G.add(new THREE.Mesh(surfGeo(floorSf,v.W),tileMat(surfTexture(floorSf,false))));
+  // стены на всю высоту, с дверью и окном
+  for(let i=0;i<4;i++){
+    const sf=M.S.find(s=>s.id==='w'+i)||{id:'w'+i,kind:'wall',wall:i,O:WO(v,i),U:WU[i],V:[0,1,0],N:WNRM[i],W:wlen(v,i),H:0,v0:0,tiles:[],holes:[],t:v.T};
+    const ops=[]; if(v.door.wall===i){const [a,b]=toU(v,i,v.door.off,v.door.w); ops.push({u0:a,u1:b,v0:0,v1:v.door.h});}
+    if(v.win.on==='yes'&&v.win.wall===i){const [a,b]=toU(v,i,v.win.off,v.win.w); ops.push({u0:a,u1:b,v0:v.win.sill,v1:v.win.sill+v.win.h});}
+    const mesh=new THREE.Mesh(surfGeo(sf,v.H,ops),tileMat(surfTexture(sf,true))); G.add(mesh);
+    // толщина стены снаружи и срез сверху — чтобы разрез выглядел как настоящий
+    const T=120, U=WU[i], Nn=WNRM[i], O=WO(v,i), len=wlen(v,i), c=[O[0]+U[0]*len/2-Nn[0]*(T/2+3),v.H/2,O[2]+U[2]*len/2-Nn[2]*(T/2+3)];
+    const outer=box(Math.abs(U[0])*(len+2*T)+Math.abs(Nn[0])*T,v.H,Math.abs(U[2])*(len+2*T)+Math.abs(Nn[2])*T,m.wall,c[0],c[1],c[2]);
+    const cap=box(Math.abs(U[0])*(len+2*T)+Math.abs(Nn[0])*T+2,8,Math.abs(U[2])*(len+2*T)+Math.abs(Nn[2])*T+2,m.cap,c[0],v.H+4,c[2]);
+    const objs=[mesh,cap]; G.add(cap);
+    if(!ops.length){G.add(outer); objs.push(outer);}
+    // дверь: открытое полотно, окно: стекло
+    ops.forEach((h,k)=>{const isDoor=v.door.wall===i&&k===0&&h.v0===0;
+      if(isDoor){const leaf=box(h.u1-h.u0,h.v1-10,40,m.wood,0,0,0), piv=new THREE.Group(); leaf.position.set((h.u1-h.u0)/2,(h.v1-10)/2,-20); piv.add(leaf);
+        piv.position.set(O[0]+U[0]*h.u0+Nn[0]*0,0,O[2]+U[2]*h.u0+Nn[2]*0); piv.rotation.y=Math.atan2(-U[2],U[0])+(-70*Math.PI/180); G.add(piv); objs.push(piv);}
+      else{const gl=box(Math.abs(U[0])*(h.u1-h.u0)+Math.abs(Nn[0])*10,h.v1-h.v0,Math.abs(U[2])*(h.u1-h.u0)+Math.abs(Nn[2])*10,m.glass,O[0]+U[0]*(h.u0+h.u1)/2-Nn[0]*60,(h.v0+h.v1)/2,O[2]+U[2]*(h.u0+h.u1)/2-Nn[2]*60); G.add(gl); objs.push(gl);}});
+    R.walls.push({n:Nn,p:O,objs});
+  }
+  // короб, экран ванны
+  M.S.filter(s=>s.kind==='box'||s.kind==='screen').forEach(sf=>G.add(new THREE.Mesh(surfGeo(sf,sf.H),tileMat(surfTexture(sf,false)))));
+  M.fxs.forEach(x=>{const fm=fixtureModel(x), w=R.walls[x.f.wall]; G.add(fm); if(['boiler','rail'].includes(x.f.t)) w.objs.push(fm); else fm.children.filter(o=>o.userData.wall).forEach(o=>w.objs.push(o));});
+  G.position.set(-v.L/2,0,-v.W/2);
+  if(resetCam){const s=Math.max(v.L,v.W,v.H), vf=R.cam.fov*Math.PI/360, hf=Math.atan(Math.tan(vf)*(R.cam.aspect||1)), dist=.5*Math.hypot(v.L,v.W,v.H)/Math.sin(Math.min(vf,hf));
+    const d=new THREE.Vector3(.55,.85,1).normalize(); R.cam.position.set(d.x*dist,v.H*.35+d.y*dist,d.z*dist); R.ctr.target.set(0,v.H*.35,0); R.cam.near=dist/100; R.cam.far=dist*20; R.cam.updateProjectionMatrix(); R.ctr.update(); resetCam=false;}
+}
+$('#bCuts').onclick=()=>{st.cuts=!st.cuts; save(); $('#bCuts').setAttribute('aria-pressed',st.cuts); dirty3D=true; renderTab();};
+$('#bMarks').onclick=()=>{st.marks=!st.marks; save(); $('#bMarks').setAttribute('aria-pressed',st.marks); dirty3D=true; renderTab();};
+$('#bLock').onclick=()=>{st.rot3d=!st.rot3d; save(); if(R&&R.setLock) R.setLock(); toast(st.rot3d?'Вращение одним пальцем: страница листается за пределами 3D':'Листать можно и по 3D — вращение пальцем вбок');};
+$('#bReset').onclick=()=>{resetCam=true; dirty3D=true; renderTab();};
+
+/* ---------- PDF ---------- */
+const PDF_JS='https://cdn.jsdelivr.net/npm/pdfmake@0.2.20/build/pdfmake.min.js', PDF_FONTS='https://cdn.jsdelivr.net/npm/pdfmake@0.2.20/build/vfs_fonts.js';
+let pdfLib=null, pdfOut=null;
+function loadPdfLib(){if(window.pdfMake&&pdfMake.vfs&&pdfMake.vfs['Roboto-Regular.ttf']) return Promise.resolve(); if(pdfLib) return pdfLib;
+  const load=src=>new Promise((ok,no)=>{const s=document.createElement('script'); s.src=src; s.onload=ok; s.onerror=()=>no(new Error('load')); document.head.appendChild(s);});
+  pdfLib=load(PDF_JS).then(()=>load(PDF_FONTS)).catch(e=>{pdfLib=null; throw e;}); return pdfLib;}
+const nb=s=>String(s).replace(/[  ]/g,' '), pm=n=>nb(Math.round(n).toLocaleString('uk-UA'))+' грн';
+const PDF_CSS='text{font-family:Arial,Helvetica,sans-serif;fill:#111}.ttl{font-weight:700}.t{fill:#fff;stroke:#999;stroke-width:1px;vector-effect:non-scaling-stroke}.tc{fill:#FFB27A;fill-opacity:.6;stroke:#111;stroke-width:1.2px;vector-effect:non-scaling-stroke}.tb{fill:#2DB8C9;stroke:#111;stroke-width:2px;vector-effect:non-scaling-stroke}.wl{fill:#222}.op{fill:#fff;stroke:#111;stroke-width:1.5px;vector-effect:non-scaling-stroke}.fx{fill:#fff;fill-opacity:.9;stroke:#111;stroke-width:2px;vector-effect:non-scaling-stroke}.fxl{fill:none;stroke:#111;stroke-width:1.4px;vector-effect:non-scaling-stroke}.ln{stroke:#D7262B;stroke-width:2.6px;stroke-dasharray:12 7;vector-effect:non-scaling-stroke;fill:none}.dr{fill:#fff;stroke:#D7262B;stroke-width:2px;vector-effect:non-scaling-stroke}.lt{fill:#D7262B;font-weight:700}.bt{font-weight:700}.ct{font-weight:600}.no{fill:#F1EFEA;stroke:#999;stroke-width:1px;stroke-dasharray:4 3;vector-effect:non-scaling-stroke}.dim line{stroke:#111;stroke-width:1.6px;vector-effect:non-scaling-stroke}.mut{fill:#777}';
+async function svgToImg(svg,W=1800){const vb=svg.match(/viewBox="([-\d.]+) ([-\d.]+) ([\d.]+) ([\d.]+)"/), H=Math.round(W*(+vb[4])/(+vb[3]));
+  const s=svg.replace(/<svg([^>]*)>/,`<svg$1 width="${W}" height="${H}"><style>${PDF_CSS}</style><rect x="${vb[1]}" y="${vb[2]}" width="100%" height="100%" fill="#fff"/>`);
+  const img=new Image(); await new Promise((ok,no)=>{img.onload=ok; img.onerror=no; img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);});
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,W,H); g.drawImage(img,0,0,W,H); return cv.toDataURL('image/jpeg',.9);}
+function snap3D(W=1600,H=1100){
+  init3D(); if(!R||R.fail) return null; const keepTab=st.tab, keepV=$('#viewer').hidden; $('#viewer').hidden=false; if(dirty3D){build3D(); dirty3D=false;}
+  const r=R.renderer, cv=r.domElement, sz=new THREE.Vector2(); r.getSize(sz); const pr=r.getPixelRatio(), asp=R.cam.aspect, cp=R.cam.position.clone(), tp=R.ctr.target.clone();
+  r.setPixelRatio(1); r.setSize(W,H,false); R.cam.aspect=W/H; R.cam.updateProjectionMatrix(); r.setClearColor(0xffffff,1);
+  const v=st.v, vf=R.cam.fov*Math.PI/360, hf=Math.atan(Math.tan(vf)*W/H), dist=.44*Math.hypot(v.L,v.W,v.H)/Math.sin(Math.min(vf,hf)), d=new THREE.Vector3(.55,.85,1).normalize();
+  R.cam.position.set(d.x*dist,v.H*.35+d.y*dist,d.z*dist); R.cam.lookAt(0,v.H*.35,0);
+  const g=R.group.position, c=R.cam.position.clone().sub(g); R.walls.forEach(w=>{const s=w.n[0]*(c.x-w.p[0])+w.n[2]*(c.z-w.p[2]); w.objs.forEach(o=>o.visible=s>0);});
+  r.render(R.scene,R.cam); const url=cv.toDataURL('image/jpeg',.9);
+  R.cam.position.copy(cp); R.cam.lookAt(tp); r.setClearColor(0x000000,0); r.setPixelRatio(pr); r.setSize(Math.max(1,sz.x),Math.max(1,sz.y),false); R.cam.aspect=asp; R.cam.updateProjectionMatrix();
+  $('#viewer').hidden=keepV; return url;}
+const firm=()=>LS.get('plit1.firm',null)||LS.get('svar1.firm',null)||LS.get('korp3.firm',{name:'',phone:''});
+async function pdfDoc(kind,meta){
+  const v=st.v, title=`${$('#hTitle').textContent} ${v.L}×${v.W} мм`, date=new Date().toLocaleDateString('uk-UA');
+  const keep={cuts:st.cuts,marks:st.marks};
+  const head=(t,sub)=>({columns:[{text:meta.firm||'',bold:true,fontSize:11},{text:[{text:t+'\n',bold:true,color:'#1C8C9A'},{text:sub||date,fontSize:9,color:'#666'}],alignment:'right'}],margin:[0,0,0,6]});
+  const hr={canvas:[{type:'line',x1:0,y1:0,x2:515,y2:0,lineWidth:2.5,lineColor:'#2DB8C9'}],margin:[0,0,0,10]};
+  const content=[];
+  if(kind==='client'){st.cuts=false; st.marks=false; dirty3D=true; const img=snap3D(); st.cuts=keep.cuts; st.marks=keep.marks; dirty3D=true;
+    content.push(head('КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ',date),hr,{text:(meta.client?`Клиент: ${meta.client}\n`:''),fontSize:10},{text:title,fontSize:18,bold:true,margin:[0,4,0,2]},{text:`${v.floor==='yes'?`Пол — ${v.F.a}×${v.F.b}, ${PAT[v.F.pat].toLowerCase()}. `:''}${+v.wh>0?`Стены — ${v.T.a}×${v.T.b} до ${Math.min(v.wh,v.H)} мм.`:''} Плитки ${fmt(M.areaF+M.areaT)} м².`,fontSize:10,color:'#444',margin:[0,0,0,8]});
+    if(img) content.push({image:img,width:515,margin:[0,0,0,10]});
+    content.push({table:{widths:['*','auto'],body:[[{text:'Стоимость под ключ',bold:true,color:'#fff',fillColor:'#111'},{text:pm(M.total),bold:true,fontSize:14,fillColor:'#2DB8C9'}],['в том числе материалы и плитка',pm(M.matSum+M.markup)],['работа',pm(M.labSum)]]},layout:'noBorders',fontSize:10});
+    content.push({text:'План пола',style:'h',pageBreak:'before'},{image:await svgToImg(planSVG()),width:515});
+    const rows=[[{text:'Наименование',style:'th'},{text:'Кол-во',style:'th',alignment:'right'},{text:'Сумма',style:'th',alignment:'right'}]], k=1+prices.markup/100;
+    ['tile','mix','hw','tool','labor'].forEach(s=>{const ls=M.lines.filter(l=>l.sec===s); if(!ls.length) return; rows.push([{text:SECN[s],colSpan:3,bold:true,fillColor:'#EEECE6'},'','']); ls.forEach(l=>rows.push([l.name,{text:`${fmt(l.qty)} ${l.unit}`,alignment:'right'},{text:pm(l.sum*(s==='labor'?1:k)),alignment:'right'}]));});
+    rows.push([{text:'ИТОГО',bold:true,colSpan:2,fillColor:'#2DB8C9'},'',{text:pm(M.total),bold:true,alignment:'right',fillColor:'#2DB8C9'}]);
+    content.push({text:'Материалы и работа',style:'h',pageBreak:'before'},{table:{headerRows:1,widths:['*','auto','auto'],body:rows},layout:'lightHorizontalLines',fontSize:9},{text:'Цены действительны 14 дней.',fontSize:8,color:'#666',margin:[0,8,0,0]});
+  }else{
+    content.push(head('РАСКЛАДКА И РЕЗКА',date),hr,{text:title,fontSize:18,bold:true},{text:`Пол ${v.floor==='yes'?`${v.F.a}×${v.F.b}, ${PAT[v.F.pat].toLowerCase()}, шов ${v.F.j} мм`:'—'} · стены ${+v.wh>0?`${v.T.a}×${v.T.b}, шов ${v.T.j} мм, до ${Math.min(v.wh,v.H)} мм`:'—'} · лазер / опорный профиль ${M.levelV} мм`,fontSize:9,color:'#444',margin:[0,2,0,8]});
+    if(M.S.find(s=>s.id==='floor')) content.push({image:await svgToImg(planSVG()),width:480,alignment:'center'});
+    const buy=(n,b,t)=>b?[n+` ${t.a}×${t.b}`,String(b.full),String(b.cutTiles),Math.round(b.res*100)+'%',String(b.withRes),`${b.boxes} × ${b.pbox}`,fmt(b.m2)]:null;
+    content.push({table:{widths:['*','auto','auto','auto','auto','auto','auto'],body:[['Плитка','Целых','На резку','Запас','Итого шт','Упаковок','м²'].map(t=>({text:t,style:'th'})),...[buy('Пол',M.buyF,v.F),buy('Стены',M.buyT,v.T)].filter(Boolean)]},layout:'lightHorizontalLines',fontSize:9,margin:[0,8,0,0]});
+    const ws=M.S.filter(s=>s.kind!=='floor');
+    for(let i=0;i<ws.length;i++){content.push({image:await svgToImg(wallSVG(ws[i])),width:ws[i].kind==='wall'?480:300,alignment:'center',margin:[0,6,0,6],...(i===0||i%2===0?{pageBreak:'before'}:{})});}
+    const cr=[[{text:'Плитка',style:'th'},{text:'Кусок, мм',style:'th'},{text:'Что это',style:'th'},{text:'Шт',style:'th',alignment:'right'},{text:'Где',style:'th'}]];
+    M.cuts.forEach(c=>cr.push([c.tile==='F'?'Пол':'Стены',`${c.cw}×${c.ch}`,typeName(c),{text:String(c.q),alignment:'right'},whereTxt(c.where)]));
+    content.push({text:'Резаные куски',style:'h',pageBreak:'before'},{table:{headerRows:1,widths:['auto','auto','*','auto','*'],body:cr},layout:'lightHorizontalLines',fontSize:9});
+    if(Object.keys(M.drills).length) content.push({text:'Отверстия коронкой: '+Object.entries(M.drills).map(([d,q])=>`Ø${d} — ${q} шт`).join(', '),fontSize:10,margin:[0,8,0,0]});
+    content.push({text:'Порядок работ',style:'h',margin:[0,14,0,6]},{ol:M.steps.map(s=>({text:[{text:s.t+'. ',bold:true},s.d],margin:[0,0,0,5]})),fontSize:9.5});
+  }
+  return {pageSize:'A4',pageMargins:[40,40,40,46],content,styles:{h:{fontSize:15,bold:true,margin:[0,0,0,8]},th:{bold:true,color:'#fff',fillColor:'#111'}},defaultStyle:{font:'Roboto',fontSize:10},
+    footer:(p,n)=>({columns:[{text:meta.firm||'',fontSize:8,color:'#888'},{text:`стр. ${p} из ${n}`,alignment:'right',fontSize:8,color:'#888'}],margin:[40,12,40,0]})};
+}
+const fileName=s=>s.replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.pdf';
+function openPdf(kind){
+  const f=firm();
+  sheet(`<h2>${kind==='client'?'PDF клиенту':'PDF плиточнику'}</h2><p class="note" style="margin:0">${kind==='client'?'3D комнаты, план пола и смета с ценами.':'План с маяками и стартовыми линиями, развёртки стен с уровнем и подрезками, список резов, отверстия и порядок работ.'}</p>
+    <div class="f"><label for="pfF">Фирма / мастер и телефон</label><div class="in"><input id="pfF" value="${esc(f.name||'')}" placeholder="Например: Плитка Кривой Рог, 067…"></div></div>
+    ${kind==='client'?`<div class="f"><label for="pfC">Клиент</label><div class="in"><input id="pfC" placeholder="Имя"></div></div>`:''}
+    <p class="note" id="pfStat" aria-live="polite"></p>
+    <div class="row" id="pfDone" hidden><button class="cta" type="button" id="pfShare" style="flex:1"><span>Отправить</span><i>${IC_PDF.replace('class="i"','class="i" style="color:#fff"')}</i></button><a class="btn" id="pfDl" download>Скачать</a></div>
+    <button class="cta w" type="button" id="pfGo"><span>Сделать PDF</span><i>${IC_PDF.replace('class="i"','class="i" style="color:#fff"')}</i></button>`,c=>{
+    const stt=c.querySelector('#pfStat'), go=c.querySelector('#pfGo');
+    c.querySelector('#pfShare').onclick=async()=>{if(!pdfOut) return; const file=new File([pdfOut.blob],pdfOut.fname,{type:'application/pdf'}); try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:pdfOut.fname}); return;}}catch(e){if(e&&e.name==='AbortError') return;} window.open(pdfOut.url,'_blank')||c.querySelector('#pfDl').click();};
+    go.onclick=async()=>{const name=c.querySelector('#pfF').value.trim(); LS.set('plit1.firm',{name}); const cl=c.querySelector('#pfC'); go.disabled=true; stt.textContent='Собираю PDF…';
+      try{await loadPdfLib(); const doc=await pdfDoc(kind,{firm:name,client:cl?cl.value.trim():''}); const blob=await new Promise((ok,no)=>{try{pdfMake.createPdf(doc).getBlob(ok);}catch(e){no(e);}});
+        const fname=fileName(`${kind==='client'?'КП плитка':'Раскладка плитки'} ${cl&&cl.value.trim()?cl.value.trim()+' ':''}${new Date().toISOString().slice(0,10)}`);
+        pdfOut={blob,fname,url:URL.createObjectURL(blob)}; const dl=c.querySelector('#pfDl'); dl.href=pdfOut.url; dl.download=fname; stt.textContent=`Готово: ${fname} · ${Math.max(1,Math.round(blob.size/1024))} КБ`; c.querySelector('#pfDone').hidden=false; go.hidden=true;}
+      catch(e){stt.textContent='Не получилось: '+(e&&e.message==='load'?'нет связи — PDF-библиотека грузится из интернета.':(e&&e.message||'ошибка'));}
+      finally{go.disabled=false;}};
+  });
+}
+
+/* ---------- меню, листы, действия ---------- */
+function sheet(html,bind){$('#sheetC').innerHTML=`<button class="ib sheetx" type="button" data-close aria-label="Закрыть">✕</button>`+html; $('#sheet').hidden=false; bind&&bind($('#sheetC'));}
+function closeSheet(){$('#sheet').hidden=true; $('#sheetC').innerHTML='';}
+$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet'||e.target.closest('[data-close]')) closeSheet();});
+function toast(msg){let el=$('.toast'); if(!el){el=document.createElement('div'); el.className='toast'; el.setAttribute('role','status'); document.body.appendChild(el);} el.textContent=msg; el.hidden=false; clearTimeout(tt); tt=setTimeout(()=>el.hidden=true,2200);}
+$('#bMenu').onclick=()=>{const d=$('#drawer'); d.hidden=!d.hidden; $('#bMenu').setAttribute('aria-expanded',String(!d.hidden));};
+$('#drawer').addEventListener('click',e=>{
+  const ext=e.target.closest('[data-ext]'); if(ext&&EMB){e.preventDefault(); parent.postMessage({tab:ext.dataset.ext},'*'); return;}
+  const b=e.target.closest('[data-nav]'); if(!b) return; $('#drawer').hidden=true; const n=b.dataset.nav;
+  if(n==='prices'){st.tab='est'; save(); renderTab(); const d=$('details.prices'); if(d){d.open=true; d.scrollIntoView({block:'start'});}}
+  else if(n==='reset'){st.v=defaults(); save(); resetCam=true; renderSide(); update(); toast('Новая комната — параметры по умолчанию');}
+  else window.scrollTo({top:0,behavior:'smooth'});
+});
+document.addEventListener('click',e=>{const a=e.target.closest('[data-act]'); if(!a) return; const k=a.dataset.act;
+  if(k==='pdfClient') openPdf('client'); else if(k==='pdfWork') openPdf('work');
+  else if(k==='copy'){const t=estText(); (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Смета скопирована')).catch(()=>sheet(`<h2>Смета</h2><textarea class="copy" readonly>${esc(t)}</textarea>`));}
+});
+$('#bCuts').setAttribute('aria-pressed',st.cuts); $('#bMarks').setAttribute('aria-pressed',st.marks);
+renderSide(); update();
+if('serviceWorker' in navigator&&location.protocol==='https:'&&!EMB) navigator.serviceWorker.register('../sw.js').catch(()=>{});
+
+</script>
+</body>
+</html>
