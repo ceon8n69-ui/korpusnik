@@ -50,7 +50,7 @@ const get=k=>{try{return localStorage.getItem(k)}catch(e){return null}}, put=(k,
 function show(t){
   if(!SRC[t]) t='mebel'; put('hub.tab',t);
   document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.t===t)));
-  if(!frames[t]){const f=document.createElement('iframe'); f.src=SRC[t]; f.title=NAME[t]; f.setAttribute('allow','clipboard-write; web-share; microphone; camera'); document.getElementById('frames').appendChild(f); frames[t]=f;}
+  if(!frames[t]){const f=document.createElement('iframe'); f.src=SRC[t]; f.title=NAME[t]; f.setAttribute('allow','clipboard-write; web-share; microphone; camera; screen-wake-lock'); document.getElementById('frames').appendChild(f); frames[t]=f;}
   Object.entries(frames).forEach(([k,f])=>{f.hidden=k!==t;});
   document.title=NAME[t]+' — Мастерская';
   try{history.replaceState(null,'','#'+t)}catch(e){}

@@ -2012,28 +2012,49 @@ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 const aiKey=()=>LS.get('svar1.apikey','')||LS.get('korp3.apikey','');
 const AI_EX=['Навес к стене дома 6×4 м, поликарбонат бронза 8 мм, водосток','Стеллаж в гараж 2000×600×2000, 5 полок, профиль 40×40','Откатные ворота 4 м, штакетник шоколад, с автоматикой','Подставка под бочку 1000 л на высоте 2 м','Стол лофт 1600×800, П-образные ноги 80×40, столешница дуб','Лестница на второй этаж 3 м, поворот налево, ступени дуб','Лестница на брусе с поворотом, ступени бук, тяги из нержавейки к потолку'];
 const AI_ERR={not_granted:'Доступ к Claude не разрешён для этой страницы.',sampling_disabled:'Claude недоступен для этого аккаунта.',rate_limited:'Слишком много запросов или закончился лимит на ключе. Попробуйте позже.',refused:'ИИ не стал это строить. Переформулируйте.',invalid_json:'Ответ получился неполным. Нажмите «Построить» ещё раз.',empty_completion:'Пустой ответ. Попробуйте ещё раз.',no_key:'Вставьте ключ Claude API — без него ИИ в приложении не работает.',bad_key:'Ключ API не подошёл. Проверьте его на console.anthropic.com.',overloaded:'Сервер ИИ перегружен. Попробуйте через минуту.',network:'Нет связи с сервером ИИ. Проверьте интернет.'};
+const FOREIGN=(()=>{try{return window.self!==window.top&&window.top.location.origin!==location.origin;}catch(e){return true;}})();
 async function sampleFn(){try{return window.claude&&typeof window.claude.use==='function'&&window.self!==window.top?await window.claude.use('sample'):null;}catch(e){return null;}}
 function extractJSON(text){const a=text.indexOf('{'), b=text.lastIndexOf('}'); if(a<0||b<=a) throw {code:'invalid_json'}; try{return JSON.parse(text.slice(a,b+1));}catch(e){throw {code:'invalid_json'};}}
-async function askClaude(prompt,blob,onProg,signal){
+// связь с ИИ: повторы при обрыве, экран не гаснет, пока идёт сборка
+const sleep=(ms,signal)=>new Promise((ok,no)=>{const t=setTimeout(ok,ms); if(signal) signal.addEventListener('abort',()=>{clearTimeout(t); no(Object.assign(new Error('abort'),{name:'AbortError'}));},{once:true});});
+const waitVisible=()=>document.hidden?new Promise(ok=>{const f=()=>{if(!document.hidden){document.removeEventListener('visibilitychange',f); ok();}}; document.addEventListener('visibilitychange',f);}):Promise.resolve();
+let wakeL=null, aiBusy=false;
+async function keepAwake(on){aiBusy=on; try{if(on){if(!wakeL&&navigator.wakeLock){wakeL=await navigator.wakeLock.request('screen'); wakeL.addEventListener('release',()=>{wakeL=null;});}} else if(wakeL){const w=wakeL; wakeL=null; await w.release();}}catch(e){wakeL=null;}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&aiBusy) keepAwake(true);});
+async function askClaude(prompt,blob,onProg,signal,onRetry){
   const sm=await sampleFn();
   if(sm) return await sm.json(prompt,{images:blob?[blob]:undefined,signal,onText:({text})=>onProg(text.length),cache:false,modelTier:'complex'});
   const key=aiKey(); if(!key) throw {code:'no_key'};
   const content=[];
   if(blob){const b64=await new Promise(ok=>{const r=new FileReader(); r.onload=()=>ok(String(r.result).split(',')[1]); r.readAsDataURL(blob);}); content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}});}
   content.push({type:'text',text:prompt});
-  let res;
-  try{res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal,headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:'claude-opus-5-5',max_tokens:32000,stream:true,messages:[{role:'user',content}]})});}catch(e){if(e&&e.name==='AbortError') throw e; throw {code:'network'};}
-  if(!res.ok){const t=await res.text().catch(()=>''); throw {code:res.status===401?'bad_key':res.status===429?'rate_limited':res.status===529?'overloaded':'upstream_error',message:t.slice(0,160)};}
-  const rd=res.body.getReader(), dec=new TextDecoder(); let buf='', text='';
-  for(;;){const {done,value}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true}); let i;
-    while((i=buf.indexOf('\n'))>=0){const line=buf.slice(0,i).trim(); buf=buf.slice(i+1); if(!line.startsWith('data:')) continue;
-      let ev; try{ev=JSON.parse(line.slice(5));}catch(e){continue;}
-      if(ev.type==='content_block_delta'&&ev.delta&&ev.delta.type==='text_delta'){text+=ev.delta.text; onProg(text.length);}
-      else if(ev.type==='error') throw {code:ev.error&&ev.error.type==='overloaded_error'?'overloaded':'upstream_error',message:ev.error&&ev.error.message};}}
-  if(!text.trim()) throw {code:'empty_completion'};
-  return extractJSON(text);
+  const body=JSON.stringify({model:'claude-opus-5-5',max_tokens:32000,stream:true,messages:[{role:'user',content}]});
+  const once=async()=>{
+    let res, text='';
+    try{res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal,headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body});}
+    catch(e){if(e&&e.name==='AbortError') throw e; throw {code:'network',retry:true,message:e&&e.message};}
+    if(!res.ok){const t=await res.text().catch(()=>''); throw {code:res.status===401?'bad_key':res.status===429?'rate_limited':res.status===529?'overloaded':'upstream_error',retry:res.status>=500,message:t.slice(0,160)};}
+    try{
+      const rd=res.body.getReader(), dec=new TextDecoder(); let buf='';
+      for(;;){const {done,value}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true}); let i;
+        while((i=buf.indexOf('\n'))>=0){const line=buf.slice(0,i).trim(); buf=buf.slice(i+1); if(!line.startsWith('data:')) continue;
+          let ev; try{ev=JSON.parse(line.slice(5));}catch(e){continue;}
+          if(ev.type==='content_block_delta'&&ev.delta&&ev.delta.type==='text_delta'){text+=ev.delta.text; onProg(text.length);}
+          else if(ev.type==='error'){const ov=ev.error&&ev.error.type==='overloaded_error'; throw {code:ov?'overloaded':'upstream_error',retry:ov,message:ev.error&&ev.error.message};}}}
+    }catch(e){if(e&&e.name==='AbortError') throw e; if(e&&e.code) throw e; throw {code:'dropped',retry:true,chars:text.length,message:e&&e.message};}
+    if(!text.trim()) throw {code:'empty_completion',retry:true};
+    return extractJSON(text);
+  };
+  for(let a=1;;a++){
+    try{return await once();}
+    catch(e){if(e&&e.name==='AbortError') throw e; if(!(e&&e.retry)||a>=(e.code==='dropped'?2:3)) throw e;
+      onRetry&&onRetry(e,a); await waitVisible(); await sleep(a===1?2000:5000,signal);}
+  }
 }
+const aiErrText=e=>{const c=e&&e.code, m=e&&e.message?` (${String(e.message).slice(0,80)})`:'';
+  if(c==='network') return navigator.onLine===false?'Телефон без интернета — включите LTE или Wi-Fi и нажмите «Построить».':'Нет связи с сервером ИИ — 3 попытки не прошли'+m+'. Проверьте интернет (откройте любой сайт) и нажмите «Построить» ещё раз.';
+  if(c==='dropped') return 'Связь оборвалась посреди сборки'+m+'. Пока ИИ собирает модель, не сворачивайте приложение и не гасите экран 1–2 минуты — iPhone рвёт соединение. Нажмите «Построить» ещё раз.';
+  return AI_ERR[c]||('Не получилось. '+(e&&e.message?String(e.message).slice(0,140):'Попробуйте ещё раз.'));};
 function aiPrompt(text,cur,hasImg,exact){
   const optS=p=>(typeof p.opts==='function'?p.opts({}):p.opts).map(o=>`${o[0]}=${String(o[1]).replace(/\s+/g,' ')}`).join(' | ');
   const tl=Object.entries(TPL).filter(([k])=>k!=='custom').map(([k,T])=>`• ${k} — ${T.name} [${T.cat}]: ${T.desc}.\n  `+T.params.map(p=>p.type==='num'?`${p.k} (${p.l}, ${p.u}) ${p.min}..${p.max}, по умолч. ${p.def}`:`${p.k} (${p.l}): ${optS(p)}`).join('; ')).join('\n');
@@ -2130,17 +2151,17 @@ async function openAI(){
       const text=ta.value.trim(); if(!text&&!aiImg){st.textContent='Опишите изделие хотя бы одной фразой или приложите фото.'; ta.focus(); return;}
       state.aiText=text; save(); const k=c.querySelector('#aiK'); if(k&&k.value.trim()) LS.set('svar1.apikey',k.value.trim());
       const refine=c.querySelector('#aiCur').checked, exact=forceExact||ex.checked; if(forceExact) ex.checked=true;
-      go.disabled=true; st.textContent=exact?'Собираю по деталям… обычно 40–150 секунд.':'Думаю над конструкцией… обычно 20–90 секунд.'; c.querySelector('#aiRes').innerHTML='';
+      go.disabled=true; st.textContent=(exact?'Собираю по деталям… обычно 40–150 секунд.':'Думаю над конструкцией… обычно 20–90 секунд.')+' Не сворачивайте приложение.'; c.querySelector('#aiRes').innerHTML=''; keepAwake(true);
       aiCtl=new AbortController();
       try{
-        const res=await askClaude(aiPrompt(text,refine?aiCurrent():null,!!aiImg,exact),aiImg,n=>{st.textContent=`Собираю модель… ${n} символов`;},aiCtl.signal);
+        const res=await askClaude(aiPrompt(text,refine?aiCurrent():null,!!aiImg,exact),aiImg,n=>{st.textContent=`Собираю модель… ${n} символов`;},aiCtl.signal,(e,a)=>{st.textContent=(e.code==='dropped'?`Связь оборвалась${e.chars?` на ${e.chars} символах`:''} — запускаю заново`:e.code==='network'?'Нет связи с сервером ИИ — пробую ещё раз':'Сервер ИИ занят — пробую ещё раз')+` (попытка ${a+1})…`;});
         const hasParts=r=>['members','blocks','slabs','sheets'].some(k=>Array.isArray(r[k])&&r[k].length);
         const ok=res&&((res.mode==='tpl'&&TPL[res.tpl]&&res.tpl!=='custom'&&!exact)||(res.mode==='custom'&&hasParts(res))||(res.mode==='patch'&&refine&&(Array.isArray(res.remove)||res.add)));
         if(!ok) throw {code:'invalid_json'};
         aiRes=Object.assign(res,{refine}); if(res.mode==='patch') aiRes.spec=applyPatch(aiBase(),res);
         st.textContent=''; showAIRes(c,()=>run(true));
-      }catch(e){if(e&&e.name==='AbortError') return; st.textContent=AI_ERR[e&&e.code]||('Не получилось. '+(e&&e.message?String(e.message).slice(0,140):'Попробуйте ещё раз.'));}
-      finally{go.disabled=false;}
+      }catch(e){if(e&&e.name==='AbortError') return; st.textContent=aiErrText(e);}
+      finally{go.disabled=false; keepAwake(false);}
     };
     go.onclick=()=>run(false);
   });
@@ -2952,7 +2973,7 @@ function copyText(txt,ok){
 }
 function exportData(){
   const txt=JSON.stringify({app:'svarka',v:1,orders:Store.orders},null,1), name='svarka-zakazy-'+new Date().toISOString().slice(0,10)+'.json';
-  const inFrame=window.self!==window.top;
+  const inFrame=FOREIGN;
   if(inFrame&&window.claude&&window.claude.use){window.claude.use('downloads').then(dl=>{if(!dl) return copyText(txt,'Данные скопированы — сохраните их в заметку или файл'); return dl.save({filename:name,data:txt}).then(()=>toast('Файл сохранён'),()=>copyText(txt,'Данные скопированы'));}); return;}
   if(!inFrame){try{const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); toast('Файл сохранён'); return;}catch(e){}}
   copyText(txt,'Данные скопированы — сохраните их в заметку или файл');
