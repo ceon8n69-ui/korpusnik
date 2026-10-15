@@ -343,7 +343,7 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
   <nav class="drawer" id="drawer" hidden>
     <button type="button" data-nav="editor">Изделие<span>→</span></button>
     <button type="button" data-nav="orders">Заказы<span>→</span></button>
-    <button type="button" data-nav="ai">ИИ по словам<span>→</span></button>
+    <button type="button" data-nav="ai">ИИ по словам и фото<span>→</span></button>
     <button type="button" data-nav="prices">Мои цены<span>→</span></button>
     <a href="../" data-ext>Корпусник — мебель<span>↗</span></a>
   </nav>
@@ -355,7 +355,7 @@ textarea.copy{width:100%;min-height:180px;font:12px var(--f-b);background:var(--
         <section class="card route" id="orderBar"></section>
         <section class="card">
           <h2 class="lbl">Изделие</h2>
-          <button class="cta w" type="button" data-act="ai" style="margin-bottom:14px;min-height:50px"><span style="font-size:17px">ИИ: чертёж по словам</span><i><svg class="i" viewBox="0 0 24 24"><path d="M12 2l2.2 6.3L20 10l-5.8 1.7L12 18l-2.2-6.3L4 10l5.8-1.7z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg></i></button>
+          <button class="cta w" type="button" data-act="ai" style="margin-bottom:14px;min-height:50px"><span style="font-size:17px">ИИ: чертёж по словам и фото</span><i><svg class="i" viewBox="0 0 24 24"><path d="M12 2l2.2 6.3L20 10l-5.8 1.7L12 18l-2.2-6.3L4 10l5.8-1.7z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg></i></button>
           <div class="cats" id="cats" role="tablist" aria-label="Категории"></div>
           <div class="tpls" id="tpls"></div>
           <p class="desc" id="tplDesc"></p>
@@ -465,7 +465,7 @@ const LAB={
   gate_swing:['Распашные ворота: изготовление и монтаж','шт',7000],gate_slide:['Откатные ворота: изготовление и монтаж','шт',12000],slfound:['Фундамент под откатные ворота','шт',3000],wicket:['Калитка: изготовление и монтаж','шт',3500],drive:['Установка автоматики','шт',3000],
   stair2:['Каркас лестницы на двух косоурах','ступень',1500],stairm:['Каркас лестницы на центральном косоуре','ступень',1800],spiral:['Винтовая лестница','ступень',2200],landing:['Площадка','шт',3000],tread:['Монтаж ступени из дерева','шт',300],rail:['Ограждение / перила','п.м',1200],
   grille:['Решётка: изготовление','м²',1100],grille_inst:['Установка решётки','шт',300],bbq:['Мангал: изготовление','шт',3500],bbqroof:['Крыша над мангалом','шт',2500],
-  gh:['Теплица: изготовление и монтаж','м²',350],woodshed:['Дровница: изготовление и монтаж','шт',4000],bench:['Верстак: изготовление','шт',3500],gazebo:['Беседка: каркас и монтаж','м²',1300],custom:['Изготовление металлоконструкции','кг',45],node:['Сварной узел: подгонка и сварка','узел',35],cmount:['Монтаж на объекте','кг',15],paint:['Покраска металла','м²',90]};
+  gh:['Теплица: изготовление и монтаж','м²',350],woodshed:['Дровница: изготовление и монтаж','шт',4000],bench:['Верстак: изготовление','шт',3500],gazebo:['Беседка: каркас и монтаж','м²',1300],custom:['Изготовление металлоконструкции','кг',45],woodp:['Деревянные детали: подгонка, обработка, монтаж','шт',250],node:['Сварной узел: подгонка и сварка','узел',35],cmount:['Монтаж на объекте','кг',15],paint:['Покраска металла','м²',90]};
 const PRICE_DEF=Object.assign({kg_tube:52,kg_pipe:53.5,kg_angle:45,kg_channel:52,kg_strip:45.5,kg_rod:46,kg_sheet:49,bym:5,
   w_oak:5600,w_ash:3900,w_beech:2600,w_larch:2800,w_pine:2200,w_wpc:1100,woil:180,conc:3200,
   electrode:130,disc:35,flap:70,primer:190,enamel:230,p3in1:330,hammer:420,heatpaint:650,solvent:120,powder:260,bend:250,delivery:0,markup:15},
@@ -492,6 +492,7 @@ function ctx(v){
   c.face=(mat,pts,o={})=>{let A=[0,0,0]; for(let i=1;i<pts.length-1;i++) A=vadd(A,vcross(vsub(pts[i],pts[0]),vsub(pts[i+1],pts[0]))); const p=Object.assign({kind:'face',mat,pts,area:vlen(A)/2,ph:'clad',name:'Обшивка'},o); c.parts.push(p); return p;};
   c.box=(mat,x,y,z,sx,sy,sz,o={})=>{const p=Object.assign({kind:'box',mat,x,y,z,sx,sy,sz,ph:'frame',name:'Деталь'},o); c.parts.push(p); return p;};
   c.poly=(mat,poly,y,t,o={})=>{let A=0; for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length]; A+=a[0]*b[1]-b[0]*a[1];} const p=Object.assign({kind:'poly',mat,poly,y,t,area:Math.abs(A)/2,ph:'frame',name:'Деталь'},o); c.parts.push(p); return p;};
+  c.blk=(mat,p1,p2,w,h,o={})=>{const p=Object.assign({kind:'blk',mat,p1,p2,w,h,len:vlen(vsub(p2,p1)),ph:'frame',name:'Деталь'},o); c.parts.push(p); return p;};
   c.ghost=(x,y,z,sx,sy,sz,name='Стена')=>{c.parts.push({kind:'ghost',x,y,z,sx,sy,sz,ph:'ghost',name});};
   c.cyl=(mat,x,z,y0,h,d,o={})=>{const p=Object.assign({kind:'cyl',mat,x,z,y0,h,d,ph:'found',name:'Бетон'},o); c.parts.push(p); return p;};
   c.mark=(type,ph,p,hw,q=1)=>{c.fx.push({type,ph,x:p[0],y:p[1],z:p[2]}); if(hw) c.H(hw,q);};
@@ -579,7 +580,7 @@ function compute(key,vals,P){
   c.parts.forEach(p=>p.step=idx[p.ph]||1); c.fx.forEach(f=>f.step=idx[f.ph]||1);
   // металл
   const lines=[]; const add=(sec,name,qty,unit,price)=>{if(qty>0&&isFinite(qty)) lines.push({sec,name,qty,unit,price,sum:qty*price});};
-  const bySec={}; c.parts.filter(p=>(p.kind==='bar'||p.kind==='arc')&&SEC[p.sec].buy!==false).forEach(p=>(bySec[p.sec]=bySec[p.sec]||[]).push(p));
+  const bySec={}; c.parts.filter(p=>(p.kind==='bar'||p.kind==='arc')&&SEC[p.sec].buy!==false&&!p.nobuy).forEach(p=>(bySec[p.sec]=bySec[p.sec]||[]).push(p));
   c.metal=[]; let kgAll=0, paintA=0, cuts=0, bends=0;
   Object.entries(bySec).sort((a,b)=>SEC[b[0]].kg-SEC[a[0]].kg).forEach(([k,ps])=>{
     const Sx=SEC[k], byM=P.bym>0&&Sx.kg>=P.bym, stock=byM?12000:6000, lens=[];
@@ -596,17 +597,19 @@ function compute(key,vals,P){
   });
   // стальной лист
   const sheetsBy={}; c.parts.filter(p=>p.kind==='box'&&STEELS[p.mat]&&!p.buyAs).forEach(p=>{const d=[p.sx,p.sy,p.sz].sort((a,b)=>b-a); (sheetsBy[p.mat]=sheetsBy[p.mat]||[]).push({a:r1(d[0]),b:r1(d[1]),n:p.name});});
-  c.parts.filter(p=>p.kind==='poly'&&STEELS[p.mat]&&p.blankAB).forEach(p=>(sheetsBy[p.mat]=sheetsBy[p.mat]||[]).push({a:r1(p.blankAB[0]),b:r1(p.blankAB[1]),n:p.name}));
+  c.parts.filter(p=>p.kind==='blk'&&STEELS[p.mat]&&!p.buyAs).forEach(p=>(sheetsBy[p.mat]=sheetsBy[p.mat]||[]).push({a:r1(p.len),b:r1(Math.max(p.w,p.h)),n:p.name}));
+  c.parts.filter(p=>p.kind==='poly'&&STEELS[p.mat]&&p.blankAB&&!p.buyAs).forEach(p=>(sheetsBy[p.mat]=sheetsBy[p.mat]||[]).push({a:r1(p.blankAB[0]),b:r1(p.blankAB[1]),n:p.name}));
   c.sheets=[];
   Object.entries(sheetsBy).forEach(([m,pcs])=>{const SS=STEELS[m], sh=packSheets(pcs), kgm2=SS.kgm2||SS.t*7.85, kg=sh.length*3.125*kgm2; kgAll+=pcs.reduce((s,p)=>s+p.a*p.b/1e6,0)*kgm2; paintA+=pcs.reduce((s,p)=>s+2*p.a*p.b/1e6,0);
     c.sheets.push({m,SS,pcs,sh}); add('metal',`${SS.n} 1250×2500`,sh.length,'лист',kg/sh.length*P.kg_sheet);});
   // дерево
   const woodBy={}; c.parts.filter(p=>p.kind==='box'&&WOOD[p.mat]).forEach(p=>{const d=[p.sx,p.sy,p.sz].sort((a,b)=>b-a), k=p.mat+'|'+Math.round(d[2]); woodBy[k]=(woodBy[k]||0)+d[0]*d[1]/1e6;});
   c.parts.filter(p=>p.kind==='poly'&&WOOD[p.mat]).forEach(p=>{const k=p.mat+'|'+Math.round(p.t); woodBy[k]=(woodBy[k]||0)+(p.blank||p.area)/1e6;});
+  c.parts.filter(p=>p.kind==='blk'&&WOOD[p.mat]).forEach(p=>{const k=p.mat+'|'+Math.round(Math.min(p.w,p.h)); woodBy[k]=(woodBy[k]||0)+p.len*Math.max(p.w,p.h)/1e6;});
   let woodA=0; Object.entries(woodBy).forEach(([k,a])=>{const [m,t]=k.split('|'), q=Math.ceil(a*1.1*10)/10; woodA+=a; add('wood',`${WOOD[m].n}${m==='wpc'?'':` — щит / доска ${t} мм`}`,q,'м²',Math.round(P['w_'+m]*clamp(+t/40,.45,1.6)));});
   if(woodA&&!c.info.noOil) add('wood','Масло / лак для дерева (2 стороны)',Math.ceil(woodA*2*10)/10,'м²',P.woil);
   // бетон
-  let vol=0; c.parts.filter(p=>p.mat==='conc').forEach(p=>{vol+=p.kind==='cyl'?Math.PI*p.d*p.d/4*p.h/1e9:p.sx*p.sy*p.sz/1e9;});
+  let vol=0; c.parts.filter(p=>p.mat==='conc').forEach(p=>{vol+=p.kind==='cyl'?Math.PI*p.d*p.d/4*p.h/1e9:p.kind==='blk'?p.len*p.w*p.h/1e9:p.kind==='poly'?p.area*p.t/1e9:p.sx*p.sy*p.sz/1e9;});
   if(vol){const q=Math.ceil(vol*1.1*100)/100; add('conc','Бетон М200 — цемент, песок, щебень',q,'м³',P.conc); c.info.concVol=q;}
   // покупные позиции
   Object.entries(c.hw).forEach(([k,q])=>{const h=HW[k]; if(!h) return; const sec=/^(pc|pn|mch|shtak|mesh|twasher|rscrew|ridge|gutter|downpipe|gbracket|pc_)/.test(k)?'clad':/plate|anchor|flange|rebar|gpin/.test(k)?'conc':'hw'; add(sec,h[0],h[1]==='м'||h[1]==='м²'?Math.ceil(q*10)/10:Math.ceil(q),h[1],P[k]);});
@@ -634,7 +637,7 @@ function compute(key,vals,P){
   // габариты
   let mn=[1e9,1e9,1e9], mx=[-1e9,-1e9,-1e9];
   const ext=pt=>{for(let i=0;i<3;i++){mn[i]=Math.min(mn[i],pt[i]); mx[i]=Math.max(mx[i],pt[i]);}};
-  c.parts.forEach(p=>{if(p.kind==='bar'){ext(p.p1);ext(p.p2);} else if(p.kind==='arc'||p.kind==='face') p.pts.forEach(ext); else if(p.kind==='box'){ext([p.x,p.y,p.z]);ext([p.x+p.sx,p.y+p.sy,p.z+p.sz]);} else if(p.kind==='poly') p.poly.forEach(([x,z])=>{ext([x,p.y,z]);ext([x,p.y+p.t,z]);}); else if(p.kind==='cyl'){ext([p.x-p.d/2,p.y0,p.z-p.d/2]);ext([p.x+p.d/2,p.y0+p.h,p.z+p.d/2]);}});
+  c.parts.forEach(p=>{if(p.kind==='bar'||p.kind==='blk'){ext(p.p1);ext(p.p2);} else if(p.kind==='arc'||p.kind==='face') p.pts.forEach(ext); else if(p.kind==='box'){ext([p.x,p.y,p.z]);ext([p.x+p.sx,p.y+p.sy,p.z+p.sz]);} else if(p.kind==='poly') p.poly.forEach(([x,z])=>{ext([x,p.y,z]);ext([x,p.y+p.t,z]);}); else if(p.kind==='cyl'){ext([p.x-p.d/2,p.y0,p.z-p.d/2]);ext([p.x+p.d/2,p.y0+p.h,p.z+p.d/2]);}});
   c.bb={mn,mx}; c.size=c.size||[mx[0]-mn[0],Math.max(0,mx[1]),mx[2]-mn[2]];
   return c;
 }
@@ -1392,7 +1395,7 @@ function bGazebo(v){
   return c;
 }
 
-/* ===== Своя конструкция: собирается ИИ по описанию ===== */
+/* ===== Своя конструкция: собирается ИИ по описанию или фото, либо из шаблона ===== */
 function demoSpec(){
   // пример: стеллаж в гараж 1500×500×1800, 4 полки
   const L=1500, D=500, H=1800, m=[], st=[], sh=[];
@@ -1409,44 +1412,87 @@ function demoSpec(){
     {t:'Полки',d:'Соедините боковины продольными трубами 40×20, по центру полок — перемычки 20×20. Варите крест-накрест, чтобы не повело.'},
     {t:'Раскос',d:'Сзади — раскос 20×20 от нижней полки к верхней: стеллаж не будет «складываться».'},
     {t:'Полки из доски',d:'Доска или фанера 18–20 мм на саморезы снизу через трубы.',after:true});
-  return {name:'Стеллаж в гараж 1500×500×1800 (пример)',summary:'Пример своей конструкции. Нажмите «ИИ по словам» и опишите, что нужно сварить.',members:m,sheets:sh,steps:st};
+  return {name:'Стеллаж в гараж 1500×500×1800 (пример)',summary:'Пример своей конструкции. Нажмите «ИИ: чертёж по словам и фото» и опишите, что нужно сварить, или приложите фото.',members:m,sheets:sh,steps:st};
 }
 const PANEL_MATS=['pn8','pn20','mch','pc4','pc6','pc8','pc10','pcm4','mesh','glass','perfo'];
+const SOLID_MATS=()=>[...Object.keys(STEELS),...Object.keys(WOOD),'conc'];
+// минимальный прямоугольник, в который вписывается многоугольник (заготовка)
+function minRect(pts){
+  let best=null;
+  for(let i=0;i<pts.length;i++){const a=pts[i], b=pts[(i+1)%pts.length], L=Math.hypot(b[0]-a[0],b[1]-a[1]); if(L<1) continue;
+    const ux=(b[0]-a[0])/L, uz=(b[1]-a[1])/L; let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9;
+    pts.forEach(([x,z])=>{const u=x*ux+z*uz, v=-x*uz+z*ux; u0=Math.min(u0,u); u1=Math.max(u1,u); v0=Math.min(v0,v); v1=Math.max(v1,v);});
+    const A=(u1-u0)*(v1-v0); if(!best||A<best.A) best={A,d:[u1-u0,v1-v0].sort((p,q)=>q-p)};}
+  return best?best.d:[0,0];
+}
 function bCustom(v,raw){
   const sp=raw&&raw.spec&&typeof raw.spec==='object'?raw.spec:demoSpec(), c=ctx(v);
   c.title=String(sp.name||'Своя конструкция').slice(0,80); c.info.ai=String(sp.summary||'').slice(0,600); c.extra=[];
-  const steps=(Array.isArray(sp.steps)&&sp.steps.length?sp.steps:[{t:'Сборка',d:'Сварите каркас по чертежу: прихватки, проверка диагоналей, проварка.'}]).slice(0,12);
+  const steps=(Array.isArray(sp.steps)&&sp.steps.length?sp.steps:[{t:'Сборка',d:'Сварите каркас по чертежу: прихватки, проверка диагоналей, проварка.'}]).slice(0,14);
   const ph=i=>'p'+clamp(Math.round(+i||1),1,steps.length);
   const num=x=>{x=+x; return isFinite(x)?clamp(Math.round(x),-60000,60000):0;};
   const pt=a=>Array.isArray(a)&&a.length>=3?[num(a[0]),num(a[1]),num(a[2])]:null;
+  const pt2=a=>Array.isArray(a)&&a.length>=2?[num(a[0]),num(a[a.length>=3?2:1])]:null;
   const txt=(s,n=60)=>String(s==null?'':s).slice(0,n);
+  const arr=(x,n)=>(Array.isArray(x)?x:[]).slice(0,n).filter(Boolean);
+  const solidMat=(m,def)=>SOLID_MATS().includes(m)?m:def;
   // каркас
   const mem=[];
-  (Array.isArray(sp.members)?sp.members:[]).slice(0,400).forEach(m=>{
-    if(!m) return; const s=SEC[m.s]&&SEC[m.s].buy!==false?m.s:(SEC[m.s]?m.s:'40x40x2'), o={name:txt(m.n||SEC[s].n),ph:ph(m.st)};
+  arr(sp.members,500).forEach(m=>{
+    const s=SEC[m.s]?m.s:'40x40x2', o={name:txt(m.n||SEC[s].n),ph:ph(m.st)}; if(m.nw) o.nw=1; if(m.buy===false) o.nobuy=1; if(m.inox) o.inox=1;
     const up=pt(m.up); if(up&&vlen(up)>0) o.up=vnorm(up); if(m.cut) o.cut=txt(m.cut,10);
     if(Array.isArray(m.pts)&&m.pts.length>=3){const pts=m.pts.map(pt).filter(Boolean); if(pts.length>=3) mem.push(c.arc(s,pts,o)); return;}
     const a=pt(m.a), b=pt(m.b); if(!a||!b||vlen(vsub(b,a))<5) return; mem.push(c.bar(s,a,b,o));
   });
-  // сварные узлы: конец детали касается другой детали
-  const segOf=p=>p.kind==='bar'?[[p.p1,p.p2]]:p.pts.slice(1).map((q,i)=>[p.pts[i],q]);
-  const dSeg=(e,[a,b])=>{const ab=vsub(b,a), t=clamp(vdot(vsub(e,a),ab)/(vdot(ab,ab)||1),0,1); return vlen(vsub(e,vadd(a,vmul(ab,t))));};
-  const rad=p=>Math.max(SEC[p.sec].h,SEC[p.sec].w)/2;
-  let nodes=0;
-  mem.forEach((p,i)=>{const ends=p.kind==='bar'?[p.p1,p.p2]:[p.pts[0],p.pts[p.pts.length-1]];
-    ends.forEach(e=>{if(mem.some((q,j)=>j!==i&&segOf(q).some(sg=>dSeg(e,sg)<=rad(p)+rad(q)+12))){c.W(p.ph,e,2); nodes++;}});});
-  // листы, дерево, бетон
-  let kg=mem.reduce((s,p)=>s+(SEC[p.sec].buy===false?0:p.len/1000*SEC[p.sec].kg),0);
-  (Array.isArray(sp.sheets)?sp.sheets:[]).slice(0,120).forEach(s=>{
-    if(!s) return; const p=pt(s.p), d=pt(s.d); if(!p||!d) return; const m=STEELS[s.m]||WOOD[s.m]||s.m==='conc'?s.m:'s2';
-    const dd=d.map(x=>Math.max(1,Math.abs(x))); c.box(m,p[0],p[1],p[2],dd[0],dd[1],dd[2],{ph:ph(s.st),name:txt(s.n||'Лист')});
-    if(STEELS[m]){const t=Math.min(...dd); kg+=dd[0]*dd[1]*dd[2]/t/1e6*(STEELS[m].kgm2||t*7.85); c.W(ph(s.st),[p[0],p[1],p[2]],2); c.W(ph(s.st),[p[0]+dd[0],p[1]+dd[1],p[2]+dd[2]],2);}
+  // листы, дерево, бетон: прямоугольные по осям
+  const solids=[];
+  arr(sp.sheets,200).forEach(s=>{
+    const p=pt(s.p), d=pt(s.d); if(!p||!d) return; const m=s.buy===false&&/^[a-z0-9_]{1,12}$/.test(s.m)?s.m:solidMat(s.m,'s2');
+    const dd=d.map(x=>Math.max(1,Math.abs(x))), o={ph:ph(s.st),name:txt(s.n||'Лист')}; if(s.buy===false) o.buyAs='spec';
+    solids.push(c.box(m,p[0],p[1],p[2],dd[0],dd[1],dd[2],o));
   });
-  (Array.isArray(sp.conc)?sp.conc:[]).slice(0,60).forEach(f=>{if(!f||!Array.isArray(f.p)) return; const dep=clamp(+f.dep||800,200,2500), d=clamp(+f.d||250,100,1200); c.cyl('conc',num(f.p[0]),num(f.p[1]),-dep,dep,d,{ph:ph(f.st),name:'Бетонная опора'}); c.L('footing',1);});
+  // бруски, доски, ступени, пластины под любым углом
+  arr(sp.blocks,200).forEach(s=>{
+    const a=pt(s.a), b=pt(s.b); if(!a||!b||vlen(vsub(b,a))<5) return; const m=solidMat(s.m,'pine');
+    const w=clamp(Math.round(+s.w||100),1,3000), h=clamp(Math.round(+s.h||(STEELS[m]?STEELS[m].t:40)),1,3000), o={ph:ph(s.st),name:txt(s.n||'Деталь')};
+    const up=pt(s.up); if(up&&vlen(up)>0) o.up=vnorm(up); if(s.buy===false) o.buyAs='spec';
+    solids.push(c.blk(m,a,b,w,h,o));
+  });
+  // фигурные плиты (забежные ступени, круглые столешницы, косынки): контур в плане + высота + толщина
+  arr(sp.slabs,200).forEach(s=>{
+    const pts=arr(s.pts,64).map(pt2).filter(Boolean); if(pts.length<3) return; const m=solidMat(s.m,'oak');
+    const t=clamp(Math.round(+s.t||(STEELS[m]?STEELS[m].t:40)),1,1000), p=c.poly(m,pts,num(s.y),t,{ph:ph(s.st),name:txt(s.n||'Плита')});
+    if(Array.isArray(s.blank)&&s.blank.length>=2&&+s.blank[0]>0&&+s.blank[1]>0){p.blankAB=[+s.blank[0],+s.blank[1]]; p.blank=+s.blank[2]>0?+s.blank[2]:p.blankAB[0]*p.blankAB[1];}
+    else{p.blankAB=minRect(pts); p.blank=Math.min(p.blankAB[0]*p.blankAB[1],p.area*1.35);}
+    if(s.buy===false) p.buyAs='spec';
+    solids.push(p);
+  });
+  // окружение: стены, перекрытие, проём — только для вида, в смету не идут
+  arr(sp.ghosts,20).forEach(g=>{const p=pt(g.p), d=pt(g.d); if(!p||!d) return; c.ghost(p[0],p[1],p[2],Math.max(1,Math.abs(d[0])),Math.max(1,Math.abs(d[1])),Math.max(1,Math.abs(d[2])),txt(g.n||'Стена',30));});
+  // сварные узлы: конец металлической детали касается другой металлической детали или стального листа
+  const isMetal=p=>p.kind==='bar'||p.kind==='arc'?SEC[p.sec].cat!=='wood'&&!p.nobuy:!!STEELS[p.mat];
+  const segOf=p=>p.kind==='bar'||p.kind==='blk'?[[p.p1,p.p2]]:p.pts.slice(1).map((q,i)=>[p.pts[i],q]);
+  const dSeg=(e,[a,b])=>{const ab=vsub(b,a), t=clamp(vdot(vsub(e,a),ab)/(vdot(ab,ab)||1),0,1); return vlen(vsub(e,vadd(a,vmul(ab,t))));};
+  const dBox=(e,q)=>Math.hypot(Math.max(q.x-e[0],0,e[0]-q.x-q.sx),Math.max(q.y-e[1],0,e[1]-q.y-q.sy),Math.max(q.z-e[2],0,e[2]-q.z-q.sz));
+  const rad=p=>p.kind==='blk'?Math.max(p.w,p.h)/2:Math.max(SEC[p.sec].h,SEC[p.sec].w)/2;
+  const metalM=mem.filter(isMetal), metalS=solids.filter(p=>STEELS[p.mat]&&(p.kind==='box'||p.kind==='blk'));
+  let nodes=0;
+  const given=Array.isArray(sp.welds)?sp.welds.slice(0,3000).map(w=>({p:pt(w),st:Array.isArray(w)?w[3]:1})).filter(w=>w.p):null;
+  if(given){given.forEach(w=>c.W(ph(w.st),w.p)); nodes=Math.ceil(given.length/2);}
+  (given?metalM.filter(p=>p.nw):metalM).forEach(p=>{const ends=p.kind==='bar'?[p.p1,p.p2]:[p.pts[0],p.pts[p.pts.length-1]];
+    ends.forEach(e=>{
+      const hit=metalM.some(q=>q!==p&&segOf(q).some(sg=>dSeg(e,sg)<=rad(p)+rad(q)+12))||metalS.some(q=>q.kind==='box'?dBox(e,q)<=rad(p)+12:dSeg(e,[q.p1,q.p2])<=rad(p)+rad(q)+12);
+      if(hit){c.W(p.ph,e,2); nodes++;}});});
+  // вес металла
+  let kg=mem.reduce((s,p)=>s+(SEC[p.sec].buy===false||p.nobuy?0:p.len/1000*SEC[p.sec].kg),0);
+  solids.forEach(p=>{if(!STEELS[p.mat]) return; const kgm2=STEELS[p.mat].kgm2||STEELS[p.mat].t*7.85;
+    if(p.kind==='box'){const d=[p.sx,p.sy,p.sz].sort((a,b)=>b-a); kg+=d[0]*d[1]/1e6*kgm2;} else if(p.kind==='blk') kg+=p.len*Math.max(p.w,p.h)/1e6*kgm2; else kg+=p.area/1e6*kgm2;});
+  const woodN=solids.filter(p=>WOOD[p.mat]).length, fixedLab=Array.isArray(sp.lab)&&sp.lab.length>0;
+  arr(sp.conc,60).forEach(f=>{const q=pt2(f.p); if(!q) return; const dep=clamp(+f.dep||800,200,2500), d=clamp(+f.d||250,100,1200); c.cyl('conc',q[0],q[1],-dep,dep,d,{ph:ph(f.st),name:'Бетонная опора'}); if(!fixedLab) c.L('footing',1);});
   // обшивка
   const area={};
-  (Array.isArray(sp.panels)?sp.panels:[]).slice(0,80).forEach(f=>{if(!f||!Array.isArray(f.pts)) return; const pts=f.pts.map(pt).filter(Boolean); if(pts.length<3) return; const m=PANEL_MATS.includes(f.m)?f.m:'pn8';
-    const fc=c.face(m,pts,{ph:ph(f.st),name:txt(f.n||'Обшивка')}); area[m]=(area[m]||0)+fc.area/1e6;});
+  arr(sp.panels,120).forEach(f=>{if(!Array.isArray(f.pts)) return; const pts=f.pts.map(pt).filter(Boolean); if(pts.length<3) return; const m=PANEL_MATS.includes(f.m)?f.m:'pn8';
+    const fc=c.face(m,pts,{ph:ph(f.st),name:txt(f.n||'Обшивка')}); if(f.buy!==false) area[m]=(area[m]||0)+fc.area/1e6;});
   Object.entries(area).forEach(([m,a])=>{
     if(/^pc\d/.test(m)){c.H(m+'_6',Math.ceil(a*1.15/12.6)); c.H('twasher',Math.ceil(a*7)); c.H('pc_join',Math.ceil(a/1.5));}
     else if(m==='pcm4'){c.H('pcm4',Math.ceil(a*1.15/6.25)); c.H('twasher',Math.ceil(a*7));}
@@ -1454,17 +1500,65 @@ function bCustom(v,raw){
     else if(m==='mesh') c.H('mesh3d',a); else if(m==='glass'){c.H('glass',a); c.H('gclamp',Math.ceil(a*4));} else if(m==='perfo') c.H('perfo',a);
   });
   // крепёж и фурнитура
-  (Array.isArray(sp.fx)?sp.fx:[]).slice(0,300).forEach(f=>{if(!f) return; const p=pt(f.p); if(!p||!FX[f.t]||f.t==='weld') return; c.mark(f.t,ph(f.st),p,HW[f.k]?f.k:null);});
-  (Array.isArray(sp.hw)?sp.hw:[]).slice(0,40).forEach(h=>{if(!h) return; const q=Math.max(0,+h.q||0); if(!q) return;
-    if(HW[h.k]) c.H(h.k,q); else if(h.n) c.extra.push({sec:'hw',name:txt(h.n,70)+' — цена ИИ, проверьте',qty:Math.ceil(q*10)/10,unit:txt(h.u||'шт',6),price:Math.max(0,+h.p||0)});});
+  arr(sp.fx,400).forEach(f=>{const p=pt(f.p); if(!p||!FX[f.t]||f.t==='weld') return; c.mark(f.t,ph(f.st),p,HW[f.k]?f.k:null);});
+  arr(sp.hw,60).forEach(h=>{const q=Math.max(0,+h.q||0); if(!q) return;
+    if(HW[h.k]) c.H(h.k,q); else if(h.n) c.extra.push({sec:'hw',name:txt(h.n,70)+(h.own?'':' — цена ИИ, проверьте'),qty:Math.ceil(q*10)/10,unit:txt(h.u||'шт',6),price:Math.max(0,+h.p||0)});});
   // размеры, предупреждения
-  (Array.isArray(sp.dims)?sp.dims:[]).slice(0,12).forEach(d=>{if(!d) return; const a=pt(d.a), b=pt(d.b); if(a&&b&&['front','side','top'].includes(d.v)) c.dim(d.v,a,b,txt(d.l||Math.round(vlen(vsub(b,a))),20),-1);});
-  (Array.isArray(sp.warn)?sp.warn:[]).slice(0,5).forEach(w=>c.warn(txt(w,300)));
-  if(!mem.length) c.warn('ИИ не прислал ни одной детали каркаса — попробуйте описать подробнее.');
-  // работа: по весу металла + сварные узлы (+ монтаж)
-  kg=Math.round(kg); c.L('custom',kg); c.L('node',nodes); if(sp.mount) c.L('cmount',kg);
+  arr(sp.dims,12).forEach(d=>{const a=pt(d.a), b=pt(d.b); if(a&&b&&['front','side','top'].includes(d.v)) c.dim(d.v,a,b,txt(d.l||Math.round(vlen(vsub(b,a))),20),-1);});
+  arr(sp.warn,6).forEach(w=>c.warn(txt(w,300)));
+  if(!mem.length&&!solids.length) c.warn('ИИ не прислал ни одной детали — попробуйте описать подробнее.');
+  // работа: из шаблона (lab) или по весу металла, узлам и деревянным деталям
+  kg=Math.round(kg);
+  if(fixedLab) sp.lab.slice(0,30).forEach(l=>{if(l&&LAB[l.k]) c.L(l.k,Math.max(0,+l.q||0));});
+  else{c.L('custom',kg); c.L('node',nodes); c.L('woodp',woodN); if(sp.mount) c.L('cmount',kg);}
+  arr(sp.labor,10).forEach(l=>{const q=Math.max(0,+l.q||0); if(q&&l.n) c.extra.push({sec:'labor',name:txt(l.n,70),qty:Math.ceil(q*10)/10,unit:txt(l.u||'шт',8),price:Math.max(0,+l.p||0)});});
   steps.forEach((s,i)=>c.step('p'+(i+1),txt(s.t||('Шаг '+(i+1)),70),txt(s.d||'',900)||'По чертежу.',true,!!s.after));
   return c;
+}
+
+/* ---- Шаблон → своя конструкция: все детали как есть, дальше правится ИИ ---- */
+function toSpec(m){
+  const R=x=>Math.round(x), P=a=>a.map(R);
+  const idx={}; let k=0; m.steps.forEach((s,i)=>{if(s.ph!=='paint') k++; idx[i+1]=Math.max(1,k);});
+  const st=p=>idx[p.step]||1, sp={name:m.title||m.T.name,summary:'Собрано из шаблона «'+m.T.name+'» — теперь можно менять любые детали.',members:[],sheets:[],blocks:[],slabs:[],panels:[],conc:[],ghosts:[],fx:[],hw:[],lab:[],labor:[],steps:[],dims:[],mount:false};
+  m.parts.forEach(p=>{
+    if(p.kind==='bar'){const o={n:p.name,s:p.sec,a:P(p.p1),b:P(p.p2),st:st(p)}; if(p.up) o.up=p.up.map(x=>Math.round(x*100)/100); if(p.cut) o.cut=p.cut; if(p.nobuy) o.buy=false; if(p.inox) o.inox=true; sp.members.push(o);}
+    else if(p.kind==='arc'){const o={n:p.name,s:p.sec,pts:p.pts.map(P),st:st(p)}; if(p.nobuy) o.buy=false; if(p.inox) o.inox=true; sp.members.push(o);}
+    else if(p.kind==='box'){const o={n:p.name,m:p.mat,p:P([p.x,p.y,p.z]),d:P([p.sx,p.sy,p.sz]),st:st(p)}; if(p.buyAs||!SOLID_MATS().includes(p.mat)) o.buy=false; sp.sheets.push(o);}
+    else if(p.kind==='blk'){const o={n:p.name,m:p.mat,a:P(p.p1),b:P(p.p2),w:R(p.w),h:R(p.h),st:st(p)}; if(p.up) o.up=p.up.map(x=>Math.round(x*100)/100); if(p.buyAs) o.buy=false; sp.blocks.push(o);}
+    else if(p.kind==='poly'){const o={n:p.name,m:p.mat,pts:p.poly.map(P),y:R(p.y),t:R(p.t),st:st(p)}; if(p.blankAB) o.blank=[R(p.blankAB[0]),R(p.blankAB[1]),R(p.blank||p.blankAB[0]*p.blankAB[1])]; if(p.buyAs) o.buy=false; sp.slabs.push(o);}
+    else if(p.kind==='face') sp.panels.push({n:p.name,m:p.mat,pts:p.pts.map(P),st:st(p),buy:false});
+    else if(p.kind==='cyl'&&p.mat==='conc') sp.conc.push({p:[R(p.x),R(p.z)],d:R(p.d),dep:R(p.h),st:st(p)});
+    else if(p.kind==='ghost') sp.ghosts.push({n:p.name,p:P([p.x,p.y,p.z]),d:P([p.sx,p.sy,p.sz])});
+  });
+  sp.welds=m.fx.filter(f=>f.type==='weld').map(f=>[R(f.x),R(f.y),R(f.z),idx[f.step]||1]);
+  m.fx.filter(f=>f.type!=='weld').forEach(f=>sp.fx.push({t:f.type,p:P([f.x,f.y,f.z]),st:idx[f.step]||1}));
+  Object.entries(m.hw).forEach(([k,q])=>sp.hw.push({k,q:Math.round(q*100)/100}));
+  (m.extra||[]).forEach(e=>{if(e.sec==='labor') sp.labor.push({n:e.name,q:e.qty,u:e.unit,p:e.price}); else sp.hw.push({n:e.name.replace(/ — цена ИИ, проверьте$/,''),q:e.qty,u:e.unit,p:e.price,own:true});});
+  Object.entries(m.lab).forEach(([k,q])=>sp.lab.push({k,q:Math.round(q*100)/100}));
+  m.steps.filter(s=>s.ph!=='paint').forEach(s=>sp.steps.push({t:s.t,d:s.d,after:!!s.after}));
+  m.dims.forEach(d=>sp.dims.push({v:d.view,a:P(d.a),b:P(d.b),l:d.label}));
+  sp.mount=!!(m.lab.cmount||m.parts.some(p=>p.kind==='cyl')||m.fx.some(f=>f.type==='anchor'));
+  Object.keys(sp).forEach(k=>{if(Array.isArray(sp[k])&&!sp[k].length) delete sp[k];});
+  return sp;
+}
+/* ---- Правка ИИ «точечно»: убрать детали по названию, добавить новые ---- */
+const SPEC_LISTS=['members','sheets','blocks','slabs','panels','conc','ghosts','fx','hw','dims','labor'];
+function applyPatch(base,r){
+  const sp=JSON.parse(JSON.stringify(base)), rm=(Array.isArray(r.remove)?r.remove:[]).map(x=>String(x||'').trim().toLowerCase()).filter(Boolean);
+  const gone=n=>rm.some(x=>String(n||'').toLowerCase().startsWith(x));
+  if(Array.isArray(sp.welds)&&Array.isArray(sp.members)){const ends=[]; sp.members.filter(p=>gone(p.n)).forEach(p=>{if(p.a&&p.b) ends.push(p.a,p.b); else if(Array.isArray(p.pts)&&p.pts.length) ends.push(p.pts[0],p.pts[p.pts.length-1]);});
+    if(ends.length) sp.welds=sp.welds.filter(w=>!ends.some(e=>Math.hypot(w[0]-e[0],w[1]-e[1],w[2]-e[2])<40));}
+  ['members','sheets','blocks','slabs','panels','ghosts','dims'].forEach(k=>{if(Array.isArray(sp[k])) sp[k]=sp[k].filter(p=>!gone(p.n||p.l));});
+  if(Array.isArray(sp.hw)) sp.hw=sp.hw.filter(h=>!gone(h.n||(HW[h.k]||[''])[0]));
+  const add=r.add&&typeof r.add==='object'?r.add:{};
+  if(Array.isArray(add.members)) add.members.forEach(m=>{if(m) m.nw=1;});
+  SPEC_LISTS.forEach(k=>{if(Array.isArray(add[k])&&add[k].length) sp[k]=(Array.isArray(sp[k])?sp[k]:[]).concat(add[k]);});
+  if(Array.isArray(r.lab)) sp.lab=r.lab;
+  ['steps','warn'].forEach(k=>{if(Array.isArray(r[k])&&r[k].length) sp[k]=r[k];});
+  ['name','summary'].forEach(k=>{if(r[k]) sp[k]=r[k];});
+  if(typeof r.mount==='boolean') sp.mount=r.mount;
+  return sp;
 }
 
 /* ===== Реестр шаблонов ===== */
@@ -1771,7 +1865,7 @@ const IC_MIC='<svg class="i" viewBox="0 0 24 24"><path d="M9 4h6v10H9z"/><path d
 const IC_CLIP='<svg class="i" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></svg>';
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 const aiKey=()=>LS.get('svar1.apikey','')||LS.get('korp3.apikey','');
-const AI_EX=['Навес к стене дома 6×4 м, поликарбонат бронза 8 мм, водосток','Стеллаж в гараж 2000×600×2000, 5 полок, профиль 40×40','Откатные ворота 4 м, штакетник шоколад, с автоматикой','Подставка под бочку 1000 л на высоте 2 м','Стол лофт 1600×800, П-образные ноги 80×40, столешница дуб','Лестница на второй этаж 3 м, поворот налево, ступени дуб'];
+const AI_EX=['Навес к стене дома 6×4 м, поликарбонат бронза 8 мм, водосток','Стеллаж в гараж 2000×600×2000, 5 полок, профиль 40×40','Откатные ворота 4 м, штакетник шоколад, с автоматикой','Подставка под бочку 1000 л на высоте 2 м','Стол лофт 1600×800, П-образные ноги 80×40, столешница дуб','Лестница на второй этаж 3 м, поворот налево, ступени дуб','Лестница на брусе с поворотом, ступени бук, тяги из нержавейки к потолку'];
 const AI_ERR={not_granted:'Доступ к Claude не разрешён для этой страницы.',sampling_disabled:'Claude недоступен для этого аккаунта.',rate_limited:'Слишком много запросов или закончился лимит на ключе. Попробуйте позже.',refused:'ИИ не стал это строить. Переформулируйте.',invalid_json:'Ответ получился неполным. Нажмите «Построить» ещё раз.',empty_completion:'Пустой ответ. Попробуйте ещё раз.',no_key:'Вставьте ключ Claude API — без него ИИ в приложении не работает.',bad_key:'Ключ API не подошёл. Проверьте его на console.anthropic.com.',overloaded:'Сервер ИИ перегружен. Попробуйте через минуту.',network:'Нет связи с сервером ИИ. Проверьте интернет.'};
 async function sampleFn(){try{return window.claude&&typeof window.claude.use==='function'&&window.self!==window.top?await window.claude.use('sample'):null;}catch(e){return null;}}
 function extractJSON(text){const a=text.indexOf('{'), b=text.lastIndexOf('}'); if(a<0||b<=a) throw {code:'invalid_json'}; try{return JSON.parse(text.slice(a,b+1));}catch(e){throw {code:'invalid_json'};}}
@@ -1784,7 +1878,7 @@ async function askClaude(prompt,blob,onProg,signal){
   content.push({type:'text',text:prompt});
   let res;
   try{res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal,headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:'claude-opus-5-5',max_tokens:16000,stream:true,messages:[{role:'user',content}]})});}catch(e){if(e&&e.name==='AbortError') throw e; throw {code:'network'};}
+    body:JSON.stringify({model:'claude-opus-5-5',max_tokens:32000,stream:true,messages:[{role:'user',content}]})});}catch(e){if(e&&e.name==='AbortError') throw e; throw {code:'network'};}
   if(!res.ok){const t=await res.text().catch(()=>''); throw {code:res.status===401?'bad_key':res.status===429?'rate_limited':res.status===529?'overloaded':'upstream_error',message:t.slice(0,160)};}
   const rd=res.body.getReader(), dec=new TextDecoder(); let buf='', text='';
   for(;;){const {done,value}=await rd.read(); if(done) break; buf+=dec.decode(value,{stream:true}); let i;
@@ -1795,94 +1889,115 @@ async function askClaude(prompt,blob,onProg,signal){
   if(!text.trim()) throw {code:'empty_completion'};
   return extractJSON(text);
 }
-function aiPrompt(text,cur,hasImg){
+function aiPrompt(text,cur,hasImg,exact){
   const optS=p=>(typeof p.opts==='function'?p.opts({}):p.opts).map(o=>`${o[0]}=${String(o[1]).replace(/\s+/g,' ')}`).join(' | ');
   const tl=Object.entries(TPL).filter(([k])=>k!=='custom').map(([k,T])=>`• ${k} — ${T.name} [${T.cat}]: ${T.desc}.\n  `+T.params.map(p=>p.type==='num'?`${p.k} (${p.l}, ${p.u}) ${p.min}..${p.max}, по умолч. ${p.def}`:`${p.k} (${p.l}): ${optS(p)}`).join('; ')).join('\n');
-  const secs=Object.entries(SEC).filter(([,x])=>x.buy!==false).map(([k,x])=>`${k}=${x.n}`).join('; ');
+  const secs=Object.entries(SEC).filter(([,x])=>x.buy!==false||x.cat==='wood').map(([k,x])=>`${k}=${x.n}`).join('; ');
   const hw=Object.entries(HW).map(([k,x])=>`${k}=${x[0]} (${x[1]})`).join('; ');
-  return `Ты — опытный сварщик-конструктор и технолог. Мастер описал словами металлоконструкцию, которую нужно изготовить. Переведи описание в модель для приложения «Сварщик», которое по ней построит 3D, чертёж, нарезку металла, шаги сварки и смету. Ответь ТОЛЬКО одним JSON-объектом, без текста вокруг.
-
-ОПИСАНИЕ МАСТЕРА: «${text||'(см. эскиз)'}»
-${hasImg?'К описанию приложен эскиз или фото — используй его для формы и размеров.\n':''}${cur?`ТЕКУЩЕЕ ИЗДЕЛИЕ — мастер просит его ИЗМЕНИТЬ (сохрани всё, о чём не сказано, и верни изделие целиком в том же формате):\n${cur}\n`:''}
-ВАРИАНТ А — ГОТОВЫЙ ШАБЛОН. Используй, если изделие по сути совпадает с шаблоном (навес, забор, ворота, калитка, лестница, ограждение, решётка, мангал, теплица, дровница, верстак, беседка). Заполни ВСЕ параметры, о которых сказано или которые следуют из описания; остальные — по умолчанию.
+  const labs=Object.entries(LAB).map(([k,x])=>`${k}=${x[0]} (${x[1]})`).join('; ');
+  const tplPart=exact?`ШАБЛОНЫ НЕ ИСПОЛЬЗУЙ: мастер просит собрать конструкцию по деталям точно как на ${hasImg?'фото':'описании'} — только вариант Б${cur?' или В':''}.\n`:`ВАРИАНТ А — ГОТОВЫЙ ШАБЛОН. Бери его ТОЛЬКО если шаблон воспроизводит изделие один в один: тот же тип и схема (опоры, косоуры, форма ступеней, ограждение), отличаются лишь размеры и материалы. Если хоть что-то принципиальное другое — другая схема лестницы (на одном брусе или стойке, «гусиный шаг», подвесная на тягах к потолку, консольная из стены), другое ограждение, нестандартная форма, сочетание узлов — бери вариант Б. Сомневаешься — вариант Б. Заполни ВСЕ параметры, о которых сказано или которые видны; остальные — по умолчанию.
 ${tl}
 Общие для всех: mc — цвет металла: ${Object.entries(MCOL).map(([k,x])=>`${k}=${x.n}`).join(' | ')}; fin — покраска: ${FIN_OPTS.map(o=>`${o[0]}=${o[1]}`).join(' | ')}.
 Формат: {"mode":"tpl","tpl":"ключ","vals":{"параметр":значение,...},"name":"название по-русски","summary":"2–3 предложения: что построил","assumptions":["допущение",...],"questions":["вопрос",...]}
+`;
+  return `Ты — опытный сварщик-конструктор и технолог. Мастер описал словами${hasImg?' и показал на фото':''} конструкцию, которую нужно изготовить. Переведи её в модель для приложения «Сварщик», которое построит 3D, чертёж, нарезку металла, шаги и смету. Ответь ТОЛЬКО одним JSON-объектом, без текста вокруг.
 
-ВАРИАНТ Б — СВОЯ КОНСТРУКЦИЯ. Если ни один шаблон не передаёт форму (стеллаж, стол, рама, подставка под бак, кронштейн, тележка, козлы, мебель лофт, ограждение сложной формы, каркас будки и т. п.) — собери её из деталей:
+ОПИСАНИЕ МАСТЕРА: «${text||'(см. фото)'}»
+${hasImg?`К описанию приложено фото или эскиз. Это главный источник: повтори именно то, что на нём — схему, количество ступеней, стоек, прутьев, их расположение, пропорции и материалы (металл, дерево, стекло). Посчитай элементы на фото. Размеры, которых не видно, возьми из описания или типовые и запиши в assumptions.\n`:''}${cur?`ТЕКУЩЕЕ ИЗДЕЛИЕ — мастер просит его ИЗМЕНИТЬ. Всё, о чём не сказано, сохрани.\n${cur}\n`:''}
+${tplPart}
+ВАРИАНТ Б — СВОЯ КОНСТРУКЦИЯ ПО ДЕТАЛЯМ. Собери любую форму из деталей — металл, дерево, лист, бетон, обшивка:
 {"mode":"custom","name":"…","summary":"…","assumptions":[…],"questions":[…],"mc":"black","fin":"enamel","mount":true|false,
  "members":[{"n":"Стойка","s":"40x40x2","a":[x,y,z],"b":[x,y,z],"st":1}],
+ "blocks":[{"n":"Ступень","m":"beech","a":[x,y,z],"b":[x,y,z],"w":250,"h":40,"st":3}],
+ "slabs":[{"n":"Ступень забежная","m":"oak","pts":[[x,z],[x,z],[x,z],[x,z]],"y":400,"t":40,"st":3}],
  "sheets":[{"n":"Полка","m":"s2","p":[x,y,z],"d":[dx,dy,dz],"st":2}],
  "panels":[{"n":"Обшивка","m":"pn8","pts":[[x,y,z],[x,y,z],[x,y,z],[x,y,z]],"st":3}],
  "conc":[{"p":[x,z],"d":250,"dep":800,"st":1}],
+ "ghosts":[{"n":"Стена","p":[x,y,z],"d":[dx,dy,dz]}],
  "fx":[{"t":"anchor","p":[x,y,z],"st":1,"k":"anchor12"}],
- "hw":[{"k":"ghinge","q":2},{"n":"Колесо поворотное Ø100","q":4,"u":"шт","p":180}],
+ "hw":[{"k":"tbolt","q":24},{"n":"Тяга нерж. Ø12 с резьбой М12 и гайками","q":7,"u":"шт","p":420}],
+ "labor":[{"n":"Монтаж тяг к перекрытию","q":7,"u":"шт","p":150}],
  "steps":[{"t":"Заголовок шага","d":"Что делать: размеры, порядок, на что смотреть","after":false}],
  "dims":[{"v":"front","a":[x,y,z],"b":[x,y,z],"l":"1500"}],
  "warn":["предупреждение о прочности или безопасности"]}
 Правила для варианта Б:
-— Координаты в целых мм. y — вверх (пол или земля y=0), x — длина слева направо, z — глубина к зрителю. Изделие начинается от x=0, z=0.
-— members — ОСЕВЫЕ линии труб, уголков, полос, прутков. s — сечение строго из списка. Длина детали = длина реза: перемычку между стойками 40×40 с осями x=20 и x=1480 ставь от x=40 до x=1460. Стыкующиеся детали должны касаться торцом — так программа найдёт сварные узлы. Детали не должны проходить друг сквозь друга.
-— У горизонтальной трубы большая сторона сечения вертикальна (60×40 — 60 по высоте); чтобы положить плашмя — добавь "up":[0,0,1]. У вертикальной — большая сторона по z. Угол реза, если не 90°, — "cut":"45°".
-— Гнутые детали (дуги, кольца) — вместо a/b "pts": [[x,y,z],…] от 6 до 30 точек.
-— sheets — листы и деревянные детали (параллелепипед от угла p размерами d): s2|s3|s4|s10|rif4 — сталь; oak|ash|beech|larch|pine|wpc — дерево; conc — бетон.
+— Координаты в целых мм. y — вверх (пол или земля y=0), x — слева направо, z — к зрителю. Изделие начинается от x=0, z=0 (стены можно ставить в минус).
+— members — ОСЕВЫЕ линии труб, уголков, полос, прутков (металл). s — сечение строго из списка. Длина детали = длина реза: перемычку между стойками 40×40 с осями x=20 и x=1480 ставь от x=40 до x=1460. Стыкующиеся детали касаются торцом — так программа найдёт сварные узлы. Детали не проходят друг сквозь друга. Деревянный поручень — s:"hrw" + в hw "hrwood" по длине.
+— Готовые покупные металлические детали (тяги и стойки из нержавейки, кованые элементы, хромированные поручни) рисуй members с "buy":false, а цену дай строкой в hw. Нержавейка — "inox":true (серый цвет).
+— У горизонтальной трубы большая сторона сечения вертикальна (60×40 — 60 по высоте); чтобы положить плашмя — "up":[0,0,1]. Угол реза, если не 90°, — "cut":"45°". Гнутые детали — вместо a/b "pts": [[x,y,z],…] от 6 до 30 точек.
+— blocks — прямоугольные детали ПОД ЛЮБЫМ УГЛОМ: доски, брус, ступени, стойки из клеёного бруса, косоуры из дерева, полосы и пластины из листа. a→b — осевая линия по длине, w — ширина, h — толщина (h идёт по направлению "up", по умолчанию вверх; для вертикальной стойки h идёт по z). a и b — центры торцов (середина сечения): ступень толщиной 40 с верхом на y=450 — a и b на y=430. Повёрнутая в плане ступень — a и b на одной высоте, направление a→b в плане задаёт поворот. Материал m: дерево oak|ash|beech|larch|pine|wpc, сталь s2|s3|s4|s10|rif4 (h = толщина листа), бетон conc.
+— slabs — плоские фигурные плиты в плане: забежные и клиновидные ступени, круглые столешницы, площадки, косынки. pts — контур [x,z] по порядку обхода, y — низ плиты, t — толщина. Круг — 24–32 точки.
+— sheets — листы и плиты строго по осям: угол p, размеры d.
 — panels — обшивка многоугольником из 3–4 точек: pn8 (профнастил стеновой), pn20 (кровельный), mch (металлочерепица), pc4|pc6|pc8|pc10 (сотовый поликарбонат), pcm4 (монолитный), mesh (сетка), glass (стекло), perfo (перфопанель).
-— conc — бетонные опоры под столбы: p=[x,z], d — диаметр, dep — глубина.
-— fx — анкеры, болты, петли, саморезы, отверстия, ролики: t = anchor|bolt|hinge|screw|hole|roller; k — ключ фурнитуры из списка (тогда она попадёт в смету).
-— hw — покупная фурнитура: по ключу k из списка или своя позиция с названием n, количеством q, единицей u и примерной ценой p в гривнах.
-— steps — 3–8 шагов работы по порядку: разметка и нарезка, сборка узлов на столе, сварка, монтаж. Покраску не пиши — программа добавит её сама. "after":true — шаг после покраски (обшивка, дерево, фурнитура). У каждой детали st — номер шага, на котором её ставят.
-— dims — 2–4 главных размера: v = front (вид спереди, x-y) | side (вид сбоку, z-y) | top (вид сверху, x-z).
-— "mount":true — если изделие монтируется на объекте (бетон, анкеры, крепление к стене).
-— Не больше 300 деталей members. Конструкция должна быть реальной и прочной: раскосы и косынки где нужно, сечения под нагрузку. Ориентиры: стеллаж — стойки 40×40×2, полки 40×20×2, средние перемычки 20×20; стол — ноги 60×60×2 или 80×40×3, царга 40×20×2; подставка под бак 1000 л (≈1 т) — стойки 80×80×3 или 100×100×4 с раскосами, обвязка 80×40×3 + лист; лёгкие рамы — 20×20, 25×25, 40×20. Под тяжёлую нагрузку добавь предупреждение в warn.
-Допустимые сечения (ключ=название): ${secs}
-Фурнитура (ключ=название, единица): ${hw}
-
+— ghosts — окружение для наглядности, в смету не идёт: стены, пол второго этажа с проёмом, колонны дома. Добавь, если изделие крепится к стене или перекрытию — так видно, как оно стоит. Толщина стены 200, перекрытия 200.
+— conc — бетонные опоры: p=[x,z], d — диаметр, dep — глубина.
+— fx — анкеры, болты, петли, саморезы, отверстия, ролики: t = anchor|bolt|hinge|screw|hole|roller; k — ключ фурнитуры (попадёт в смету).
+— hw — покупное: по ключу k из списка или своя позиция n, q, u и цена p в гривнах (Кривой Рог, ${new Date().getFullYear()}).
+— labor — только работы, которых нет в автоматическом расчёте (программа сама считает изготовление металла по весу, сварные узлы, деревянные детали, бетон, монтаж и покраску): например монтаж тяг к перекрытию, сверление бетона под химанкер.
+— steps — 3–10 шагов по порядку: разметка и нарезка, сборка узлов, сварка, монтаж, дерево. Покраску не пиши — программа добавит. "after":true — шаг после покраски (дерево, обшивка, фурнитура). У каждой детали st — номер шага.
+— dims — 2–4 главных размера: v = front (x-y) | side (z-y) | top (x-z).
+— "mount":true — если монтаж на объекте (бетон, анкеры, стена, перекрытие).
+— До 350 деталей всего. Конструкция реальная и прочная: раскосы и косынки где нужно, сечения под нагрузку. Ориентиры: стеллаж — стойки 40×40×2, полки 40×20×2; стол — ноги 60×60×2 или 80×40×3; подставка под бак 1000 л — стойки 80×80×3 с раскосами; лестница — подъём ступени 160–200 мм одинаковый, проступь 200–280, ширина марша от 600, ступени дерево 40 мм, тяги к перекрытию — пруток r12/r16 или нерж. тяга в hw. Под тяжёлую нагрузку — предупреждение в warn.
+${cur?`
+ВАРИАНТ В — ПРАВКА ТЕКУЩЕЙ КОНСТРУКЦИИ ПО ДЕТАЛЯМ (удобнее, если меняется часть изделия, а остальное остаётся):
+{"mode":"patch","name":"…","summary":"что изменил","assumptions":[…],"questions":[…],"remove":["начало названия деталей",...],"add":{"members":[…],"blocks":[…],"slabs":[…],"sheets":[…],"panels":[…],"ghosts":[…],"fx":[…],"hw":[…],"labor":[…]},"lab":[{"k":"ключ работы","q":число}],"steps":[…]}
+— remove убирает все детали и покупные позиции, чьё название начинается с указанной строки (без учёта регистра). Например ["Балясина","Поручень"] — убрать ограждение.
+— add — новые детали в формате варианта Б. st — номера существующих шагов, либо пришли steps целиком заново.
+— lab — если в текущем изделии есть "lab" (работа по шаблону) — пришли его целиком с поправленными количествами; ключи работ: ${labs}.
+`:''}
 ОБЩЕЕ:
-— Если размер не назван — возьми стандартный и запиши в assumptions. В questions — до 3 уточнений, которые сильно влияют на цену или прочность (не спрашивай то, что уже сказано).
+— Если размер не назван — возьми стандартный и запиши в assumptions. В questions — до 3 уточнений, которые сильно влияют на цену или прочность.
 — Все тексты — по-русски, коротко и по делу, как мастер мастеру.
-— Только JSON, без markdown.`;
+— Только JSON, без markdown.
+Допустимые сечения (ключ=название): ${secs}
+Фурнитура (ключ=название, единица): ${hw}`;
 }
 function aiCurrent(){
-  if(state.tpl==='custom'){const sp=tv().spec||demoSpec(); return JSON.stringify(Object.assign({mode:'custom'},sp,{mc:M.v.mc,fin:M.v.fin}));}
-  return JSON.stringify({mode:'tpl',tpl:state.tpl,name:M.T.name,vals:normVals(state.tpl,tv())});
+  if(state.tpl==='custom'){const sp=tv().spec||demoSpec(); return 'Своя конструкция (детали):\n'+JSON.stringify(Object.assign({mode:'custom'},sp,{mc:M.v.mc,fin:M.v.fin}));}
+  return `Шаблон: ${JSON.stringify({mode:'tpl',tpl:state.tpl,name:M.T.name,vals:normVals(state.tpl,tv())})}\nЕсли правку можно сделать параметрами шаблона — верни вариант А с этим шаблоном. Если нет — вот это же изделие по деталям, правь его вариантом В (или верни целиком вариантом Б):\n${JSON.stringify(toSpec(M))}`;
 }
+function aiBase(){return state.tpl==='custom'?(tv().spec||demoSpec()):toSpec(M);}
 async function openAI(){
   if(state.screen!=='editor') go('editor');
   const sm=await sampleFn(), key=aiKey(); aiImg=null;
-  sheet(`<h2>ИИ по словам</h2>
-    <p class="note" style="margin:0">Опишите, что нужно сварить: размеры, профиль, материал, где стоит. ИИ возьмёт подходящий шаблон или соберёт свою конструкцию по деталям — дальше 3D, чертёж, нарезка и смета как обычно. Надиктовать можно микрофоном на клавиатуре.</p>
-    <div class="f"><label for="aiT">Описание</label><div class="in"><textarea id="aiT" rows="5" placeholder="Например: навес для машины 6 на 4 метра к стене дома, поликарбонат бронза 8 мм, с водостоком">${esc(state.aiText||'')}</textarea></div></div>
+  sheet(`<h2>ИИ по словам и фото</h2>
+    <p class="note" style="margin:0">Опишите, что нужно сварить, или приложите фото: ИИ возьмёт шаблон, если изделие совпадает с ним один в один, а если нет — соберёт свою конструкцию по деталям, как на фото. Дальше 3D, чертёж, нарезка и смета как обычно.</p>
+    <div class="f"><label for="aiT">Описание</label><div class="in"><textarea id="aiT" rows="5" placeholder="Например: лестница как на фото, высота 2700, ступени бук, тяги к потолку из нержавейки">${esc(state.aiText||'')}</textarea></div></div>
     <div class="row">${SR?`<button class="btn" type="button" id="aiMic">${IC_MIC}Надиктовать</button>`:''}<label class="btn" style="cursor:pointer" for="aiFile">${IC_CLIP}Эскиз или фото</label><input type="file" id="aiFile" accept="image/*" hidden></div>
     <p class="note" id="aiImgN" hidden></p>
     <p class="sub" style="margin:0">Примеры</p>
     <div class="chips">${AI_EX.map(x=>`<button class="chip ex" type="button" data-ex="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+    <label class="chk"><input type="checkbox" id="aiExact"> Точно как на фото — собрать по деталям, без шаблона</label>
     <label class="chk"><input type="checkbox" id="aiCur"${state.aiLast?' checked':''}> Изменить текущее «${esc(M.title||M.T.name)}», а не новое изделие</label>
     ${!sm?`<div class="f"><label for="aiK">Ключ Claude API${key?' — сохранён':''}</label><div class="in"><input id="aiK" type="password" autocomplete="off" placeholder="${key?'•••••••• — можно вставить новый':'sk-ant-…'}"></div><p class="note" style="margin-top:4px">ИИ работает через ваш ключ с console.anthropic.com — тот же, что в Корпуснике. Ключ хранится только на этом телефоне.</p></div>`:''}
     <p class="note" id="aiStat" aria-live="polite"></p>
     <div id="aiRes"></div>
     <button class="cta" type="button" id="aiGo"><span>Построить</span><i>${IC_AI}</i></button>`,
   c=>{
-    const ta=c.querySelector('#aiT'), st=c.querySelector('#aiStat'), go=c.querySelector('#aiGo');
+    const ta=c.querySelector('#aiT'), st=c.querySelector('#aiStat'), go=c.querySelector('#aiGo'), ex=c.querySelector('#aiExact');
     c.querySelector('.chips').onclick=e=>{const b=e.target.closest('[data-ex]'); if(!b) return; ta.value=b.dataset.ex; c.querySelector('#aiCur').checked=false; ta.focus();};
-    c.querySelector('#aiFile').onchange=async e=>{const f=e.target.files&&e.target.files[0]; if(!f) return; try{aiImg=await prepImage(f); const n=c.querySelector('#aiImgN'); n.hidden=false; n.textContent='Эскиз прикреплён: '+f.name;}catch(err){toast('Не удалось открыть картинку');}};
+    c.querySelector('#aiFile').onchange=async e=>{const f=e.target.files&&e.target.files[0]; if(!f) return; try{aiImg=await prepImage(f); const n=c.querySelector('#aiImgN'); n.hidden=false; n.textContent='Фото прикреплено: '+f.name; ex.checked=true;}catch(err){toast('Не удалось открыть картинку');}};
     const mic=c.querySelector('#aiMic');
     if(mic) mic.onclick=()=>{try{const r=new SR(), base=ta.value.trim(); r.lang='ru-RU'; r.interimResults=true; r.continuous=false;
       r.onresult=e=>{let t=''; for(const x of e.results) t+=x[0].transcript; ta.value=(base?base+' ':'')+t;}; r.onerror=()=>toast('Микрофон недоступен — используйте микрофон на клавиатуре'); r.onend=()=>mic.removeAttribute('aria-pressed');
       mic.setAttribute('aria-pressed','true'); r.start();}catch(e){toast('Микрофон недоступен — используйте микрофон на клавиатуре');}};
-    go.onclick=async()=>{
-      const text=ta.value.trim(); if(!text&&!aiImg){st.textContent='Опишите изделие хотя бы одной фразой.'; ta.focus(); return;}
+    const run=async forceExact=>{
+      const text=ta.value.trim(); if(!text&&!aiImg){st.textContent='Опишите изделие хотя бы одной фразой или приложите фото.'; ta.focus(); return;}
       state.aiText=text; save(); const k=c.querySelector('#aiK'); if(k&&k.value.trim()) LS.set('svar1.apikey',k.value.trim());
-      const refine=c.querySelector('#aiCur').checked;
-      go.disabled=true; st.textContent='Думаю над конструкцией… обычно 20–90 секунд.'; c.querySelector('#aiRes').innerHTML='';
+      const refine=c.querySelector('#aiCur').checked, exact=forceExact||ex.checked; if(forceExact) ex.checked=true;
+      go.disabled=true; st.textContent=exact?'Собираю по деталям… обычно 40–150 секунд.':'Думаю над конструкцией… обычно 20–90 секунд.'; c.querySelector('#aiRes').innerHTML='';
       aiCtl=new AbortController();
       try{
-        const res=await askClaude(aiPrompt(text,refine?aiCurrent():null,!!aiImg),aiImg,n=>{st.textContent=`Собираю модель… ${n} символов`;},aiCtl.signal);
-        const ok=res&&((res.mode==='tpl'&&TPL[res.tpl]&&res.tpl!=='custom')||(res.mode==='custom'&&Array.isArray(res.members)&&res.members.length));
+        const res=await askClaude(aiPrompt(text,refine?aiCurrent():null,!!aiImg,exact),aiImg,n=>{st.textContent=`Собираю модель… ${n} символов`;},aiCtl.signal);
+        const hasParts=r=>['members','blocks','slabs','sheets'].some(k=>Array.isArray(r[k])&&r[k].length);
+        const ok=res&&((res.mode==='tpl'&&TPL[res.tpl]&&res.tpl!=='custom'&&!exact)||(res.mode==='custom'&&hasParts(res))||(res.mode==='patch'&&refine&&(Array.isArray(res.remove)||res.add)));
         if(!ok) throw {code:'invalid_json'};
-        aiRes=Object.assign(res,{refine}); st.textContent=''; showAIRes(c);
+        aiRes=Object.assign(res,{refine}); if(res.mode==='patch') aiRes.spec=applyPatch(aiBase(),res);
+        st.textContent=''; showAIRes(c,()=>run(true));
       }catch(e){if(e&&e.name==='AbortError') return; st.textContent=AI_ERR[e&&e.code]||('Не получилось. '+(e&&e.message?String(e.message).slice(0,140):'Попробуйте ещё раз.'));}
       finally{go.disabled=false;}
     };
+    go.onclick=()=>run(false);
   });
 }
 async function prepImage(file){
@@ -1892,17 +2007,23 @@ async function prepImage(file){
   cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height); URL.revokeObjectURL(url);
   return await new Promise(ok=>cv.toBlob(ok,'image/jpeg',.85));
 }
-function showAIRes(c){
+function showAIRes(c,again){
   const r=aiRes, isT=r.mode==='tpl', T=isT?TPL[r.tpl]:TPL.custom, arr=x=>Array.isArray(x)?x.slice(0,6):[];
+  const sp=r.mode==='patch'?r.spec:r, nP=['members','blocks','slabs','sheets','panels'].reduce((s,k)=>s+(Array.isArray(sp[k])?sp[k].length:0),0);
+  const chip=isT?'Шаблон: '+esc(T.name):r.mode==='patch'?`Правка по деталям: ${nP} ${plural(nP,'деталь','детали','деталей')}`:`Своя конструкция: ${nP} ${plural(nP,'деталь','детали','деталей')}`;
   c.querySelector('#aiRes').innerHTML=`<div class="stepcard"><p class="sub">Понял так</p><h3>${esc(r.name||T.name)}</h3><p>${esc(r.summary||'')}</p>
     ${arr(r.assumptions).length?`<p class="sub">Допущения</p><ul style="margin:0;padding-left:18px">${arr(r.assumptions).map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:''}
     ${arr(r.questions).length?`<p class="sub">Уточните у клиента</p><ul style="margin:0;padding-left:18px">${arr(r.questions).map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:''}
-    <div class="chips"><span class="chip" style="background:var(--yel)">${isT?'Шаблон: '+esc(T.name):`Своя конструкция: ${r.members.length} ${plural(r.members.length,'деталь','детали','деталей')}`}</span></div></div>
-    <button class="cta" type="button" id="aiApply" style="margin-top:12px"><span>Открыть в конструкторе</span><i>${IC.refresh}</i></button>`;
+    <div class="chips"><span class="chip" style="background:var(--yel)">${chip}</span></div></div>
+    <button class="cta" type="button" id="aiApply" style="margin-top:12px"><span>Открыть в конструкторе</span><i>${IC.refresh}</i></button>
+    ${isT?`<button class="btn" type="button" id="aiExactGo" style="width:100%;margin-top:8px;min-height:44px">Не то — собрать по деталям, как на фото</button>`:''}`;
   c.querySelector('#aiGo span').textContent='Другой вариант';
+  const eg=c.querySelector('#aiExactGo'); if(eg) eg.onclick=()=>again();
   c.querySelector('#aiApply').onclick=()=>{
     if(isT){const k=r.tpl; state.tpl=k; state.vals[k]=Object.assign({},r.vals||{}); state.cat=T.cat;}
-    else{const spec=JSON.parse(JSON.stringify(r)); ['mode','refine','mc','fin'].forEach(x=>delete spec[x]); state.tpl='custom'; state.vals.custom={spec}; if(r.mc) state.vals.custom.mc=r.mc; if(r.fin) state.vals.custom.fin=r.fin; state.cat='Свои';}
+    else{let spec; if(r.mode==='patch') spec=r.spec; else{spec=JSON.parse(JSON.stringify(r)); ['mode','refine','mc','fin','spec'].forEach(x=>delete spec[x]);}
+      const mc=r.mc||(state.tpl!=='custom'&&r.refine?M.v.mc:null), fin=r.fin||(state.tpl!=='custom'&&r.refine?M.v.fin:null);
+      state.tpl='custom'; state.vals.custom={spec}; if(mc) state.vals.custom.mc=mc; if(fin) state.vals.custom.fin=fin; state.cat='Свои';}
     if(!r.refine) state.editItem=null;
     state.aiLast=true; step=1; resetCam=true; closeSheet(); renderCats(); renderTpls(); renderParams(); update(); go('editor'); window.scrollTo({top:0,behavior:'smooth'});
     toast(r.refine?'Изделие изменено — проверьте размеры':'Готово — проверьте размеры и смету');
@@ -2179,7 +2300,7 @@ function renderSum(){
 }
 
 /* ---------- Вкладки ---------- */
-const isClad=p=>p.kind==='face'||p.ph==='treads'||p.kind==='poly'||(p.kind==='box'&&(WOOD[p.mat]||p.mat==='gutter'));
+const isClad=p=>p.kind==='face'||p.ph==='treads'||p.kind==='poly'||((p.kind==='box'||p.kind==='blk')&&(WOOD[p.mat]||p.mat==='gutter'));
 function renderTab(){
   document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===state.tab));
   const show3D=state.tab==='3d'||state.tab==='asm';
@@ -2252,7 +2373,7 @@ function faceStyle(m){
 }
 function partColor(p){
   const mc=(MCOL[M.v.mc]||MCOL.black).c;
-  if(p.kind==='bar'||p.kind==='arc'){if(p.sec==='hrw') return WOOD.beech.c; if(p.sec==='rail70') return '#A3A9AF'; if(p.ph==='found') return '#6B6F74'; return mc;}
+  if(p.kind==='bar'||p.kind==='arc'){if(p.inox) return '#B9BEC3'; if(p.sec==='hrw') return WOOD.beech.c; if(p.sec==='rail70') return '#A3A9AF'; if(p.ph==='found') return '#6B6F74'; return mc;}
   if(p.kind==='face') return faceStyle(p.mat).c;
   if(WOOD[p.mat]) return WOOD[p.mat].c;
   if(p.mat==='rif4') return '#8E949B';
@@ -2304,6 +2425,11 @@ function build3D(){
       const g=new THREE.BoxGeometry(p.sx,p.sy,p.sz), conc=p.mat==='conc'; baseO=conc?.55:1;
       const mesh=new THREE.Mesh(g,mkMat(baseO,WOOD[p.mat]||conc?{roughness:.9,metalness:0}:{})); mesh.position.set(p.x+p.sx/2,p.y+p.sy/2,p.z+p.sz/2); R.group.add(mesh); objs.push(mesh);
       const ln=new THREE.LineSegments(new THREE.EdgesGeometry(g),lineMat()); ln.position.copy(mesh.position); R.group.add(ln); objs.push(ln);
+    }else if(p.kind==='blk'){
+      const d=vnorm(vsub(p.p2,p.p1)), [x,u,z]=basis(d,p.up), g=new THREE.BoxGeometry(p.len,p.h,p.w), conc=p.mat==='conc'; baseO=conc?.55:1;
+      const m4=new THREE.Matrix4().makeBasis(new THREE.Vector3(...x),new THREE.Vector3(...u),new THREE.Vector3(...z)); const c=mid(p.p1,p.p2); m4.setPosition(c[0],c[1],c[2]);
+      const mesh=new THREE.Mesh(g,mkMat(baseO,WOOD[p.mat]||conc?{roughness:.88,metalness:0}:{})); mesh.matrixAutoUpdate=false; mesh.matrix.copy(m4); R.group.add(mesh); objs.push(mesh);
+      const ln=new THREE.LineSegments(new THREE.EdgesGeometry(g),lineMat()); ln.matrixAutoUpdate=false; ln.matrix.copy(m4); R.group.add(ln); objs.push(ln);
     }else if(p.kind==='poly'){
       const sh=new THREE.Shape(p.poly.map(([x,z])=>new THREE.Vector2(x,-z))), g=new THREE.ExtrudeGeometry(sh,{depth:p.t,bevelEnabled:false,curveSegments:1}); g.rotateX(-Math.PI/2);
       const mesh=new THREE.Mesh(g,mkMat(1,WOOD[p.mat]?{roughness:.85,metalness:0}:{})); mesh.position.set(0,p.y,0); R.group.add(mesh); objs.push(mesh);
@@ -2381,6 +2507,7 @@ function hull(pts){
 }
 function solids(p){ // наборы 3D-точек: каждая — выпуклое тело
   if(p.kind==='bar'||p.kind==='arc'){const Sx=SEC[p.sec]; return segs(p).map(s=>{const [x,u,z]=basis(vnorm(vsub(s.b,s.a)),s.up), o=[]; [s.a,s.b].forEach(e=>[[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([i,j])=>o.push(vadd(e,vadd(vmul(u,i*Sx.h/2),vmul(z,j*Sx.w/2)))))); return o;});}
+  if(p.kind==='blk'){const [x,u,z]=basis(vnorm(vsub(p.p2,p.p1)),p.up), o=[]; [p.p1,p.p2].forEach(e=>[[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([i,j])=>o.push(vadd(e,vadd(vmul(u,i*p.h/2),vmul(z,j*p.w/2)))))); return [o];}
   if(p.kind==='box'){const o=[]; [0,p.sx].forEach(a=>[0,p.sy].forEach(b=>[0,p.sz].forEach(c=>o.push([p.x+a,p.y+b,p.z+c])))); return [o];}
   if(p.kind==='poly') return [p.poly.flatMap(([x,z])=>[[x,p.y,z],[x,p.y+p.t,z]])];
   if(p.kind==='cyl'){const o=[]; for(let i=0;i<16;i++){const a=i/16*2*Math.PI, x=p.x+Math.cos(a)*p.d/2, z=p.z+Math.sin(a)*p.d/2; o.push([x,p.y0,z],[x,p.y0+p.h,z]);} return [o];}
@@ -2431,8 +2558,8 @@ function panelDraw(P){
 
 /* ---------- Материалы ---------- */
 function woodPieces(m=M){
-  const g={}; m.parts.filter(p=>(p.kind==='box'||p.kind==='poly')&&WOOD[p.mat]).forEach(p=>{
-    const d=p.kind==='box'?[p.sx,p.sy,p.sz].sort((a,b)=>b-a).map(Math.round):[...(p.blankAB||[0,0]).map(Math.round).sort((a,b)=>b-a),p.t];
+  const g={}; m.parts.filter(p=>(p.kind==='box'||p.kind==='poly'||p.kind==='blk')&&WOOD[p.mat]).forEach(p=>{
+    const d=p.kind==='box'?[p.sx,p.sy,p.sz].sort((a,b)=>b-a).map(Math.round):p.kind==='blk'?[p.len,Math.max(p.w,p.h),Math.min(p.w,p.h)].map(Math.round):[...(p.blankAB||[0,0]).map(Math.round).sort((a,b)=>b-a),p.t];
     const k=p.name+'|'+p.mat+'|'+d.join('×'); (g[k]=g[k]||{name:p.name,mat:p.mat,d,q:0,wedge:p.kind==='poly'}).q++;});
   return Object.values(g);
 }
